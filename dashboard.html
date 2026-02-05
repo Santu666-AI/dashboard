@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Varadachari – Recruiter Personal Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+
+<body onload="checkLogin()">
+
+<div class="container my-4">
+
+<!-- HEADER -->
+<div class="header mb-3">
+  <img src="logo.png" onerror="this.style.display='none'">
+  <div>
+    <h4 class="mb-0">Varadachari – Recruiter Personal Dashboard</h4>
+    <div><b>Company:</b> NetVision Resources</div>
+    <div><b>Designation:</b> Sr Technical Recruiter</div>
+  </div>
+  <div class="ms-auto">
+    <button class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- COUNTERS -->
+<div class="row text-center mb-4">
+  <div class="col-md-3"><div class="card card-counter sub p-3"><h6>Submissions</h6><h2 id="subCount">0</h2></div></div>
+  <div class="col-md-3"><div class="card card-counter int p-3"><h6>Interviews</h6><h2 id="intCount">0</h2></div></div>
+  <div class="col-md-3"><div class="card card-counter pla p-3"><h6>Placements</h6><h2 id="placeCount">0</h2></div></div>
+  <div class="col-md-3"><div class="card card-counter sta p-3"><h6>Starts</h6><h2 id="startCount">0</h2></div></div>
+</div>
+
+<!-- TABS -->
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#jd">Job Description</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#resume">Resume Parse</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#daily">Daily Task</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#submission">Submission</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#proposal">Proposal</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#interview">Interview</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#placement">Placement</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#start">Start</a></li>
+</ul>
+
+<div class="tab-content">
+
+<!-- JOB DESCRIPTION -->
+<div class="tab-pane fade show active" id="jd">
+  <div class="row">
+    <div class="col-md-4">
+      <input class="form-control mb-2" id="jdDate" placeholder="MM/DD/YYYY">
+      <input class="form-control mb-2" id="jdNvr" placeholder="NVR Job ID">
+      <input class="form-control mb-2" id="jdSubject" placeholder="Subject">
+      <textarea class="form-control mb-2" rows="6" id="jdText" placeholder="Paste Job Description"></textarea>
+      <button class="btn btn-primary w-100" onclick="saveJD()">Save JD</button>
+    </div>
+    <div class="col-md-8 table-responsive">
+      <table class="table table-bordered">
+        <thead><tr><th>Date</th><th>NVR Job ID</th><th>Subject</th></tr></thead>
+        <tbody id="jdTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="tab-pane fade" id="resume">
+  <div class="col-md-4">
+    <input class="form-control mb-2" id="rpDate" placeholder="MM/DD/YYYY">
+    <textarea class="form-control mb-2" id="rpNotes" rows="4" placeholder="Paste resume"></textarea>
+    <input class="form-control mb-2" id="rpName" placeholder="Name">
+    <input class="form-control mb-2" id="rpEmail" placeholder="Email">
+    <input class="form-control mb-2" id="rpPhone" placeholder="Phone">
+    <input class="form-control mb-2" id="rpJob" placeholder="Job">
+    <input class="form-control mb-2" id="rpLocation" placeholder="Location">
+    <input class="form-control mb-2" id="rpSkills" placeholder="Skills">
+    <input class="form-control mb-2" id="rpVisa" placeholder="Visa">
+    <button class="btn btn-success w-100" onclick="saveToDaily()">Save to Daily</button>
+  </div>
+</div>
+
+<div class="tab-pane fade" id="daily">
+  <input class="form-control search-box mb-2" placeholder="Search" oninput="renderDaily(this.value)">
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
+          <th>Job</th><th>Location</th><th>Skills</th><th>Visa</th>
+          <th>Notes</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="dailyTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tab-pane fade" id="submission"></div>
+<div class="tab-pane fade" id="proposal"></div>
+<div class="tab-pane fade" id="interview"></div>
+<div class="tab-pane fade" id="placement"></div>
+<div class="tab-pane fade" id="start"></div>
+
+</div>
+</div>
+
+<script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
