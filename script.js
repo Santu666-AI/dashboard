@@ -4,9 +4,7 @@ function login(){
   if(username.value==="admin" && password.value==="admin"){
     localStorage.setItem("logged","yes");
     location.href="dashboard.html";
-  } else {
-    alert("Invalid Username or Password");
-  }
+  } else alert("Invalid Username or Password");
 }
 
 function checkLogin(){
@@ -29,23 +27,23 @@ const today = () => new Date().toLocaleDateString("en-US");
 /* ================= JOB DESCRIPTION ================= */
 
 function saveJD(){
-  const d = get("jd");
+  const d=get("jd");
   d.push({
-    date: jdDate.value || today(),
+    date: jdDate.value||today(),
     nvr: jdNvr.value,
     subject: jdSubject.value,
     text: jdText.value
   });
-  set("jd", d);
+  set("jd",d);
   renderJD();
 }
 
 function renderJD(){
   jdTable.innerHTML="";
   get("jd").forEach((r,i)=>{
-    jdTable.innerHTML += `
+    jdTable.innerHTML+=`
       <tr>
-        <td>${r.date}</td>
+        <td style="width:110px">${r.date}</td>
         <td>${r.nvr}</td>
         <td class="subject-link" onclick="openJD(${i})">${r.subject}</td>
       </tr>`;
@@ -53,262 +51,256 @@ function renderJD(){
 }
 
 function openJD(i){
-  const r = get("jd")[i];
-  jdModalTitle.innerText = r.subject;
-  jdModalBody.innerText = r.text;
+  const r=get("jd")[i];
+  jdModalTitle.innerText=r.subject;
+  jdModalBody.innerText=r.text;
   new bootstrap.Modal(document.getElementById("jdModal")).show();
 }
 
-/* ================= RESUME → DAILY ================= */
+/* ================= RESUME → DAILY (MANUAL) ================= */
 
-function saveToDaily() {
-  const resumeText = rpNotes.value || "";
+function saveToDaily(){
+  const t=rpNotes.value||"";
+  const email=(t.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)||[""])[0];
+  const phone=(t.match(/(\+?\d{1,3}[\s-]?)?\d{10}/)||[""])[0];
+  const lines=t.split("\n").map(l=>l.trim()).filter(l=>l);
+  const name=lines[0]||"";
+  const location=(t.match(/(Location|City|Based in)\s*[:\-]?\s*(.*)/i)||["",""])[2];
+  const visa=(t.match(/(US Citizen|GC|Green Card|H1B|H-1B|OPT|CPT|EAD|L2|TN|Citizen)/i)||[""])[0];
 
-  /* ===== EMAIL ===== */
-  const emailMatch = resumeText.match(
-    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
-  );
-  const email = emailMatch ? emailMatch[0] : "";
-
-  /* ===== PHONE ===== */
-  const phoneMatch = resumeText.match(
-    /(\+?\d{1,3}[\s-]?)?\d{10}/
-  );
-  const phone = phoneMatch ? phoneMatch[0] : "";
-
-  /* ===== NAME (FIRST NON-EMPTY LINE) ===== */
-  const lines = resumeText
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l);
-  const name = lines.length > 0 ? lines[0] : "";
-
-  /* ===== LOCATION ===== */
-  const locationMatch = resumeText.match(
-    /(Location|City|Based in)\s*[:\-]?\s*(.*)/i
-  );
-  const location = locationMatch ? locationMatch[2] : "";
-
-  /* ===== VISA / WORK AUTH ===== */
-  const visaMatch = resumeText.match(
-    /(US Citizen|GC|Green Card|H1B|H-1B|OPT|CPT|EAD|L2|TN|Citizen)/i
-  );
-  const visa = visaMatch ? visaMatch[0] : "";
-
-  const d = get("daily");
-
+  const d=get("daily");
   d.push({
-    date: rpDate.value || today(),
-    name: name,
-    email: email,
-    phone: phone,
-    job: "",
-    location: location,
-    skills: "",
-    visa: visa,
-    notes: ""          // ✅ NOTES MANUAL ONLY
+    date: rpDate.value||today(),
+    name,email,phone,
+    job:"",location,skills:"",visa,
+    notes:"",
+    editing:false
   });
-
-  set("daily", d);
-
-  // Clear resume box after saving
-  rpNotes.value = "";
-
-  renderDaily();
+  set("daily",d);
+  rpNotes.value="";
+  renderAll();
 }
 
+/* ================= CEIPAL EXCEL IMPORT (FIXED) ================= */
 
-/* ================= DAILY TASK ================= */
+function importCeipalExcel(input){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:"binary"});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    const d=get("daily");
 
-function renderDaily(q=""){
+    const pick = (row, keys) => {
+      for (let k of keys) {
+        if (row[k] && row[k].toString().trim()) {
+          return row[k].toString().trim();
+        }
+      }
+      return "";
+    };
+
+    rows.forEach(r=>{
+      d.push({
+        date: today(),
+        name: pick(r, ["Applicant Name","Candidate Name","Applicant_Name"]),
+        email: pick(r, ["Email Address","Email","Email ID"]),
+        phone: pick(r, ["Mobile Number","Phone","Phone Number"]),
+        job:"",
+        location: pick(r, ["Location","Current Location","City"]),
+        skills:"",
+        visa:"",
+        notes:"",
+        editing:false
+      });
+    });
+
+    set("daily",d);
+    renderAll();
+  };
+  reader.readAsBinaryString(input.files[0]);
+}
+
+/* ================= EDIT CONTROL ================= */
+
+function toggleEdit(tab,i){
+  const d=get(tab);
+  d.forEach((r,idx)=>r.editing = idx===i ? !r.editing : false);
+  set(tab,d);
+  renderAll();
+}
+
+function upd(tab,i,k,v){
+  const d=get(tab);
+  d[i][k]=v;
+  set(tab,d);
+}
+
+/* ================= DAILY ================= */
+
+function renderDaily(){
   dailyTable.innerHTML="";
-
   get("daily").forEach((r,i)=>{
-    if(q && !r.email.includes(q) && !r.phone.includes(q)) return;
-
-    dailyTable.innerHTML += `
+    dailyTable.innerHTML+=`
     <tr>
-      <td>${r.date}</td>
-
+      ${cell(r.date,r.editing,'daily',i,'date')}
+      ${cell(r.name,r.editing,'daily',i,'name')}
+      ${cell(r.email,r.editing,'daily',i,'email')}
+      ${cell(r.phone,r.editing,'daily',i,'phone')}
+      ${cell(r.job,r.editing,'daily',i,'job')}
+      ${cell(r.location,r.editing,'daily',i,'location')}
+      ${cell(r.skills,r.editing,'daily',i,'skills')}
+      ${cell(r.visa,r.editing,'daily',i,'visa')}
       <td>
-        <input class="form-control form-control-sm"
-          value="${r.name}"
-          onblur="updateDaily(${i},'name',this.value)">
+        <textarea ${r.editing?"":"disabled"}
+          oninput="upd('daily',${i},'notes',this.value)">${r.notes}</textarea>
       </td>
-
       <td>
-        <input class="form-control form-control-sm"
-          value="${r.email}"
-          onblur="updateDaily(${i},'email',this.value)">
-      </td>
-
-      <td>
-        <input class="form-control form-control-sm"
-          value="${r.phone}"
-          onblur="updateDaily(${i},'phone',this.value)">
-      </td>
-
-      <td>
-        <input class="form-control form-control-sm"
-          value="${r.location}"
-          onblur="updateDaily(${i},'location',this.value)">
-      </td>
-
-      <td>
-        <input class="form-control form-control-sm"
-          value="${r.visa}"
-          onblur="updateDaily(${i},'visa',this.value)">
-      </td>
-
-      <td>
-        <textarea class="form-control form-control-sm"
-          onblur="updateDaily(${i},'notes',this.value)">${r.notes || ""}</textarea>
-      </td>
-
-      <td>
-        <button class="btn btn-primary btn-sm"
-          onclick="move('daily','submission',${i})">Add</button>
-        <button class="btn btn-danger btn-sm"
-          onclick="del('daily',${i})">Delete</button>
+        <button class="btn btn-sm ${r.editing?'btn-success':'btn-primary'}"
+          onclick="toggleEdit('daily',${i})">${r.editing?'Save':'Edit'}</button>
+        <button class="btn btn-sm btn-secondary"
+          onclick="route('daily','submission',${i})">Add</button>
+        <button class="btn btn-sm btn-danger"
+          onclick="del('daily',${i})">DEL</button>
       </td>
     </tr>`;
   });
 }
 
-
-/* ================= UPDATE / DELETE ================= */
-
-function upd(tab,i,k,v){
-  const d = get(tab);
-  d[i][k] = v;
-  set(tab, d);
-}
-
-function del(tab,i){
-  const d = get(tab);
-  d.splice(i,1);
-  set(tab,d);
-  renderDaily();
-  renderTargets();
-  updateCounts();
-}
-
 /* ================= ROUTING ================= */
 
 function route(from,to,i){
-  const d = get(to);
-  d.push(get(from)[i]);
+  const row={...get(from)[i],editing:false};
+  if(to==="submission") row.ceipalId="";
+  if(to==="proposal"){
+    row.clientName="";
+    row.programName="";
+    row.pwName="";
+  }
+  const d=get(to);
+  d.push(row);
   set(to,d);
-  renderTargets();
-  updateCounts();
+  renderAll();
 }
 
-/* ================= TARGET TABLES ================= */
-
-function renderTargets(){
-  renderSubmission();
-  renderSimple("proposal");
-  renderSimple("interview");
-  renderSimple("placement");
-  renderSimple("start");
-}
+/* ================= SUBMISSION ================= */
 
 function renderSubmission(){
-  submission.innerHTML = `
-  <div class="table-responsive">
+  submission.innerHTML=`
   <table class="table table-bordered">
-  <thead>
     <tr>
-      <th>Date</th><th>Name</th><th>Email</th><th>Job</th><th>Action</th>
+      <th style="width:110px">Date</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Job</th>
+      <th style="width:120px">Ceipal ID</th>
+      <th style="width:240px">Action</th>
     </tr>
-  </thead>
-  <tbody>
-  ${get("submission").map((r,i)=>`
+    ${get("submission").map((r,i)=>`
     <tr>
-      <td><input value="${r.date}"
-      onblur="upd('submission',${i},'date',this.value)"></td>
+      ${cell(r.date,r.editing,'submission',i,'date')}
       <td>${r.name}</td>
       <td>${r.email}</td>
-      <td>${r.job}</td>
+      ${cell(r.job,r.editing,'submission',i,'job')}
+      ${cell(r.ceipalId,r.editing,'submission',i,'ceipalId')}
       <td>
-        <button class="btn btn-sm btn-warning"
-        onclick="route('submission','proposal',${i})">Proposal</button>
-        <button class="btn btn-sm btn-info"
-        onclick="route('submission','interview',${i})">Interview</button>
-        <button class="btn btn-sm btn-success"
-        onclick="route('submission','placement',${i})">Placement</button>
-        <button class="btn btn-sm btn-dark"
-        onclick="route('submission','start',${i})">Start</button>
-        <button class="btn btn-sm btn-danger"
-        onclick="del('submission',${i})">Delete</button>
+        <button class="btn btn-sm btn-primary" onclick="route('submission','proposal',${i})">PRO</button>
+        <button class="btn btn-sm btn-info" onclick="route('submission','interview',${i})">INT</button>
+        <button class="btn btn-sm btn-success" onclick="route('submission','placement',${i})">OFF</button>
+        <button class="btn btn-sm btn-dark" onclick="route('submission','start',${i})">STA</button>
+        <button class="btn btn-sm ${r.editing?'btn-success':'btn-warning'}"
+          onclick="toggleEdit('submission',${i})">${r.editing?'Save':'Edit'}</button>
+        <button class="btn btn-sm btn-danger" onclick="del('submission',${i})">DEL</button>
       </td>
     </tr>`).join("")}
-  </tbody>
-  </table></div>`;
+  </table>`;
 }
 
-function renderSimple(tab){
-  document.getElementById(tab).innerHTML = `
-  <div class="table-responsive">
+/* ================= PROPOSAL ================= */
+
+function renderProposal(){
+  proposal.innerHTML=`
   <table class="table table-bordered">
-  <thead>
-    <tr><th>Date</th><th>Name</th><th>Email</th><th>Job</th></tr>
-  </thead>
-  <tbody>
-  ${get(tab).map((r,i)=>`
     <tr>
-      <td><input value="${r.date}"
-      onblur="upd('${tab}',${i},'date',this.value)"></td>
+      <th style="width:110px">Date</th><th>Name</th><th>Email</th><th>Job</th>
+      <th>Client</th><th>Program</th><th>PW</th>
+      <th style="width:120px">Action</th>
+    </tr>
+    ${get("proposal").map((r,i)=>`
+    <tr>
+      ${cell(r.date,r.editing,'proposal',i,'date')}
       <td>${r.name}</td>
       <td>${r.email}</td>
-      <td>${r.job}</td>
+      ${cell(r.job,r.editing,'proposal',i,'job')}
+      ${cell(r.clientName,r.editing,'proposal',i,'clientName')}
+      ${cell(r.programName,r.editing,'proposal',i,'programName')}
+      ${cell(r.pwName,r.editing,'proposal',i,'pwName')}
+      <td>
+        <button class="btn btn-sm ${r.editing?'btn-success':'btn-warning'}"
+          onclick="toggleEdit('proposal',${i})">${r.editing?'Save':'Edit'}</button>
+        <button class="btn btn-sm btn-danger" onclick="del('proposal',${i})">DEL</button>
+      </td>
     </tr>`).join("")}
-  </tbody>
-  </table></div>`;
+  </table>`;
+}
+
+/* ================= INTERVIEW / PLACEMENT / START ================= */
+
+function renderStage(tab){
+  document.getElementById(tab).innerHTML=`
+  <table class="table table-bordered">
+    <tr>
+      <th style="width:110px">Date</th><th>Name</th><th>Email</th><th>Job</th>
+      <th style="width:120px">Action</th>
+    </tr>
+    ${get(tab).map((r,i)=>`
+    <tr>
+      ${cell(r.date,r.editing,tab,i,'date')}
+      <td>${r.name}</td>
+      <td>${r.email}</td>
+      ${cell(r.job,r.editing,tab,i,'job')}
+      <td>
+        <button class="btn btn-sm ${r.editing?'btn-success':'btn-warning'}"
+          onclick="toggleEdit('${tab}',${i})">${r.editing?'Save':'Edit'}</button>
+        <button class="btn btn-sm btn-danger" onclick="del('${tab}',${i})">DEL</button>
+      </td>
+    </tr>`).join("")}
+  </table>`;
+}
+
+/* ================= HELPERS ================= */
+
+function cell(val,edit,tab,i,key){
+  return `<td><input value="${val||""}" ${edit?"":"disabled"}
+    oninput="upd('${tab}',${i},'${key}',this.value)"></td>`;
+}
+
+function del(tab,i){
+  const d=get(tab);
+  d.splice(i,1);
+  set(tab,d);
+  renderAll();
 }
 
 /* ================= COUNTERS ================= */
 
 function updateCounts(){
-  subCount.innerText = get("submission").length;
-  intCount.innerText = get("interview").length;
-  placeCount.innerText = get("placement").length;
-  startCount.innerText = get("start").length;
+  subCount.innerText=get("submission").length;
+  intCount.innerText=get("interview").length;
+  placeCount.innerText=get("placement").length;
+  startCount.innerText=get("start").length;
 }
 
-/* ================= EXCEL IMPORT ================= */
+/* ================= RENDER ALL ================= */
 
-function importExcel(inp){
-  const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result,{type:"binary"});
-    const rows = XLSX.utils.sheet_to_json(
-      wb.Sheets[wb.SheetNames[0]]
-    );
-    const d = get("daily");
-    rows.forEach(r=>{
-      d.push({
-        date: today(),
-        name: r["Applicant Name"] || "",
-        email: r["Email Address"] || "",
-        phone: r["Mobile Number"] || "",
-        job: r["Job Applied"] || "",
-        location: r["Job Location"] || "",
-        skills: "",
-        visa: "",
-        notes: ""
-      });
-    });
-    set("daily", d);
-    renderDaily();
-  };
-  reader.readAsBinaryString(inp.files[0]);
+function renderAll(){
+  renderJD();
+  renderDaily();
+  renderSubmission();
+  renderProposal();
+  ["interview","placement","start"].forEach(renderStage);
+  updateCounts();
 }
 
 /* ================= INIT ================= */
 
-window.onload = ()=>{
-  renderJD();
-  renderDaily();
-  updateCounts();
-};
+window.onload=renderAll;
