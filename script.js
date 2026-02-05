@@ -61,58 +61,120 @@ function openJD(i){
 
 /* ================= RESUME → DAILY ================= */
 
-function saveToDaily(){
+function saveToDaily() {
+  const resumeText = rpNotes.value || "";
+
+  /* ===== EMAIL ===== */
+  const emailMatch = resumeText.match(
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+  );
+  const email = emailMatch ? emailMatch[0] : "";
+
+  /* ===== PHONE ===== */
+  const phoneMatch = resumeText.match(
+    /(\+?\d{1,3}[\s-]?)?\d{10}/
+  );
+  const phone = phoneMatch ? phoneMatch[0] : "";
+
+  /* ===== NAME (FIRST NON-EMPTY LINE) ===== */
+  const lines = resumeText
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => l);
+  const name = lines.length > 0 ? lines[0] : "";
+
+  /* ===== LOCATION ===== */
+  const locationMatch = resumeText.match(
+    /(Location|City|Based in)\s*[:\-]?\s*(.*)/i
+  );
+  const location = locationMatch ? locationMatch[2] : "";
+
+  /* ===== VISA / WORK AUTH ===== */
+  const visaMatch = resumeText.match(
+    /(US Citizen|GC|Green Card|H1B|H-1B|OPT|CPT|EAD|L2|TN|Citizen)/i
+  );
+  const visa = visaMatch ? visaMatch[0] : "";
+
   const d = get("daily");
+
   d.push({
     date: rpDate.value || today(),
-    name: rpName.value,
-    email: rpEmail.value,
-    phone: rpPhone.value,
-    job: rpJob.value,
-    location: rpLocation.value,
-    skills: rpSkills.value,
-    visa: rpVisa.value,
-    notes: rpNotes.value
+    name: name,
+    email: email,
+    phone: phone,
+    job: "",
+    location: location,
+    skills: "",
+    visa: visa,
+    notes: ""          // ✅ NOTES MANUAL ONLY
   });
+
   set("daily", d);
+
+  // Clear resume box after saving
+  rpNotes.value = "";
+
   renderDaily();
 }
+
 
 /* ================= DAILY TASK ================= */
 
 function renderDaily(q=""){
   dailyTable.innerHTML="";
+
   get("daily").forEach((r,i)=>{
     if(q && !r.email.includes(q) && !r.phone.includes(q)) return;
+
     dailyTable.innerHTML += `
     <tr>
-      <td class="date-col">
-        <input class="date-input" value="${r.date}"
-        onblur="upd('daily',${i},'date',this.value)">
-      </td>
-      <td>${r.name}</td>
-      <td>${r.email}</td>
-      <td>${r.phone}</td>
-      <td>${r.job}</td>
-      <td>${r.location}</td>
-      <td>${r.skills}</td>
-      <td>${r.visa}</td>
+      <td>${r.date}</td>
+
       <td>
-        <textarea onblur="upd('daily',${i},'notes',this.value)">
-${r.notes || ""}
-        </textarea>
+        <input class="form-control form-control-sm"
+          value="${r.name}"
+          onblur="updateDaily(${i},'name',this.value)">
       </td>
+
       <td>
-        <button class="btn btn-sm btn-primary"
-        onclick="route('daily','submission',${i})">Add</button>
-        <button class="btn btn-sm btn-danger"
-        onclick="del('daily',${i})">Delete</button>
+        <input class="form-control form-control-sm"
+          value="${r.email}"
+          onblur="updateDaily(${i},'email',this.value)">
+      </td>
+
+      <td>
+        <input class="form-control form-control-sm"
+          value="${r.phone}"
+          onblur="updateDaily(${i},'phone',this.value)">
+      </td>
+
+      <td>
+        <input class="form-control form-control-sm"
+          value="${r.location}"
+          onblur="updateDaily(${i},'location',this.value)">
+      </td>
+
+      <td>
+        <input class="form-control form-control-sm"
+          value="${r.visa}"
+          onblur="updateDaily(${i},'visa',this.value)">
+      </td>
+
+      <td>
+        <textarea class="form-control form-control-sm"
+          onblur="updateDaily(${i},'notes',this.value)">${r.notes || ""}</textarea>
+      </td>
+
+      <td>
+        <button class="btn btn-primary btn-sm"
+          onclick="move('daily','submission',${i})">Add</button>
+        <button class="btn btn-danger btn-sm"
+          onclick="del('daily',${i})">Delete</button>
       </td>
     </tr>`;
   });
-  renderTargets();
-  updateCounts();
 }
+
 
 /* ================= UPDATE / DELETE ================= */
 
