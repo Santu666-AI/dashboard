@@ -93,7 +93,7 @@
   </div>
 </div>
 
-<!-- ===== RESUME (UPDATED WITH MANUAL ENTRY) ===== -->
+<!-- ===== RESUME ===== -->
 <div class="tab-pane fade" id="resume">
   <div class="row">
     <div class="col-md-4">
@@ -114,13 +114,20 @@
   </div>
 </div>
 
-<!-- ===== DAILY ===== -->
+<!-- ===== DAILY (UPDATED) ===== -->
 <div class="tab-pane fade" id="daily">
+
+  <!-- Search -->
+  <input class="form-control mb-2"
+         placeholder="Search by Email or Phone"
+         oninput="searchDaily(this.value)">
+
   <table class="table">
     <thead>
       <tr>
         <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
         <th>Job</th><th>Location</th><th>Skills</th><th>Visa</th>
+        <th>Follow-Up</th>
         <th>Notes</th><th>Action</th>
       </tr>
     </thead>
@@ -128,8 +135,15 @@
   </table>
 </div>
 
-<!-- ===== PIPELINE TABS ===== -->
-<div class="tab-pane fade" id="submission"></div>
+<!-- ===== SUBMISSION (UPDATED) ===== -->
+<div class="tab-pane fade" id="submission">
+  <input class="form-control mb-2"
+         placeholder="Search by Email or Phone"
+         oninput="searchSubmission(this.value)">
+  <div id="submissionTable"></div>
+</div>
+
+<!-- ===== OTHER PIPELINE TABS ===== -->
 <div class="tab-pane fade" id="proposal"></div>
 <div class="tab-pane fade" id="interview"></div>
 <div class="tab-pane fade" id="placement"></div>

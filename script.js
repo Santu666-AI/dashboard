@@ -24,6 +24,25 @@ const get = k => JSON.parse(localStorage.getItem(k) || "[]");
 const set = (k,v) => localStorage.setItem(k, JSON.stringify(v));
 const today = () => new Date().toLocaleDateString("en-US");
 
+/* ================= NOTIFICATION ================= */
+
+if("Notification" in window && Notification.permission !== "granted"){
+  Notification.requestPermission();
+}
+
+function scheduleReminder(name, phone, datetime){
+  if(!datetime) return;
+  const notifyAt = new Date(datetime).getTime() - (10 * 60 * 1000);
+  const delay = notifyAt - Date.now();
+  if(delay > 0){
+    setTimeout(()=>{
+      new Notification("Follow-up Reminder",{
+        body:`Call ${name}${phone ? " – " + phone : ""}`
+      });
+    }, delay);
+  }
+}
+
 /* ================= JOB DESCRIPTION ================= */
 
 function saveJD(){
@@ -50,7 +69,7 @@ function renderJD(){
   });
 }
 
-/* ================= RESUME → DAILY (MANUAL + PASTE) ================= */
+/* ================= RESUME → DAILY ================= */
 
 function saveToDaily(){
   const resumeText = rpNotes.value || "";
@@ -71,11 +90,11 @@ function saveToDaily(){
     skills: rpSkills.value || "",
     visa: rpVisa.value || autoVisa,
     notes: "",
+    followup: "",
     editing: false
   });
   set("daily",d);
 
-  // Clear resume form
   rpDate.value="";
   rpName.value="";
   rpEmail.value="";
@@ -103,6 +122,13 @@ function upd(tab,i,k,v){
   set(tab,d);
 }
 
+function updFollowup(i,v){
+  const d=get("daily");
+  d[i].followup = v;
+  set("daily",d);
+  scheduleReminder(d[i].name, d[i].phone, v);
+}
+
 function del(tab,i){
   const d=get(tab);
   d.splice(i,1);
@@ -110,7 +136,7 @@ function del(tab,i){
   renderAll();
 }
 
-/* ================= ROUTING (ADD ONLY – NO MOVE) ================= */
+/* ================= ROUTING (ADD ONLY) ================= */
 
 function route(from,to,i){
   const copy={...get(from)[i],editing:false};
@@ -143,6 +169,12 @@ function row(tab,r,i,allowRoute){
     ${cell(tab,i,'skills',r.skills)}
     ${cell(tab,i,'visa',r.visa)}
     <td>
+      <input type="datetime-local"
+        value="${r.followup||""}"
+        ${r.editing?"":"disabled"}
+        onchange="updFollowup(${i},this.value)">
+    </td>
+    <td>
       <textarea ${r.editing?"":"disabled"}
         oninput="upd('${tab}',${i},'notes',this.value)">${r.notes||""}</textarea>
     </td>
@@ -157,36 +189,53 @@ function row(tab,r,i,allowRoute){
   </tr>`;
 }
 
-/* ================= DAILY ================= */
+/* ================= DAILY + SEARCH ================= */
 
-function renderDaily(){
-  if(!window.dailyTable) return;
+function searchDaily(q){
+  q = q.toLowerCase();
   dailyTable.innerHTML="";
   get("daily").forEach((r,i)=>{
+    if(q && !r.email.toLowerCase().includes(q) && !r.phone.includes(q)) return;
     dailyTable.innerHTML+=row("daily",r,i,true);
   });
 }
 
-/* ================= PIPELINE STAGES ================= */
-
-function renderStage(tab){
-  const el=document.getElementById(tab);
-  el.innerHTML=`
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
-          <th>Job</th><th>Location</th><th>Skills</th><th>Visa</th>
-          <th>Notes</th><th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${get(tab).map((r,i)=>row(tab,r,i,false)).join("")}
-      </tbody>
-    </table>`;
+function renderDaily(){
+  searchDaily("");
 }
 
-/* ================= HOME (2026 MONTHLY) ================= */
+/* ================= PIPELINE STAGES ================= */
+
+function searchSubmission(q){
+  q = q.toLowerCase();
+  const el=document.getElementById("submission");
+  el.innerHTML=renderStageHTML("submission",q);
+}
+
+function renderStage(tab){
+  document.getElementById(tab).innerHTML = renderStageHTML(tab,"");
+}
+
+function renderStageHTML(tab,q){
+  return `
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
+        <th>Job</th><th>Location</th><th>Skills</th><th>Visa</th>
+        <th>Follow-Up</th><th>Notes</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${get(tab).map((r,i)=>{
+        if(q && !r.email.toLowerCase().includes(q) && !r.phone.includes(q)) return "";
+        return row(tab,r,i,false);
+      }).join("")}
+    </tbody>
+  </table>`;
+}
+
+/* ================= HOME ================= */
 
 function getMonthlyStats(year){
   const m=Array.from({length:12},()=>({s:0,i:0,p:0,t:0}));
