@@ -29,98 +29,66 @@ const today = () => new Date().toLocaleDateString("en-US");
 function saveJD(){
   const d=get("jd");
   d.push({
-    date: jdDate.value||today(),
+    date: jdDate.value || today(),
     nvr: jdNvr.value,
-    subject: jdSubject.value,
-    text: jdText.value
+    subject: jdSubject.value
   });
   set("jd",d);
   renderJD();
 }
 
 function renderJD(){
+  if(!window.jdTable) return;
   jdTable.innerHTML="";
-  get("jd").forEach((r,i)=>{
+  get("jd").forEach(r=>{
     jdTable.innerHTML+=`
       <tr>
-        <td style="width:110px">${r.date}</td>
+        <td>${r.date}</td>
         <td>${r.nvr}</td>
-        <td class="subject-link" onclick="openJD(${i})">${r.subject}</td>
+        <td>${r.subject}</td>
       </tr>`;
   });
 }
 
-function openJD(i){
-  const r=get("jd")[i];
-  jdModalTitle.innerText=r.subject;
-  jdModalBody.innerText=r.text;
-  new bootstrap.Modal(document.getElementById("jdModal")).show();
-}
-
-/* ================= RESUME → DAILY (MANUAL) ================= */
+/* ================= RESUME → DAILY (MANUAL + PASTE) ================= */
 
 function saveToDaily(){
-  const t=rpNotes.value||"";
-  const email=(t.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)||[""])[0];
-  const phone=(t.match(/(\+?\d{1,3}[\s-]?)?\d{10}/)||[""])[0];
-  const lines=t.split("\n").map(l=>l.trim()).filter(l=>l);
-  const name=lines[0]||"";
-  const location=(t.match(/(Location|City|Based in)\s*[:\-]?\s*(.*)/i)||["",""])[2];
-  const visa=(t.match(/(US Citizen|GC|Green Card|H1B|H-1B|OPT|CPT|EAD|L2|TN|Citizen)/i)||[""])[0];
+  const resumeText = rpNotes.value || "";
+
+  const autoEmail = (resumeText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)||[""])[0];
+  const autoPhone = (resumeText.match(/(\+?\d{1,3}[\s-]?)?\d{10}/)||[""])[0];
+  const autoName  = resumeText.split("\n").map(l=>l.trim()).filter(Boolean)[0] || "";
+  const autoVisa  = (resumeText.match(/(US Citizen|GC|Green Card|H1B|H-1B|OPT|CPT|EAD|L2|TN)/i)||[""])[0];
 
   const d=get("daily");
   d.push({
-    date: rpDate.value||today(),
-    name,email,phone,
-    job:"",location,skills:"",visa,
-    notes:"",
-    editing:false
+    date: rpDate.value || today(),
+    name: rpName.value || autoName,
+    email: rpEmail.value || autoEmail,
+    phone: rpPhone.value || autoPhone,
+    job: "",
+    location: rpLocation.value || "",
+    skills: rpSkills.value || "",
+    visa: rpVisa.value || autoVisa,
+    notes: "",
+    editing: false
   });
   set("daily",d);
+
+  // Clear resume form
+  rpDate.value="";
+  rpName.value="";
+  rpEmail.value="";
+  rpPhone.value="";
+  rpLocation.value="";
+  rpSkills.value="";
+  rpVisa.value="";
   rpNotes.value="";
+
   renderAll();
 }
 
-/* ================= CEIPAL EXCEL IMPORT (FIXED) ================= */
-
-function importCeipalExcel(input){
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const wb=XLSX.read(e.target.result,{type:"binary"});
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-    const d=get("daily");
-
-    const pick = (row, keys) => {
-      for (let k of keys) {
-        if (row[k] && row[k].toString().trim()) {
-          return row[k].toString().trim();
-        }
-      }
-      return "";
-    };
-
-    rows.forEach(r=>{
-      d.push({
-        date: today(),
-        name: pick(r, ["Applicant Name","Candidate Name","Applicant_Name"]),
-        email: pick(r, ["Email Address","Email","Email ID"]),
-        phone: pick(r, ["Mobile Number","Phone","Phone Number"]),
-        job:"",
-        location: pick(r, ["Location","Current Location","City"]),
-        skills:"",
-        visa:"",
-        notes:"",
-        editing:false
-      });
-    });
-
-    set("daily",d);
-    renderAll();
-  };
-  reader.readAsBinaryString(input.files[0]);
-}
-
-/* ================= EDIT CONTROL ================= */
+/* ================= EDIT / UPDATE ================= */
 
 function toggleEdit(tab,i){
   const d=get(tab);
@@ -135,145 +103,6 @@ function upd(tab,i,k,v){
   set(tab,d);
 }
 
-/* ================= DAILY ================= */
-
-function renderDaily(){
-  dailyTable.innerHTML="";
-  get("daily").forEach((r,i)=>{
-    dailyTable.innerHTML+=`
-    <tr>
-      ${cell(r.date,r.editing,'daily',i,'date')}
-      ${cell(r.name,r.editing,'daily',i,'name')}
-      ${cell(r.email,r.editing,'daily',i,'email')}
-      ${cell(r.phone,r.editing,'daily',i,'phone')}
-      ${cell(r.job,r.editing,'daily',i,'job')}
-      ${cell(r.location,r.editing,'daily',i,'location')}
-      ${cell(r.skills,r.editing,'daily',i,'skills')}
-      ${cell(r.visa,r.editing,'daily',i,'visa')}
-      <td>
-        <textarea ${r.editing?"":"disabled"}
-          oninput="upd('daily',${i},'notes',this.value)">${r.notes}</textarea>
-      </td>
-      <td>
-        <button class="btn btn-sm ${r.editing?'btn-success':'btn-primary'}"
-          onclick="toggleEdit('daily',${i})">${r.editing?'Save':'Edit'}</button>
-        <button class="btn btn-sm btn-secondary"
-          onclick="route('daily','submission',${i})">Add</button>
-        <button class="btn btn-sm btn-danger"
-          onclick="del('daily',${i})">DEL</button>
-      </td>
-    </tr>`;
-  });
-}
-
-/* ================= ROUTING ================= */
-
-function route(from,to,i){
-  const row={...get(from)[i],editing:false};
-  if(to==="submission") row.ceipalId="";
-  if(to==="proposal"){
-    row.clientName="";
-    row.programName="";
-    row.pwName="";
-  }
-  const d=get(to);
-  d.push(row);
-  set(to,d);
-  renderAll();
-}
-
-/* ================= SUBMISSION ================= */
-
-function renderSubmission(){
-  submission.innerHTML=`
-  <table class="table table-bordered">
-    <tr>
-      <th style="width:110px">Date</th>
-      <th>Name</th>
-      <th>Email</th>
-      <th>Job</th>
-      <th style="width:120px">Ceipal ID</th>
-      <th style="width:240px">Action</th>
-    </tr>
-    ${get("submission").map((r,i)=>`
-    <tr>
-      ${cell(r.date,r.editing,'submission',i,'date')}
-      <td>${r.name}</td>
-      <td>${r.email}</td>
-      ${cell(r.job,r.editing,'submission',i,'job')}
-      ${cell(r.ceipalId,r.editing,'submission',i,'ceipalId')}
-      <td>
-        <button class="btn btn-sm btn-primary" onclick="route('submission','proposal',${i})">PRO</button>
-        <button class="btn btn-sm btn-info" onclick="route('submission','interview',${i})">INT</button>
-        <button class="btn btn-sm btn-success" onclick="route('submission','placement',${i})">OFF</button>
-        <button class="btn btn-sm btn-dark" onclick="route('submission','start',${i})">STA</button>
-        <button class="btn btn-sm ${r.editing?'btn-success':'btn-warning'}"
-          onclick="toggleEdit('submission',${i})">${r.editing?'Save':'Edit'}</button>
-        <button class="btn btn-sm btn-danger" onclick="del('submission',${i})">DEL</button>
-      </td>
-    </tr>`).join("")}
-  </table>`;
-}
-
-/* ================= PROPOSAL ================= */
-
-function renderProposal(){
-  proposal.innerHTML=`
-  <table class="table table-bordered">
-    <tr>
-      <th style="width:110px">Date</th><th>Name</th><th>Email</th><th>Job</th>
-      <th>Client</th><th>Program</th><th>PW</th>
-      <th style="width:120px">Action</th>
-    </tr>
-    ${get("proposal").map((r,i)=>`
-    <tr>
-      ${cell(r.date,r.editing,'proposal',i,'date')}
-      <td>${r.name}</td>
-      <td>${r.email}</td>
-      ${cell(r.job,r.editing,'proposal',i,'job')}
-      ${cell(r.clientName,r.editing,'proposal',i,'clientName')}
-      ${cell(r.programName,r.editing,'proposal',i,'programName')}
-      ${cell(r.pwName,r.editing,'proposal',i,'pwName')}
-      <td>
-        <button class="btn btn-sm ${r.editing?'btn-success':'btn-warning'}"
-          onclick="toggleEdit('proposal',${i})">${r.editing?'Save':'Edit'}</button>
-        <button class="btn btn-sm btn-danger" onclick="del('proposal',${i})">DEL</button>
-      </td>
-    </tr>`).join("")}
-  </table>`;
-}
-
-/* ================= INTERVIEW / PLACEMENT / START ================= */
-
-function renderStage(tab){
-  document.getElementById(tab).innerHTML=`
-  <table class="table table-bordered">
-    <tr>
-      <th style="width:110px">Date</th><th>Name</th><th>Email</th><th>Job</th>
-      <th style="width:120px">Action</th>
-    </tr>
-    ${get(tab).map((r,i)=>`
-    <tr>
-      ${cell(r.date,r.editing,tab,i,'date')}
-      <td>${r.name}</td>
-      <td>${r.email}</td>
-      ${cell(r.job,r.editing,tab,i,'job')}
-      <td>
-        <button class="btn btn-sm ${r.editing?'btn-success':'btn-warning'}"
-          onclick="toggleEdit('${tab}',${i})">${r.editing?'Save':'Edit'}</button>
-        <button class="btn btn-sm btn-danger" onclick="del('${tab}',${i})">DEL</button>
-      </td>
-    </tr>`).join("")}
-  </table>`;
-}
-
-/* ================= HELPERS ================= */
-
-function cell(val,edit,tab,i,key){
-  return `<td><input value="${val||""}" ${edit?"":"disabled"}
-    oninput="upd('${tab}',${i},'${key}',this.value)"></td>`;
-}
-
 function del(tab,i){
   const d=get(tab);
   d.splice(i,1);
@@ -281,26 +110,128 @@ function del(tab,i){
   renderAll();
 }
 
-/* ================= COUNTERS ================= */
+/* ================= ROUTING (ADD ONLY – NO MOVE) ================= */
 
-function updateCounts(){
-  subCount.innerText=get("submission").length;
-  intCount.innerText=get("interview").length;
-  placeCount.innerText=get("placement").length;
-  startCount.innerText=get("start").length;
+function route(from,to,i){
+  const copy={...get(from)[i],editing:false};
+  const d=get(to);
+  d.push(copy);
+  set(to,d);
+  renderAll();
 }
 
-/* ================= RENDER ALL ================= */
+/* ================= TABLE CELL ================= */
+
+function cell(tab,i,key,val){
+  return `<td>
+    <input value="${val||""}" ${get(tab)[i].editing?"":"disabled"}
+      oninput="upd('${tab}',${i},'${key}',this.value)">
+  </td>`;
+}
+
+/* ================= ROW TEMPLATE ================= */
+
+function row(tab,r,i,allowRoute){
+  return `
+  <tr>
+    ${cell(tab,i,'date',r.date)}
+    ${cell(tab,i,'name',r.name)}
+    ${cell(tab,i,'email',r.email)}
+    ${cell(tab,i,'phone',r.phone)}
+    ${cell(tab,i,'job',r.job)}
+    ${cell(tab,i,'location',r.location)}
+    ${cell(tab,i,'skills',r.skills)}
+    ${cell(tab,i,'visa',r.visa)}
+    <td>
+      <textarea ${r.editing?"":"disabled"}
+        oninput="upd('${tab}',${i},'notes',this.value)">${r.notes||""}</textarea>
+    </td>
+    <td>
+      <button onclick="toggleEdit('${tab}',${i})">${r.editing?"Save":"Edit"}</button>
+      ${allowRoute ? `
+        <button onclick="route('${tab}','submission',${i})">Sub</button>
+        <button onclick="route('${tab}','proposal',${i})">Pro</button>
+      ` : ``}
+      <button onclick="del('${tab}',${i})">DEL</button>
+    </td>
+  </tr>`;
+}
+
+/* ================= DAILY ================= */
+
+function renderDaily(){
+  if(!window.dailyTable) return;
+  dailyTable.innerHTML="";
+  get("daily").forEach((r,i)=>{
+    dailyTable.innerHTML+=row("daily",r,i,true);
+  });
+}
+
+/* ================= PIPELINE STAGES ================= */
+
+function renderStage(tab){
+  const el=document.getElementById(tab);
+  el.innerHTML=`
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
+          <th>Job</th><th>Location</th><th>Skills</th><th>Visa</th>
+          <th>Notes</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${get(tab).map((r,i)=>row(tab,r,i,false)).join("")}
+      </tbody>
+    </table>`;
+}
+
+/* ================= HOME (2026 MONTHLY) ================= */
+
+function getMonthlyStats(year){
+  const m=Array.from({length:12},()=>({s:0,i:0,p:0,t:0}));
+  [["submission","s"],["interview","i"],["placement","p"],["start","t"]].forEach(([k,x])=>{
+    get(k).forEach(r=>{
+      if(!r.date) return;
+      const d=new Date(r.date);
+      if(d.getFullYear()===year) m[d.getMonth()][x]++;
+    });
+  });
+  return m;
+}
+
+function renderHome(){
+  const stats=getMonthlyStats(2026);
+
+  subCount.innerText=stats.reduce((a,b)=>a+b.s,0);
+  intCount.innerText=stats.reduce((a,b)=>a+b.i,0);
+  placeCount.innerText=stats.reduce((a,b)=>a+b.p,0);
+  startCount.innerText=stats.reduce((a,b)=>a+b.t,0);
+
+  if(window.homeChartInstance) window.homeChartInstance.destroy();
+
+  window.homeChartInstance=new Chart(homeChart,{
+    type:"bar",
+    data:{
+      labels:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      datasets:[
+        {label:"Submissions",data:stats.map(x=>x.s)},
+        {label:"Interviews",data:stats.map(x=>x.i)},
+        {label:"Placements",data:stats.map(x=>x.p)},
+        {label:"Starts",data:stats.map(x=>x.t)}
+      ]
+    },
+    options:{responsive:true}
+  });
+}
+
+/* ================= INIT ================= */
 
 function renderAll(){
   renderJD();
   renderDaily();
-  renderSubmission();
-  renderProposal();
-  ["interview","placement","start"].forEach(renderStage);
-  updateCounts();
+  ["submission","proposal","interview","placement","start"].forEach(renderStage);
+  renderHome();
 }
-
-/* ================= INIT ================= */
 
 window.onload=renderAll;
