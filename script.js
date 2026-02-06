@@ -4,7 +4,9 @@ function login(){
   if(username.value==="admin" && password.value==="admin"){
     localStorage.setItem("logged","yes");
     location.href="dashboard.html";
-  } else alert("Invalid Username or Password");
+  } else {
+    alert("Invalid Username or Password");
+  }
 }
 
 function checkLogin(){
@@ -26,7 +28,7 @@ const today = () => new Date().toLocaleDateString("en-US");
 
 /* ================= NOTIFICATION ================= */
 
-if("Notification" in window && Notification.permission !== "granted"){
+if ("Notification" in window && Notification.permission !== "granted") {
   Notification.requestPermission();
 }
 
@@ -34,6 +36,7 @@ function scheduleReminder(name, phone, datetime){
   if(!datetime) return;
   const notifyAt = new Date(datetime).getTime() - (10 * 60 * 1000);
   const delay = notifyAt - Date.now();
+
   if(delay > 0){
     setTimeout(()=>{
       new Notification("Follow-up Reminder",{
@@ -50,7 +53,8 @@ function saveJD(){
   d.push({
     date: jdDate.value || today(),
     nvr: jdNvr.value,
-    subject: jdSubject.value
+    subject: jdSubject.value,
+    text: jdText.value
   });
   set("jd",d);
   renderJD();
@@ -72,12 +76,12 @@ function renderJD(){
 /* ================= RESUME → DAILY ================= */
 
 function saveToDaily(){
-  const resumeText = rpNotes.value || "";
+  const txt = rpNotes.value || "";
 
-  const autoEmail = (resumeText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)||[""])[0];
-  const autoPhone = (resumeText.match(/(\+?\d{1,3}[\s-]?)?\d{10}/)||[""])[0];
-  const autoName  = resumeText.split("\n").map(l=>l.trim()).filter(Boolean)[0] || "";
-  const autoVisa  = (resumeText.match(/(US Citizen|GC|Green Card|H1B|H-1B|OPT|CPT|EAD|L2|TN)/i)||[""])[0];
+  const autoEmail = (txt.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)||[""])[0];
+  const autoPhone = (txt.match(/(\+?\d{1,3}[\s-]?)?\d{10}/)||[""])[0];
+  const autoName  = txt.split("\n").map(l=>l.trim()).filter(Boolean)[0] || "";
+  const autoVisa  = (txt.match(/(US Citizen|GC|Green Card|H1B|H-1B|OPT|CPT|EAD|L2|TN)/i)||[""])[0];
 
   const d=get("daily");
   d.push({
@@ -89,9 +93,9 @@ function saveToDaily(){
     location: rpLocation.value || "",
     skills: rpSkills.value || "",
     visa: rpVisa.value || autoVisa,
-    notes: "",
     followup: "",
-    editing: false
+    notes: "",
+    editing:false
   });
   set("daily",d);
 
@@ -107,14 +111,7 @@ function saveToDaily(){
   renderAll();
 }
 
-/* ================= EDIT / UPDATE ================= */
-
-function toggleEdit(tab,i){
-  const d=get(tab);
-  d.forEach((r,idx)=>r.editing = idx===i ? !r.editing : false);
-  set(tab,d);
-  renderAll();
-}
+/* ================= UPDATE HELPERS ================= */
 
 function upd(tab,i,k,v){
   const d=get(tab);
@@ -124,9 +121,9 @@ function upd(tab,i,k,v){
 
 function updFollowup(i,v){
   const d=get("daily");
-  d[i].followup = v;
+  d[i].followup=v;
   set("daily",d);
-  scheduleReminder(d[i].name, d[i].phone, v);
+  scheduleReminder(d[i].name,d[i].phone,v);
 }
 
 function del(tab,i){
@@ -146,18 +143,43 @@ function route(from,to,i){
   renderAll();
 }
 
-/* ================= TABLE CELL ================= */
+/* ================= CELL ================= */
 
 function cell(tab,i,key,val){
   return `<td>
-    <input value="${val||""}" ${get(tab)[i].editing?"":"disabled"}
-      oninput="upd('${tab}',${i},'${key}',this.value)">
+    <input value="${val||""}"
+      onblur="upd('${tab}',${i},'${key}',this.value)">
   </td>`;
 }
 
 /* ================= ROW TEMPLATE ================= */
 
-function row(tab,r,i,allowRoute){
+function row(tab,r,i){
+  let actions="";
+
+  if(tab==="daily"){
+    actions=`
+      <button onclick="route('daily','submission',${i})">Sub</button>
+      <button onclick="route('daily','proposal',${i})">Pro</button>`;
+  }
+
+  if(tab==="submission"){
+    actions=`
+      <button onclick="route('submission','interview',${i})">INT</button>
+      <button onclick="route('submission','placement',${i})">OFF</button>
+      <button onclick="route('submission','start',${i})">STA</button>`;
+  }
+
+  if(tab==="interview"){
+    actions=`
+      <button onclick="route('interview','placement',${i})">OFF</button>
+      <button onclick="route('interview','start',${i})">STA</button>`;
+  }
+
+  if(tab==="placement"){
+    actions=`<button onclick="route('placement','start',${i})">STA</button>`;
+  }
+
   return `
   <tr>
     ${cell(tab,i,'date',r.date)}
@@ -171,77 +193,54 @@ function row(tab,r,i,allowRoute){
     <td>
       <input type="datetime-local"
         value="${r.followup||""}"
-        ${r.editing?"":"disabled"}
         onchange="updFollowup(${i},this.value)">
     </td>
     <td>
-      <textarea ${r.editing?"":"disabled"}
-        oninput="upd('${tab}',${i},'notes',this.value)">${r.notes||""}</textarea>
+      <textarea onblur="upd('${tab}',${i},'notes',this.value)">
+${r.notes||""}</textarea>
     </td>
     <td>
-      <button onclick="toggleEdit('${tab}',${i})">${r.editing?"Save":"Edit"}</button>
-      ${allowRoute ? `
-        <button onclick="route('${tab}','submission',${i})">Sub</button>
-        <button onclick="route('${tab}','proposal',${i})">Pro</button>
-      ` : ``}
+      ${actions}
       <button onclick="del('${tab}',${i})">DEL</button>
     </td>
   </tr>`;
 }
 
-/* ================= DAILY + SEARCH ================= */
+/* ================= DAILY ================= */
 
-function searchDaily(q){
-  q = q.toLowerCase();
+function renderDaily(){
+  if(!window.dailyTable) return;
   dailyTable.innerHTML="";
   get("daily").forEach((r,i)=>{
-    if(q && !r.email.toLowerCase().includes(q) && !r.phone.includes(q)) return;
-    dailyTable.innerHTML+=row("daily",r,i,true);
+    dailyTable.innerHTML+=row("daily",r,i);
   });
 }
 
-function renderDaily(){
-  searchDaily("");
-}
-
-/* ================= PIPELINE STAGES ================= */
-
-function searchSubmission(q){
-  q = q.toLowerCase();
-  const el=document.getElementById("submission");
-  el.innerHTML=renderStageHTML("submission",q);
-}
+/* ================= PIPELINE ================= */
 
 function renderStage(tab){
-  document.getElementById(tab).innerHTML = renderStageHTML(tab,"");
-}
-
-function renderStageHTML(tab,q){
-  return `
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
-        <th>Job</th><th>Location</th><th>Skills</th><th>Visa</th>
-        <th>Follow-Up</th><th>Notes</th><th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${get(tab).map((r,i)=>{
-        if(q && !r.email.toLowerCase().includes(q) && !r.phone.includes(q)) return "";
-        return row(tab,r,i,false);
-      }).join("")}
-    </tbody>
-  </table>`;
+  document.getElementById(tab).innerHTML=`
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
+          <th>Job</th><th>Location</th><th>Skills</th><th>Visa</th>
+          <th>Follow-Up</th><th>Notes</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${get(tab).map((r,i)=>row(tab,r,i)).join("")}
+      </tbody>
+    </table>`;
 }
 
 /* ================= HOME ================= */
 
 function getMonthlyStats(year){
   const m=Array.from({length:12},()=>({s:0,i:0,p:0,t:0}));
-  [["submission","s"],["interview","i"],["placement","p"],["start","t"]].forEach(([k,x])=>{
+  [["submission","s"],["interview","i"],["placement","p"],["start","t"]]
+  .forEach(([k,x])=>{
     get(k).forEach(r=>{
-      if(!r.date) return;
       const d=new Date(r.date);
       if(d.getFullYear()===year) m[d.getMonth()][x]++;
     });
