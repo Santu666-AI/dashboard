@@ -10,13 +10,12 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
-/* ===== FULL SCREEN LOGO BACKGROUND (NO CROPPING) ===== */
+/* ===== FULL SCREEN LOGO BACKGROUND ===== */
 body {
   height: 100vh;
   margin: 0;
   font-family: "Segoe UI", system-ui, sans-serif;
 
-  /* Logo background */
   background:
     linear-gradient(
       rgba(255,255,255,0.92),
@@ -24,7 +23,6 @@ body {
     ),
     url("logo.png") no-repeat center center;
 
-  /* THIS IS THE KEY FIX */
   background-size: contain;
 
   display: flex;
@@ -41,10 +39,37 @@ body {
   overflow: hidden;
 }
 
+/* ===== SCROLLING WELCOME ===== */
+.welcome-marquee {
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(90deg, #5f4dde, #6f5cff);
+  padding: 10px 0;
+}
+
+.marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 1px;
+  animation: marquee-scroll 16s linear infinite;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
 /* ===== HEADER ===== */
 .login-header {
   text-align: center;
-  padding: 26px 20px 16px;
+  padding: 22px 20px 16px;
 }
 
 .login-header img {
@@ -106,8 +131,15 @@ body {
 <body>
 
 <div class="login-card">
+
+  <!-- SCROLLING TEXT -->
+  <div class="welcome-marquee">
+    <div class="marquee-text">
+      Welcome to NetVision Resources Inc • Welcome to NetVision Resources Inc • Welcome to NetVision Resources Inc
+    </div>
+  </div>
+
   <div class="login-header">
-    <!-- Logo stays original -->
     <img src="logo.png" alt="NetVision Resources Logo">
     <h5>Recruiter Portal</h5>
     <p>Secure Access to Hiring Dashboard</p>
