@@ -4,7 +4,9 @@ function login(){
   if(username.value==="admin" && password.value==="admin"){
     localStorage.setItem("logged","yes");
     location.href="dashboard.html";
-  } else alert("Invalid Username or Password");
+  } else {
+    alert("Invalid Username or Password");
+  }
 }
 
 function checkLogin(){
@@ -59,29 +61,17 @@ function saveJD(){
 }
 
 function renderJD(){
+  if(!window.jdTable) return;
   jdTable.innerHTML="";
-  get("jd").forEach((r,i)=>{
+  get("jd").forEach(r=>{
     jdTable.innerHTML += `
       <tr>
         <td>${r.date}</td>
         <td>${r.nvr}</td>
-        <td><a href="#" onclick="openJD(${i})">${r.subject}</a></td>
-        <td>
-          <select onchange="upd('jd',${i},'status',this.value)">
-            ${["Active","Hold","Closed"].map(s =>
-              `<option ${r.status===s?"selected":""}>${s}</option>`
-            ).join("")}
-          </select>
-        </td>
+        <td>${r.subject}</td>
+        <td>${r.status}</td>
       </tr>`;
   });
-}
-
-function openJD(i){
-  const r = get("jd")[i];
-  jdModalTitle.innerText = r.subject;
-  jdModalBody.innerText = r.text || "";
-  new bootstrap.Modal(document.getElementById("jdModal")).show();
 }
 
 /* ================= RESUME → DAILY ================= */
@@ -108,7 +98,7 @@ function saveToDaily(){
   renderDaily();
 }
 
-/* ================= UPDATE ================= */
+/* ================= UPDATE HELPERS ================= */
 
 function upd(tab,i,k,v){
   const d=get(tab);
@@ -140,14 +130,14 @@ function del(tab,i){
 /* ================= ROUTING ================= */
 
 function route(from,to,i){
-  const copy={...get(from)[i],editing:false};
-  const d=get(to);
-  d.unshift(copy);
-  set(to,d);
+  const record = {...get(from)[i], editing:false};
+  const target = get(to);
+  target.unshift(record);
+  set(to,target);
   renderAll();
 }
 
-/* ================= TABLE HELPERS ================= */
+/* ================= TABLE RENDER ================= */
 
 function cell(tab,i,key,val){
   return `<td>
@@ -160,21 +150,21 @@ function row(tab,r,i){
   let actions="";
 
   if(tab==="daily"){
-    actions += `<button title="Submit" onclick="route('daily','submission',${i})">📤</button>`;
+    actions += `<button onclick="route('daily','submission',${i})">📤</button>`;
   }
   if(tab==="submission"){
     actions += `
-      <button title="Interview" onclick="route('submission','interview',${i})">🎤</button>
-      <button title="Offer" onclick="route('submission','placement',${i})">💼</button>
-      <button title="Start" onclick="route('submission','start',${i})">🚀</button>`;
+      <button onclick="route('submission','interview',${i})">🎤</button>
+      <button onclick="route('submission','placement',${i})">💼</button>
+      <button onclick="route('submission','start',${i})">🚀</button>`;
   }
   if(tab==="interview"){
     actions += `
-      <button title="Offer" onclick="route('interview','placement',${i})">💼</button>
-      <button title="Start" onclick="route('interview','start',${i})">🚀</button>`;
+      <button onclick="route('interview','placement',${i})">💼</button>
+      <button onclick="route('interview','start',${i})">🚀</button>`;
   }
   if(tab==="placement"){
-    actions += `<button title="Start" onclick="route('placement','start',${i})">🚀</button>`;
+    actions += `<button onclick="route('placement','start',${i})">🚀</button>`;
   }
 
   return `
@@ -196,34 +186,24 @@ function row(tab,r,i){
         oninput="upd('${tab}',${i},'notes',this.value)">${r.notes||""}</textarea>
     </td>
     <td>
-      <button title="Edit / Save" onclick="toggleEdit('${tab}',${i})">
-        ${r.editing?"💾":"✏️"}
-      </button>
+      <button onclick="toggleEdit('${tab}',${i})">${r.editing?"💾":"✏️"}</button>
       ${actions}
-      <button title="Delete" onclick="del('${tab}',${i})">🗑️</button>
+      <button onclick="del('${tab}',${i})">🗑️</button>
     </td>
   </tr>`;
 }
 
-/* ================= RENDER ================= */
-
 function renderDaily(){
+  if(!window.dailyTable) return;
   dailyTable.innerHTML="";
   get("daily").forEach((r,i)=> dailyTable.innerHTML+=row("daily",r,i));
 }
 
-function searchDaily(q){
-  q=q.toLowerCase();
-  dailyTable.innerHTML="";
-  get("daily").forEach((r,i)=>{
-    if(!q || r.email.toLowerCase().includes(q) || r.phone.includes(q)){
-      dailyTable.innerHTML+=row("daily",r,i);
-    }
-  });
-}
-
 function renderStage(tab){
-  document.getElementById(tab).innerHTML = `
+  const el = document.getElementById(tab);
+  if(!el) return;
+
+  el.innerHTML = `
   <table class="table">
     <thead>
       <tr>
@@ -238,24 +218,54 @@ function renderStage(tab){
   </table>`;
 }
 
-/* ================= HOME ================= */
+/* ================= HOME – YEARLY MONTH-WISE REPORT ================= */
 
-function getMonthlyStats(y){
-  const m=Array.from({length:12},()=>({s:0,i:0,p:0,t:0}));
-  [["submission","s"],["interview","i"],["placement","p"],["start","t"]]
-    .forEach(([k,x])=>get(k).forEach(r=>{
-      const d=new Date(r.date);
-      if(d.getFullYear()===y) m[d.getMonth()][x]++;
-    }));
-  return m;
+function getMonthlyCounts(tab, year){
+  const months = Array(12).fill(0);
+
+  get(tab).forEach(r=>{
+    const d = new Date(r.date);
+    if(d.getFullYear() === year){
+      months[d.getMonth()]++;
+    }
+  });
+
+  return months;
 }
 
 function renderHome(){
-  const s=getMonthlyStats(2026);
-  subCount.innerText=s.reduce((a,b)=>a+b.s,0);
-  intCount.innerText=s.reduce((a,b)=>a+b.i,0);
-  placeCount.innerText=s.reduce((a,b)=>a+b.p,0);
-  startCount.innerText=s.reduce((a,b)=>a+b.t,0);
+  const year = 2026;
+
+  const sub = getMonthlyCounts("submission", year);
+  const int = getMonthlyCounts("interview", year);
+  const place = getMonthlyCounts("placement", year);
+  const start = getMonthlyCounts("start", year);
+
+  // KPI TOTALS (YEAR)
+  subCount.innerText   = sub.reduce((a,b)=>a+b,0);
+  intCount.innerText   = int.reduce((a,b)=>a+b,0);
+  placeCount.innerText = place.reduce((a,b)=>a+b,0);
+  startCount.innerText = start.reduce((a,b)=>a+b,0);
+
+  // YEARLY MONTH TABLE
+  const tbody = document.getElementById("yearlyReportTable");
+  if(!tbody) return;
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun",
+                  "Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  tbody.innerHTML = "";
+
+  months.forEach((m,i)=>{
+    tbody.innerHTML += `
+      <tr>
+        <td><strong>${m}</strong></td>
+        <td>${sub[i]}</td>
+        <td>${int[i]}</td>
+        <td>${place[i]}</td>
+        <td>${start[i]}</td>
+      </tr>`;
+  });
 }
 
 /* ================= INIT ================= */
@@ -267,4 +277,4 @@ function renderAll(){
   renderHome();
 }
 
-window.onload=renderAll;
+window.onload = renderAll;

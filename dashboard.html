@@ -7,7 +7,6 @@
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body onload="checkLogin()">
@@ -23,29 +22,29 @@
   <button class="btn btn-outline-light btn-sm" onclick="logout()">Logout</button>
 </div>
 
-<!-- ================= KPI ================= -->
+<!-- ================= KPI (YEAR TOTALS) ================= -->
 <div class="row g-3 mb-4">
   <div class="col-md-3">
     <div class="kpi-card blue">
-      <span>Submissions</span>
+      <span>Total Submissions (2026)</span>
       <h2 id="subCount">0</h2>
     </div>
   </div>
   <div class="col-md-3">
     <div class="kpi-card purple">
-      <span>Interviews</span>
+      <span>Total Interviews (2026)</span>
       <h2 id="intCount">0</h2>
     </div>
   </div>
   <div class="col-md-3">
     <div class="kpi-card green">
-      <span>Placements</span>
+      <span>Total Placements (2026)</span>
       <h2 id="placeCount">0</h2>
     </div>
   </div>
   <div class="col-md-3">
     <div class="kpi-card orange">
-      <span>Starts</span>
+      <span>Total Starts (2026)</span>
       <h2 id="startCount">0</h2>
     </div>
   </div>
@@ -67,9 +66,32 @@
 <!-- ================= CONTENT ================= -->
 <div class="tab-content">
 
-<!-- ===== HOME ===== -->
+<!-- ===== HOME (YEARLY MONTH-WISE REPORT) ===== -->
 <div class="tab-pane fade show active" id="home">
-  <canvas id="homeChart"></canvas>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+
+      <h5 class="fw-bold mb-3">📊 Yearly Report – 2026 (Jan to Dec)</h5>
+
+      <div class="table-responsive">
+        <table class="table table-bordered text-center align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Month</th>
+              <th>Submissions</th>
+              <th>Interviews</th>
+              <th>Placements</th>
+              <th>Starts</th>
+            </tr>
+          </thead>
+          <tbody id="yearlyReportTable"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <!-- ===== JD ===== -->
@@ -98,7 +120,7 @@
   </div>
 </div>
 
-<!-- ===== RESUME (NO SKILLS) ===== -->
+<!-- ===== RESUME ===== -->
 <div class="tab-pane fade" id="resume">
   <div class="row">
     <div class="col-md-4">
@@ -118,9 +140,8 @@
   </div>
 </div>
 
-<!-- ===== DAILY (NO SKILLS – FIXED) ===== -->
+<!-- ===== DAILY ===== -->
 <div class="tab-pane fade" id="daily">
-
   <input class="form-control mb-2"
          placeholder="Search by Email or Phone"
          oninput="searchDaily(this.value)">
@@ -144,14 +165,7 @@
   </table>
 </div>
 
-<!-- ===== SUBMISSION ===== -->
-<div class="tab-pane fade" id="submission">
-  <input class="form-control mb-2"
-         placeholder="Search by Email or Phone"
-         oninput="searchSubmission(this.value)">
-</div>
-
-<!-- ===== OTHER PIPELINE TABS ===== -->
+<div class="tab-pane fade" id="submission"></div>
 <div class="tab-pane fade" id="proposal"></div>
 <div class="tab-pane fade" id="interview"></div>
 <div class="tab-pane fade" id="placement"></div>
