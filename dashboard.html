@@ -14,7 +14,7 @@
 <div class="container-fluid px-4 py-3">
 
 <!-- ================= HEADER ================= -->
-<div class="dashboard-header mb-4">
+<div class="dashboard-header mb-4 d-flex justify-content-between align-items-center">
   <div>
     <h4 class="mb-1">Varadachari – Recruiter Dashboard</h4>
     <div class="small">NetVision Resources • Sr Technical Recruiter</div>
@@ -66,14 +66,11 @@
 <!-- ================= CONTENT ================= -->
 <div class="tab-content">
 
-<!-- ===== HOME (YEARLY MONTH-WISE REPORT) ===== -->
+<!-- ===== HOME ===== -->
 <div class="tab-pane fade show active" id="home">
-
   <div class="card shadow-sm mt-3">
     <div class="card-body">
-
       <h5 class="fw-bold mb-3">📊 Yearly Report – 2026 (Jan to Dec)</h5>
-
       <div class="table-responsive">
         <table class="table table-bordered text-center align-middle">
           <thead class="table-light">
@@ -88,17 +85,14 @@
           <tbody id="yearlyReportTable"></tbody>
         </table>
       </div>
-
     </div>
   </div>
-
 </div>
 
 <!-- ===== JD ===== -->
 <div class="tab-pane fade" id="jd">
   <div class="row">
     <div class="col-md-4">
-      <input id="jdDate" class="form-control mb-2" placeholder="Date (auto)">
       <input id="jdNvr" class="form-control mb-2" placeholder="NVR Job ID">
       <input id="jdSubject" class="form-control mb-2" placeholder="Subject">
       <textarea id="jdText" class="form-control mb-2" rows="5" placeholder="Job Description"></textarea>
@@ -124,23 +118,39 @@
 <div class="tab-pane fade" id="resume">
   <div class="row">
     <div class="col-md-4">
-      <input id="rpDate" class="form-control mb-2" placeholder="Date (MM/DD/YYYY)">
       <input id="rpName" class="form-control mb-2" placeholder="Candidate Name">
       <input id="rpEmail" class="form-control mb-2" placeholder="Email">
       <input id="rpPhone" class="form-control mb-2" placeholder="Phone">
       <input id="rpLocation" class="form-control mb-2" placeholder="Location">
-      <input id="rpVisa" class="form-control mb-2" placeholder="Visa Status">
+
+      <label class="form-label fw-semibold">Visa Status</label>
+      <select id="rpVisa" class="form-select mb-2">
+        <option value="">Select Visa Type</option>
+        <option>US Citizen</option>
+        <option>Green Card</option>
+        <option>H1B</option>
+        <option>H4 EAD</option>
+        <option>OPT EAD</option>
+        <option>Other</option>
+      </select>
+
+      <input id="rpVisaNotes" class="form-control mb-2"
+             placeholder="Visa notes (expiry / transfer / EAD date)">
     </div>
 
     <div class="col-md-8">
       <textarea id="rpNotes" class="form-control mb-2" rows="8"
-        placeholder="Paste Resume Here (optional)"></textarea>
-      <button class="btn btn-success w-100" onclick="saveToDaily()">Save to Daily</button>
+        placeholder="Paste Resume Here"
+        oninput="parseResume(this.value)"></textarea>
+
+      <button class="btn btn-success w-100" onclick="saveToDaily()">
+        Save to Daily
+      </button>
     </div>
   </div>
 </div>
 
-<!-- ===== DAILY ===== -->
+<!-- ===== DAILY (DAILY WORK REPORT) ===== -->
 <div class="tab-pane fade" id="daily">
   <input class="form-control mb-2"
          placeholder="Search by Email or Phone"
@@ -149,7 +159,8 @@
   <table class="table">
     <thead>
       <tr>
-        <th>Date</th>
+        <th>Sl</th>
+        <th>Date & Time</th>
         <th>Name</th>
         <th>Email</th>
         <th>Phone</th>
