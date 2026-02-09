@@ -24,7 +24,18 @@ function logout(){
 
 const get = k => JSON.parse(localStorage.getItem(k) || "[]");
 const set = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-const today = () => new Date().toLocaleDateString("en-US");
+
+function now(){
+  return new Date().toLocaleString("en-US",{
+    year:"numeric",
+    month:"2-digit",
+    day:"2-digit",
+    hour:"2-digit",
+    minute:"2-digit",
+    second:"2-digit",
+    hour12:false
+  });
+}
 
 /* ================= NOTIFICATION ================= */
 
@@ -50,7 +61,7 @@ function scheduleReminder(name, phone, datetime){
 function saveJD(){
   const d = get("jd");
   d.unshift({
-    date: jdDate.value || today(),
+    date: now(),
     nvr: jdNvr.value,
     subject: jdSubject.value,
     text: jdText.value,
@@ -79,7 +90,7 @@ function renderJD(){
 function saveToDaily(){
   const d = get("daily");
   d.unshift({
-    date: rpDate.value || today(),
+    date: now(),
     name: rpName.value,
     email: rpEmail.value,
     phone: rpPhone.value,
@@ -92,7 +103,7 @@ function saveToDaily(){
   });
   set("daily", d);
 
-  ["rpDate","rpName","rpEmail","rpPhone","rpLocation","rpVisa","rpNotes"]
+  ["rpName","rpEmail","rpPhone","rpLocation","rpVisa","rpNotes"]
     .forEach(id => document.getElementById(id).value="");
 
   renderDaily();
@@ -127,10 +138,14 @@ function del(tab,i){
   renderAll();
 }
 
-/* ================= ROUTING ================= */
+/* ================= ROUTING (AUTO TIMESTAMP) ================= */
 
 function route(from,to,i){
-  const record = {...get(from)[i], editing:false};
+  const record = {
+    ...get(from)[i],
+    date: now(),       // NEW timestamp on stage change
+    editing:false
+  };
   const target = get(to);
   target.unshift(record);
   set(to,target);
@@ -207,7 +222,7 @@ function renderStage(tab){
   <table class="table">
     <thead>
       <tr>
-        <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
+        <th>Date & Time</th><th>Name</th><th>Email</th><th>Phone</th>
         <th>Job</th><th>Location</th><th>Visa</th>
         <th>Follow-Up</th><th>Notes</th><th>Action</th>
       </tr>
@@ -218,44 +233,39 @@ function renderStage(tab){
   </table>`;
 }
 
-/* ================= HOME – YEARLY MONTH-WISE REPORT ================= */
+/* ================= HOME – YEARLY MONTH REPORT ================= */
 
 function getMonthlyCounts(tab, year){
   const months = Array(12).fill(0);
-
   get(tab).forEach(r=>{
     const d = new Date(r.date);
     if(d.getFullYear() === year){
       months[d.getMonth()]++;
     }
   });
-
   return months;
 }
 
 function renderHome(){
   const year = 2026;
 
-  const sub = getMonthlyCounts("submission", year);
-  const int = getMonthlyCounts("interview", year);
+  const sub   = getMonthlyCounts("submission", year);
+  const int   = getMonthlyCounts("interview", year);
   const place = getMonthlyCounts("placement", year);
   const start = getMonthlyCounts("start", year);
 
-  // KPI TOTALS (YEAR)
   subCount.innerText   = sub.reduce((a,b)=>a+b,0);
   intCount.innerText   = int.reduce((a,b)=>a+b,0);
   placeCount.innerText = place.reduce((a,b)=>a+b,0);
   startCount.innerText = start.reduce((a,b)=>a+b,0);
 
-  // YEARLY MONTH TABLE
   const tbody = document.getElementById("yearlyReportTable");
   if(!tbody) return;
 
   const months = ["Jan","Feb","Mar","Apr","May","Jun",
                   "Jul","Aug","Sep","Oct","Nov","Dec"];
 
-  tbody.innerHTML = "";
-
+  tbody.innerHTML="";
   months.forEach((m,i)=>{
     tbody.innerHTML += `
       <tr>
