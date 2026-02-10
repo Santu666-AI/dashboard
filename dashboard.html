@@ -12,7 +12,6 @@
 
 <div class="container-fluid px-4 py-3">
 
-<!-- HEADER -->
 <div class="dashboard-header mb-4 d-flex justify-content-between align-items-center">
   <div>
     <h4 class="mb-1">Varadachari – Recruiter Dashboard</h4>
@@ -23,18 +22,17 @@
 
 <!-- KPI -->
 <div class="row g-3 mb-4">
-  <div class="col-md-3"><div class="kpi-card blue"><span>Total Submissions (2026)</span><h2 id="subCount">0</h2></div></div>
-  <div class="col-md-3"><div class="kpi-card purple"><span>Total Interviews (2026)</span><h2 id="intCount">0</h2></div></div>
-  <div class="col-md-3"><div class="kpi-card green"><span>Total Placements (2026)</span><h2 id="placeCount">0</h2></div></div>
-  <div class="col-md-3"><div class="kpi-card orange"><span>Total Starts (2026)</span><h2 id="startCount">0</h2></div></div>
+  <div class="col-md-3"><div class="kpi-card blue"><span>Total Submissions</span><h2 id="subCount">0</h2></div></div>
+  <div class="col-md-3"><div class="kpi-card purple"><span>Total Interviews</span><h2 id="intCount">0</h2></div></div>
+  <div class="col-md-3"><div class="kpi-card green"><span>Total Placements</span><h2 id="placeCount">0</h2></div></div>
+  <div class="col-md-3"><div class="kpi-card orange"><span>Total Starts</span><h2 id="startCount">0</h2></div></div>
 </div>
 
-<!-- TABS -->
 <ul class="nav nav-pills soft-tabs mb-3">
-  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#home">Home</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#home">Home</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#jd">JD</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#resume">Resume</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#daily">Daily</a></li>
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#daily">Daily</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#submission">Submission</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#proposal">Proposal</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#interview">Interview</a></li>
@@ -45,7 +43,7 @@
 <div class="tab-content">
 
 <!-- HOME -->
-<div class="tab-pane fade show active" id="home">
+<div class="tab-pane fade" id="home">
   <table class="table table-bordered text-center">
     <thead class="table-light">
       <tr><th>Month</th><th>Submissions</th><th>Interviews</th><th>Placements</th><th>Starts</th></tr>
@@ -77,7 +75,7 @@
   </div>
 </div>
 
-<!-- RESUME (UNCHANGED) -->
+<!-- RESUME -->
 <div class="tab-pane fade" id="resume">
   <div class="row">
     <div class="col-md-4">
@@ -85,17 +83,13 @@
       <input id="rpEmail" class="form-control mb-2" placeholder="Email">
       <input id="rpPhone" class="form-control mb-2" placeholder="Phone">
       <input id="rpLocation" class="form-control mb-2" placeholder="Location">
-      <label class="form-label fw-semibold">Visa Status</label>
       <select id="rpVisa" class="form-select mb-2">
-        <option value="">Select Visa Type</option>
+        <option value="">Visa</option>
         <option>US Citizen</option>
         <option>Green Card</option>
         <option>H1B</option>
-        <option>H4 EAD</option>
         <option>OPT EAD</option>
-        <option>Other</option>
       </select>
-      <input id="rpVisaNotes" class="form-control mb-2" placeholder="Visa notes">
     </div>
     <div class="col-md-8">
       <textarea id="rpNotes" class="form-control mb-2" rows="8"
@@ -107,13 +101,14 @@
 </div>
 
 <!-- DAILY -->
-<div class="tab-pane fade" id="daily">
+<div class="tab-pane fade show active" id="daily">
+  <button class="btn btn-sm btn-outline-primary mb-2" onclick="exportCSV('daily')">Export</button>
   <table class="table table-bordered">
     <thead>
       <tr>
         <th>Sl</th><th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
-        <th>Job</th><th>Source</th><th>Location</th><th>Visa</th>
-        <th>Follow-up</th><th>Notes</th><th>Action</th>
+        <th>Job Title</th><th>Client</th><th>Source</th>
+        <th>Location</th><th>Visa</th><th>Follow-up</th><th>Notes</th><th>Action</th>
       </tr>
     </thead>
     <tbody id="dailyTable"></tbody>
