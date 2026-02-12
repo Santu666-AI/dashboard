@@ -1,188 +1,203 @@
 /* ==========================================================
-   SAFE GLOBAL SETUP
+   SUPABASE CONNECTION
 ========================================================== */
 
-const el = (id) => document.getElementById(id);
+const SUPABASE_URL = "https://jpmmciputroyyrjmyeya.supabase.co";
+const SUPABASE_KEY = "sb_publishable_afZSYp99Z_Xwb5Wl_W7J8g_m7fPHPTE";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const el = id => document.getElementById(id);
 const now = () => new Date().toISOString();
 
-/* ==========================================================
-   SUPABASE CONNECTION (SAFE)
-========================================================== */
 
-let supabaseClient = null;
-
-if (typeof supabase !== "undefined") {
-  const SUPABASE_URL = "https://jpmmciputroyyrjmyeya.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_afZSYp99Z_Xwb5Wl_W7J8g_m7fPHPTE";
-  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} else {
-  console.log("Supabase not loaded (OK on login page)");
-}
 
 /* ==========================================================
    LOGIN SYSTEM
 ========================================================== */
 
-function login() {
+function login(){
+  const u = el("username")?.value.trim();
+  const p = el("password")?.value.trim();
 
-  const userField = el("username");
-  const passField = el("password");
-
-  if (!userField || !passField) return;
-
-  const u = userField.value.trim();
-  const p = passField.value.trim();
-
-  if (u === "admin" && p === "admin") {
-    localStorage.setItem("logged", "yes");
+  if(u === "admin" && p === "admin"){
+    localStorage.setItem("logged","yes");
     window.location.href = "dashboard.html";
-  } else {
+  }else{
     alert("Invalid Username or Password");
   }
 }
 
-function checkLogin() {
-  if (localStorage.getItem("logged") !== "yes") {
+function checkLogin(){
+  if(localStorage.getItem("logged") !== "yes"){
     window.location.href = "index.html";
   }
 }
 
-function logout() {
+function logout(){
   localStorage.removeItem("logged");
   window.location.href = "index.html";
 }
 
+
+
 /* ==========================================================
-   LOAD ACTIVE JDs
+   JD MANAGEMENT
 ========================================================== */
 
-async function loadActiveJDs() {
+async function saveJD(){
 
-  if (!supabaseClient) return;
+  const row = {
+    date: now(),
+    jdnvr: el("jdNvr").value,
+    jdsubject: el("jdSubject").value,
+    jdtext: el("jdText").value,
+    jdstatus: el("jdStatus").value
+  };
 
-  const select = el("dailyJobSelect");
-  if (!select) return;
+  const { error } = await supabaseClient.from("jd").insert([row]);
 
-  const { data, error } = await supabaseClient
-    .from("jd")
-    .select("*")
-    .eq("jdstatus", "Active");
-
-  if (error) {
-    console.error(error);
+  if(error){
+    alert(error.message);
     return;
   }
 
+  el("jdNvr").value="";
+  el("jdSubject").value="";
+  el("jdText").value="";
+
+  loadJD();
+  loadActiveJDs();
+}
+
+async function loadJD(){
+
+  const table = el("jdTable");
+  if(!table) return;
+
+  const { data } = await supabaseClient
+    .from("jd")
+    .select("*")
+    .order("id",{ascending:false});
+
+  table.innerHTML="";
+
+  (data||[]).forEach(j=>{
+    table.innerHTML+=`
+      <tr>
+        <td>${j.date ? j.date.split("T")[0]:""}</td>
+        <td>${j.jdnvr||""}</td>
+        <td>${j.jdsubject||""}</td>
+        <td>${j.jdstatus||""}</td>
+        <td>
+          <button onclick="deleteRow('jd',${j.id})">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function loadActiveJDs(){
+
+  const { data } = await supabaseClient
+    .from("jd")
+    .select("*")
+    .eq("jdstatus","Active");
+
+  const select = el("dailyJobSelect");
+  if(!select) return;
+
   select.innerHTML = `<option value="">Select Active Requirement</option>`;
 
-  (data || []).forEach(j => {
-    select.innerHTML += `
+  (data||[]).forEach(j=>{
+    select.innerHTML+=`
       <option value="${j.jdsubject}">
         ${j.jdsubject}
       </option>`;
   });
 }
 
+
+
 /* ==========================================================
    CLIENT MASTER
 ========================================================== */
 
-async function loadClients() {
+async function loadClients(){
 
-  if (!supabaseClient) return;
-
-  const select = el("dailyClientSelect");
-  if (!select) return;
-
-  const { data, error } = await supabaseClient
+  const { data } = await supabaseClient
     .from("clients")
     .select("*")
     .order("client_name");
 
-  if (error) {
-    console.error(error);
-    return;
+  const input = el("dailyClientInput");
+  if(!input) return;
+
+  // This allows manual typing but also auto-suggest
+  input.setAttribute("list","clientList");
+
+  let datalist = document.getElementById("clientList");
+  if(!datalist){
+    datalist = document.createElement("datalist");
+    datalist.id="clientList";
+    document.body.appendChild(datalist);
   }
 
-  select.innerHTML = `<option value="">Select Client</option>`;
+  datalist.innerHTML="";
 
-  (data || []).forEach(c => {
-    select.innerHTML += `
+  (data||[]).forEach(c=>{
+    datalist.innerHTML+=`
       <option value="${c.client_name}">
-        ${c.client_name}
-      </option>`;
+    `;
   });
 }
 
-async function addClient() {
 
-  if (!supabaseClient) return;
-
-  const input = el("newClientInput");
-  if (!input) return;
-
-  const name = input.value.trim();
-  if (!name) return alert("Enter client name");
-
-  const { error } = await supabaseClient
-    .from("clients")
-    .insert([{ client_name: name }]);
-
-  if (error) {
-    alert("Client may already exist");
-    return;
-  }
-
-  input.value = "";
-  loadClients();
-}
 
 /* ==========================================================
    RESUME PARSER
 ========================================================== */
 
-function parseResume(text) {
+function parseResume(text){
 
-  if (!text) return;
+  if(!text) return;
 
   const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if (emailMatch && el("rpEmail")) el("rpEmail").value = emailMatch[0];
+  if(emailMatch) el("rpEmail").value = emailMatch[0];
 
   const phoneMatch = text.match(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/);
-  if (phoneMatch && el("rpPhone")) el("rpPhone").value = phoneMatch[0];
+  if(phoneMatch) el("rpPhone").value = phoneMatch[0];
+
 }
+
+
 
 /* ==========================================================
    SAVE DAILY
 ========================================================== */
 
-async function saveToDaily() {
+async function saveToDaily(){
 
-  if (!supabaseClient) return;
-
-  if (!el("dailyJobSelect")?.value)
+  if(!el("dailyJobSelect").value)
     return alert("Select Active Requirement");
-
-  if (!el("dailyClientSelect")?.value)
-    return alert("Select Client");
 
   const row = {
     date: now(),
-    name: el("rpName")?.value || "",
-    email: el("rpEmail")?.value || "",
-    phone: el("rpPhone")?.value || "",
+    name: el("rpName").value,
+    email: el("rpEmail").value,
+    phone: el("rpPhone").value,
     job: el("dailyJobSelect").value,
-    client: el("dailyClientSelect").value,
-    location: el("rpLocation")?.value || "",
-    visa: el("rpVisa")?.value || "",
-    notes: el("rpNotes")?.value || ""
+    client: el("dailyClientInput").value,
+    location: el("rpLocation").value,
+    visa: el("rpVisa").value,
+    notes: el("rpNotes").value
   };
 
   const { error } = await supabaseClient
     .from("daily")
     .insert([row]);
 
-  if (error) {
+  if(error){
     alert(error.message);
     return;
   }
@@ -190,21 +205,21 @@ async function saveToDaily() {
   loadDaily();
 }
 
+
+
 /* ==========================================================
-   COPY FUNCTIONS
+   COPY PIPELINE
 ========================================================== */
 
-async function copyToStage(id, target) {
-
-  if (!supabaseClient) return;
+async function copyToStage(id,target){
 
   const { data } = await supabaseClient
     .from("daily")
     .select("*")
-    .eq("id", id)
+    .eq("id",id)
     .single();
 
-  if (!data) return;
+  if(!data) return;
 
   delete data.id;
 
@@ -214,17 +229,15 @@ async function copyToStage(id, target) {
   updateKPIs();
 }
 
-async function copyBetweenStages(source, id, target) {
-
-  if (!supabaseClient) return;
+async function copyBetweenStages(source,id,target){
 
   const { data } = await supabaseClient
     .from(source)
     .select("*")
-    .eq("id", id)
+    .eq("id",id)
     .single();
 
-  if (!data) return;
+  if(!data) return;
 
   delete data.id;
 
@@ -233,76 +246,88 @@ async function copyBetweenStages(source, id, target) {
   loadStage(target);
   updateKPIs();
 }
+
+
 
 /* ==========================================================
    DELETE
 ========================================================== */
 
-async function deleteRow(table, id) {
+async function deleteRow(table,id){
 
-  if (!supabaseClient) return;
-  if (!confirm("Delete entry?")) return;
+  if(!confirm("Delete entry?")) return;
 
-  await supabaseClient.from(table).delete().eq("id", id);
+  await supabaseClient
+    .from(table)
+    .delete()
+    .eq("id",id);
 
-  if (table === "daily") loadDaily();
+  if(table==="daily") loadDaily();
+  else if(table==="jd"){
+    loadJD();
+    loadActiveJDs();
+  }
   else loadStage(table);
 
   updateKPIs();
 }
 
+
+
 /* ==========================================================
    UPDATE
 ========================================================== */
 
-async function updateDate(table, id, value) {
-  if (!supabaseClient) return;
-  await supabaseClient.from(table).update({ date: value }).eq("id", id);
+async function updateDate(table,id,value){
+  await supabaseClient.from(table)
+    .update({date:value})
+    .eq("id",id);
 }
 
-async function updateNotes(table, id, value) {
-  if (!supabaseClient) return;
-  await supabaseClient.from(table).update({ notes: value }).eq("id", id);
+async function updateNotes(table,id,value){
+  await supabaseClient.from(table)
+    .update({notes:value})
+    .eq("id",id);
 }
+
+
 
 /* ==========================================================
    LOAD DAILY
 ========================================================== */
 
-async function loadDaily() {
-
-  if (!supabaseClient) return;
+async function loadDaily(){
 
   const table = el("dailyTable");
-  if (!table) return;
+  if(!table) return;
 
   const { data } = await supabaseClient
     .from("daily")
     .select("*")
-    .order("id", { ascending: false });
+    .order("id",{ascending:false});
 
-  table.innerHTML = "";
+  table.innerHTML="";
 
-  (data || []).forEach((r, i) => {
+  (data||[]).forEach((r,i)=>{
 
-    table.innerHTML += `
+    table.innerHTML+=`
       <tr>
-        <td>${i + 1}</td>
+        <td>${i+1}</td>
         <td>
           <input type="date"
-            value="${r.date ? r.date.split("T")[0] : ""}"
+            value="${r.date? r.date.split("T")[0]:""}"
             onchange="updateDate('daily',${r.id},this.value)">
         </td>
-        <td>${r.name || ""}</td>
-        <td>${r.email || ""}</td>
-        <td>${r.phone || ""}</td>
-        <td>${r.job || ""}</td>
-        <td>${r.client || ""}</td>
-        <td>${r.location || ""}</td>
-        <td>${r.visa || ""}</td>
+        <td>${r.name||""}</td>
+        <td>${r.email||""}</td>
+        <td>${r.phone||""}</td>
+        <td>${r.job||""}</td>
+        <td>${r.client||""}</td>
+        <td>${r.location||""}</td>
+        <td>${r.visa||""}</td>
         <td>
           <textarea onchange="updateNotes('daily',${r.id},this.value)">
-            ${r.notes || ""}
+            ${r.notes||""}
           </textarea>
         </td>
         <td>
@@ -310,105 +335,111 @@ async function loadDaily() {
           <button onclick="copyToStage(${r.id},'proposal')">Proposal</button>
           <button onclick="deleteRow('daily',${r.id})">Delete</button>
         </td>
-      </tr>`;
+      </tr>
+    `;
   });
 
   updateKPIs();
 }
 
+
+
 /* ==========================================================
    LOAD STAGES
 ========================================================== */
 
-async function loadStage(tab) {
-
-  if (!supabaseClient) return;
+async function loadStage(tab){
 
   const container = el(tab);
-  if (!container) return;
+  if(!container) return;
 
   const { data } = await supabaseClient
     .from(tab)
     .select("*")
-    .order("id", { ascending: false });
+    .order("id",{ascending:false});
 
-  container.innerHTML = `
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Job</th>
-        <th>Client</th>
-        <th>Notes</th>
-        ${tab === "submission" ? "<th>Move</th>" : ""}
-        <th>Delete</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${(data || []).map(r => `
+  container.innerHTML=`
+    <table class="table table-bordered">
+      <thead>
         <tr>
-          <td>
-            <input type="date"
-              value="${r.date ? r.date.split("T")[0] : ""}"
-              onchange="updateDate('${tab}',${r.id},this.value)">
-          </td>
-          <td>${r.name || ""}</td>
-          <td>${r.email || ""}</td>
-          <td>${r.job || ""}</td>
-          <td>${r.client || ""}</td>
-          <td>
-            <textarea onchange="updateNotes('${tab}',${r.id},this.value)">
-              ${r.notes || ""}
-            </textarea>
-          </td>
-          ${tab === "submission" ? `
-          <td>
-            <button onclick="copyBetweenStages('submission',${r.id},'interview')">Interview</button>
-            <button onclick="copyBetweenStages('submission',${r.id},'placement')">Placement</button>
-            <button onclick="copyBetweenStages('submission',${r.id},'start')">Start</button>
-          </td>` : ""}
-          <td>
-            <button onclick="deleteRow('${tab}',${r.id})">Delete</button>
-          </td>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Job</th>
+          <th>Client</th>
+          <th>Notes</th>
+          ${tab==="submission" ? "<th>Move</th>" : ""}
+          <th>Delete</th>
         </tr>
-      `).join("")}
-    </tbody>
-  </table>`;
+      </thead>
+      <tbody>
+        ${(data||[]).map(r=>`
+          <tr>
+            <td>
+              <input type="date"
+                value="${r.date? r.date.split("T")[0]:""}"
+                onchange="updateDate('${tab}',${r.id},this.value)">
+            </td>
+            <td>${r.name||""}</td>
+            <td>${r.email||""}</td>
+            <td>${r.job||""}</td>
+            <td>${r.client||""}</td>
+            <td>
+              <textarea onchange="updateNotes('${tab}',${r.id},this.value)">
+                ${r.notes||""}
+              </textarea>
+            </td>
+            ${tab==="submission" ? `
+              <td>
+                <button onclick="copyBetweenStages('submission',${r.id},'interview')">Interview</button>
+                <button onclick="copyBetweenStages('submission',${r.id},'placement')">Placement</button>
+                <button onclick="copyBetweenStages('submission',${r.id},'start')">Start</button>
+              </td>` : ""}
+            <td>
+              <button onclick="deleteRow('${tab}',${r.id})">Delete</button>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
 }
+
+
 
 /* ==========================================================
    KPI
 ========================================================== */
 
-async function updateKPIs() {
-
-  if (!supabaseClient) return;
+async function updateKPIs(){
 
   const sub = await supabaseClient.from("submission").select("*");
   const int = await supabaseClient.from("interview").select("*");
   const pla = await supabaseClient.from("placement").select("*");
   const sta = await supabaseClient.from("start").select("*");
 
-  if (el("subCount")) el("subCount").innerText = sub.data?.length || 0;
-  if (el("intCount")) el("intCount").innerText = int.data?.length || 0;
-  if (el("placeCount")) el("placeCount").innerText = pla.data?.length || 0;
-  if (el("startCount")) el("startCount").innerText = sta.data?.length || 0;
+  el("subCount").innerText = sub.data?.length || 0;
+  el("intCount").innerText = int.data?.length || 0;
+  el("placeCount").innerText = pla.data?.length || 0;
+  el("startCount").innerText = sta.data?.length || 0;
 }
+
+
 
 /* ==========================================================
    INIT
 ========================================================== */
 
-window.addEventListener("load", () => {
+window.addEventListener("load",()=>{
 
-  if (el("dailyTable")) {
+  if(el("dailyTable")){
 
     checkLogin();
 
+    loadJD();
     loadActiveJDs();
     loadClients();
+
     loadDaily();
     loadStage("submission");
     loadStage("proposal");
