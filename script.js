@@ -12,8 +12,8 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 ================================ */
 
 function login(){
-  const u = el("username").value.trim();
-  const p = el("password").value.trim();
+  const u = el("username")?.value.trim();
+  const p = el("password")?.value.trim();
 
   if(u === "admin" && p === "admin"){
     localStorage.setItem("logged","yes");
@@ -44,6 +44,25 @@ const now = () => new Date().toISOString();
 
 
 /* ================================
+   RESUME PARSER
+================================ */
+
+function parseResume(text){
+
+  if(!text || text.length < 20) return;
+
+  const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if(emailMatch) el("rpEmail").value = emailMatch[0];
+
+  const phoneMatch = text.match(/(\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+  if(phoneMatch) el("rpPhone").value = phoneMatch[0];
+
+  const lines = text.split("\n").map(l=>l.trim()).filter(l=>l.length>2);
+  if(lines.length>0) el("rpName").value = lines[0];
+}
+
+
+/* ================================
    SAVE TO DAILY
 ================================ */
 
@@ -60,12 +79,10 @@ async function saveToDaily(){
     location: el("rpLocation").value,
     visa: el("rpVisa").value,
     followup: "",
-    notes: ""
+    notes: el("rpNotes").value
   };
 
-  const { error } = await supabaseClient
-    .from("daily")
-    .insert([row]);
+  const { error } = await supabaseClient.from("daily").insert([row]);
 
   if(error){
     alert(error.message);
@@ -120,6 +137,8 @@ async function loadDaily(){
         <button onclick="copyToStage(${r.id},'interview')">Interview</button>
         <button onclick="copyToStage(${r.id},'placement')">Placement</button>
         <button onclick="copyToStage(${r.id},'start')">Start</button>
+        <button class="btn btn-sm btn-danger"
+          onclick="deleteRow('daily',${r.id})">Delete</button>
       </td>
     </tr>`;
   });
@@ -129,10 +148,10 @@ async function loadDaily(){
 
 
 /* ================================
-   COPY TO STAGE (NOT MOVE)
+   COPY TO STAGE
 ================================ */
 
-async function copyToStage(id, target){
+async function copyToStage(id,target){
 
   const { data, error } = await supabaseClient
     .from("daily")
@@ -157,17 +176,9 @@ async function copyToStage(id, target){
     notes: data.notes
   };
 
-  if(target === "proposal"){
-    row.program_name = "";
-  }
-
-  if(target === "interview"){
-    row.interview_scheduled_on = null;
-  }
-
-  if(target === "start"){
-    row.start_date = null;
-  }
+  if(target==="proposal") row.program_name="";
+  if(target==="interview") row.interview_scheduled_on=null;
+  if(target==="start") row.start_date=null;
 
   const { error: insertError } = await supabaseClient
     .from(target)
@@ -185,19 +196,41 @@ async function copyToStage(id, target){
 
 
 /* ================================
-   LOAD STAGE TABLES
+   DELETE ROW
+================================ */
+
+async function deleteRow(table,id){
+
+  if(!confirm("Are you sure you want to delete this entry?")) return;
+
+  const { error } = await supabaseClient
+    .from(table)
+    .delete()
+    .eq("id", id);
+
+  if(error){
+    alert(error.message);
+    console.error(error);
+    return;
+  }
+
+  if(table==="daily"){
+    loadDaily();
+  } else {
+    loadStage(table);
+  }
+
+  updateKPIs();
+}
+
+
+/* ================================
+   LOAD STAGE TABLE
 ================================ */
 
 async function loadStage(tab){
 
-  const container = el(
-    tab==="submission" ? "Submission" :
-    tab==="proposal" ? "Proposal" :
-    tab==="interview" ? "Interview" :
-    tab==="placement" ? "Placement" :
-    "start"
-  );
-
+  const container = document.getElementById(tab);
   if(!container) return;
 
   const { data } = await supabaseClient
@@ -205,54 +238,60 @@ async function loadStage(tab){
     .select("*")
     .order("id",{ascending:false});
 
-  let extraHeader = "";
-  let extraCell = "";
+  let extraHeader="";
+  let extraCell=r=>"";
 
-  if(tab === "proposal"){
-    extraHeader = "<th>Program</th>";
-    extraCell = r => `<td><input type="text" value="${r.program_name||""}" 
-                     onchange="updateProposal(${r.id}, this.value)"></td>`;
+  if(tab==="proposal"){
+    extraHeader="<th>Program</th>";
+    extraCell=r=>`<td>
+      <input type="text" value="${r.program_name||""}"
+      onchange="updateProposal(${r.id},this.value)">
+    </td>`;
   }
 
-  if(tab === "interview"){
-    extraHeader = "<th>Interview Date</th>";
-    extraCell = r => `<td><input type="date" value="${r.interview_scheduled_on||""}" 
-                     onchange="updateInterviewDate(${r.id}, this.value)"></td>`;
+  if(tab==="interview"){
+    extraHeader="<th>Interview Date</th>";
+    extraCell=r=>`<td>
+      <input type="date" value="${r.interview_scheduled_on||""}"
+      onchange="updateInterview(${r.id},this.value)">
+    </td>`;
   }
 
-  if(tab === "start"){
-    extraHeader = "<th>Start Date</th>";
-    extraCell = r => `<td><input type="date" value="${r.start_date||""}" 
-                     onchange="updateStartDate(${r.id}, this.value)"></td>`;
+  if(tab==="start"){
+    extraHeader="<th>Start Date</th>";
+    extraCell=r=>`<td>
+      <input type="date" value="${r.start_date||""}"
+      onchange="updateStart(${r.id},this.value)">
+    </td>`;
   }
 
-  container.innerHTML = `
+  container.innerHTML=`
   <table class="table table-bordered">
     <thead>
       <tr>
-        <th>Date</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>Job</th>
-        <th>Client</th>
-        ${extraHeader}
-        <th>Notes</th>
+        <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
+        <th>Job</th><th>Client</th>${extraHeader}<th>Notes</th><th>Delete</th>
       </tr>
     </thead>
     <tbody>
       ${
         (data||[]).map(r=>`
-          <tr>
-            <td>${r.date?r.date.split("T")[0]:""}</td>
-            <td>${r.name||""}</td>
-            <td>${r.email||""}</td>
-            <td>${r.phone||""}</td>
-            <td>${r.job||""}</td>
-            <td>${r.client||""}</td>
-            ${extraCell ? extraCell(r) : ""}
-            <td>${r.notes||""}</td>
-          </tr>
+        <tr>
+          <td>${r.date?r.date.split("T")[0]:""}</td>
+          <td>${r.name||""}</td>
+          <td>${r.email||""}</td>
+          <td>${r.phone||""}</td>
+          <td>${r.job||""}</td>
+          <td>${r.client||""}</td>
+          ${extraCell(r)}
+          <td>${r.notes||""}</td>
+          <td>
+            <button class="btn btn-sm btn-danger"
+              onclick="deleteRow('${tab}',${r.id})">
+              Delete
+            </button>
+          </td>
+        </tr>
         `).join("")
       }
     </tbody>
@@ -266,19 +305,19 @@ async function loadStage(tab){
 
 async function updateProposal(id,value){
   await supabaseClient.from("proposal")
-    .update({ program_name:value })
+    .update({program_name:value})
     .eq("id",id);
 }
 
-async function updateInterviewDate(id,value){
+async function updateInterview(id,value){
   await supabaseClient.from("interview")
-    .update({ interview_scheduled_on:value })
+    .update({interview_scheduled_on:value})
     .eq("id",id);
 }
 
-async function updateStartDate(id,value){
+async function updateStart(id,value){
   await supabaseClient.from("start")
-    .update({ start_date:value })
+    .update({start_date:value})
     .eq("id",id);
 }
 
@@ -294,11 +333,28 @@ async function updateKPIs(){
   const pla = await supabaseClient.from("placement").select("*");
   const sta = await supabaseClient.from("start").select("*");
 
-  if(el("subCount")) el("subCount").innerText = sub.data?.length || 0;
-  if(el("intCount")) el("intCount").innerText = int.data?.length || 0;
-  if(el("placeCount")) el("placeCount").innerText = pla.data?.length || 0;
-  if(el("startCount")) el("startCount").innerText = sta.data?.length || 0;
+  if(el("subCount")) el("subCount").innerText=sub.data?.length||0;
+  if(el("intCount")) el("intCount").innerText=int.data?.length||0;
+  if(el("placeCount")) el("placeCount").innerText=pla.data?.length||0;
+  if(el("startCount")) el("startCount").innerText=sta.data?.length||0;
 }
+
+
+/* ================================
+   TAB AUTO LOAD
+================================ */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  ["submission","proposal","interview","placement","start"]
+  .forEach(tab=>{
+    const link=document.querySelector(`a[href="#${tab}"]`);
+    if(link){
+      link.addEventListener("shown.bs.tab",()=>loadStage(tab));
+    }
+  });
+
+});
 
 
 /* ================================
@@ -306,9 +362,7 @@ async function updateKPIs(){
 ================================ */
 
 window.addEventListener("load",()=>{
-
   if(el("dailyTable")){
-    checkLogin();
     loadDaily();
     loadStage("submission");
     loadStage("proposal");
