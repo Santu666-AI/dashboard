@@ -20,23 +20,23 @@ function login(){
   const u = el("username")?.value.trim();
   const p = el("password")?.value.trim();
 
-  if(u==="admin" && p==="admin"){
+  if(u === "admin" && p === "admin"){
     localStorage.setItem("logged","yes");
-    window.location.href="dashboard.html";
+    window.location.href = "dashboard.html";
   }else{
     alert("Invalid Username or Password");
   }
 }
 
 function checkLogin(){
-  if(localStorage.getItem("logged")!=="yes"){
-    window.location.href="index.html";
+  if(localStorage.getItem("logged") !== "yes"){
+    window.location.href = "index.html";
   }
 }
 
 function logout(){
   localStorage.removeItem("logged");
-  window.location.href="index.html";
+  window.location.href = "index.html";
 }
 
 
@@ -47,7 +47,7 @@ function logout(){
 
 async function saveJD(){
 
-  const row={
+  const row = {
     date: now(),
     jdnvr: el("jdNvr").value,
     jdsubject: el("jdSubject").value,
@@ -55,7 +55,7 @@ async function saveJD(){
     jdstatus: el("jdStatus").value
   };
 
-  const {error}=await supabaseClient.from("jd").insert([row]);
+  const { error } = await supabaseClient.from("jd").insert([row]);
   if(error){ alert(error.message); return; }
 
   el("jdNvr").value="";
@@ -68,10 +68,10 @@ async function saveJD(){
 
 async function loadJD(){
 
-  const table=el("jdTable");
+  const table = el("jdTable");
   if(!table) return;
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from("jd")
     .select("*")
     .order("id",{ascending:false});
@@ -81,13 +81,13 @@ async function loadJD(){
   (data||[]).forEach(j=>{
     table.innerHTML+=`
       <tr>
-        <td>${j.date?j.date.split("T")[0]:""}</td>
+        <td>${j.date ? j.date.split("T")[0]:""}</td>
         <td>${j.jdnvr||""}</td>
         <td>${j.jdsubject||""}</td>
         <td>${j.jdstatus||""}</td>
         <td>
           <button class="btn btn-sm btn-danger"
-            onclick="deleteRow('jd',${j.id})">X</button>
+            onclick="deleteRow('jd',${j.id})">Delete</button>
         </td>
       </tr>
     `;
@@ -96,15 +96,15 @@ async function loadJD(){
 
 async function loadActiveJDs(){
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from("jd")
     .select("jdsubject")
     .eq("jdstatus","Active");
 
-  const select=el("dailyJobSelect");
+  const select = el("dailyJobSelect");
   if(!select) return;
 
-  select.innerHTML=`<option value="">Select Active Requirement</option>`;
+  select.innerHTML = `<option value="">Select Active Requirement</option>`;
 
   (data||[]).forEach(j=>{
     select.innerHTML+=`
@@ -117,24 +117,24 @@ async function loadActiveJDs(){
 
 
 /* ==========================================================
-   CLIENT AUTO HINT (DATALIST)
+   CLIENT HINT SYSTEM
 ========================================================== */
 
 async function loadClients(){
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from("clients")
     .select("*")
     .order("client_name");
 
-  const input=el("dailyClientInput");
+  const input = el("dailyClientInput");
   if(!input) return;
 
   input.setAttribute("list","clientList");
 
-  let datalist=document.getElementById("clientList");
+  let datalist = document.getElementById("clientList");
   if(!datalist){
-    datalist=document.createElement("datalist");
+    datalist = document.createElement("datalist");
     datalist.id="clientList";
     document.body.appendChild(datalist);
   }
@@ -149,40 +149,48 @@ async function loadClients(){
 
 
 /* ==========================================================
-   PROFESSIONAL RESUME PARSER
+   IMPROVED RESUME PARSER
 ========================================================== */
 
 function parseResume(text){
 
   if(!text) return;
 
-  const clean=text.replace(/\r/g,"");
+  const lines = text.split("\n").map(l=>l.trim()).filter(l=>l);
 
-  const email=clean.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if(email) el("rpEmail").value=email[0];
+  /* EMAIL */
+  const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if(emailMatch) el("rpEmail").value = emailMatch[0];
 
-  const phone=clean.match(/\+?\d[\d\-\s]{8,15}\d/);
-  if(phone) el("rpPhone").value=phone[0].replace(/[^\d\-+]/g,"");
+  /* PHONE */
+  const phoneMatch = text.match(/\+?\d{1,3}?\s?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+  if(phoneMatch) el("rpPhone").value = phoneMatch[0];
 
-  const firstLine=clean.split("\n")[0];
-  if(firstLine){
-    const nameOnly=firstLine.split("-")[0].trim();
-    if(nameOnly.length<40 && !nameOnly.includes("@")){
-      el("rpName").value=nameOnly;
+  /* NAME */
+  if(lines.length > 0){
+    const firstLine = lines[0];
+    if(
+      !firstLine.includes("@") &&
+      !firstLine.match(/\d{3}/) &&
+      firstLine.length < 40
+    ){
+      el("rpName").value = firstLine;
     }
   }
 
-  const location=clean.match(/([A-Za-z]+,\s?[A-Za-z]+,\s?(United States|USA))/i);
-  if(location) el("rpLocation").value=location[0];
-
-  const visa=clean.match(/(US Citizen|Green Card|H1B|OPT|EAD)/i);
-  if(visa) el("rpVisa").value=visa[0];
+  /* LOCATION */
+  const locationMatch = text.match(
+    /([A-Za-z]+,\s?[A-Z]{2}|USA|United States)/i
+  );
+  if(locationMatch){
+    el("rpLocation").value = locationMatch[0];
+  }
 }
 
 
 
 /* ==========================================================
-   SAVE TO DAILY (CLEAR RESUME AFTER SAVE)
+   SAVE TO DAILY + AUTO CLEAR
 ========================================================== */
 
 async function saveToDaily(){
@@ -190,7 +198,7 @@ async function saveToDaily(){
   if(!el("dailyJobSelect").value)
     return alert("Select Active Requirement");
 
-  const row={
+  const row = {
     date: now(),
     name: el("rpName").value,
     email: el("rpEmail").value,
@@ -199,18 +207,16 @@ async function saveToDaily(){
     client: el("dailyClientInput").value,
     location: el("rpLocation").value,
     visa: el("rpVisa").value,
-    notes: ""
+    notes: el("rpNotes").value
   };
 
-  const {error}=await supabaseClient.from("daily").insert([row]);
+  const { error } = await supabaseClient.from("daily").insert([row]);
   if(error){ alert(error.message); return; }
 
-  [
-    "rpName","rpEmail","rpPhone",
-    "rpLocation","rpVisa",
-    "rpNotes","dailyJobSelect",
-    "dailyClientInput"
-  ].forEach(id=> el(id).value="");
+  /* CLEAR FORM */
+  ["rpName","rpEmail","rpPhone","rpLocation",
+   "rpVisa","rpNotes","dailyJobSelect","dailyClientInput"]
+   .forEach(id=> el(id).value="");
 
   loadDaily();
 }
@@ -223,7 +229,7 @@ async function saveToDaily(){
 
 async function copyToStage(id,target){
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from("daily")
     .select("*")
     .eq("id",id)
@@ -232,7 +238,23 @@ async function copyToStage(id,target){
   if(!data) return;
 
   delete data.id;
+  await supabaseClient.from(target).insert([data]);
 
+  loadStage(target);
+  updateKPIs();
+}
+
+async function copyBetweenStages(source,id,target){
+
+  const { data } = await supabaseClient
+    .from(source)
+    .select("*")
+    .eq("id",id)
+    .single();
+
+  if(!data) return;
+
+  delete data.id;
   await supabaseClient.from(target).insert([data]);
 
   loadStage(target);
@@ -252,10 +274,7 @@ async function deleteRow(table,id){
   await supabaseClient.from(table).delete().eq("id",id);
 
   if(table==="daily") loadDaily();
-  else if(table==="jd"){
-    loadJD();
-    loadActiveJDs();
-  }
+  else if(table==="jd"){ loadJD(); loadActiveJDs(); }
   else loadStage(table);
 
   updateKPIs();
@@ -281,10 +300,10 @@ async function updateNotes(table,id,value){
 
 async function loadDaily(){
 
-  const table=el("dailyTable");
+  const table = el("dailyTable");
   if(!table) return;
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from("daily")
     .select("*")
     .order("id",{ascending:false});
@@ -292,10 +311,11 @@ async function loadDaily(){
   table.innerHTML="";
 
   (data||[]).forEach((r,i)=>{
+
     table.innerHTML+=`
       <tr>
         <td>${i+1}</td>
-        <td>${r.date?r.date.split("T")[0]:""}</td>
+        <td>${r.date ? r.date.split("T")[0]:""}</td>
         <td>${r.name||""}</td>
         <td>${r.email||""}</td>
         <td>${r.phone||""}</td>
@@ -304,20 +324,21 @@ async function loadDaily(){
         <td>${r.location||""}</td>
         <td>${r.visa||""}</td>
         <td>
-          <textarea class="form-control form-control-sm"
+          <textarea class="form-control"
             onchange="updateNotes('daily',${r.id},this.value)">
             ${r.notes||""}
           </textarea>
         </td>
-        <td class="text-nowrap">
-          <button class="btn btn-sm btn-primary me-1"
-            onclick="copyToStage(${r.id},'submission')">Sub</button>
-          <button class="btn btn-sm btn-warning me-1"
-            onclick="copyToStage(${r.id},'proposal')">Prop</button>
+        <td>
+          <button class="btn btn-sm btn-primary"
+            onclick="copyToStage(${r.id},'submission')">Submission</button>
+          <button class="btn btn-sm btn-warning"
+            onclick="copyToStage(${r.id},'proposal')">Proposal</button>
           <button class="btn btn-sm btn-danger"
-            onclick="deleteRow('daily',${r.id})">X</button>
+            onclick="deleteRow('daily',${r.id})">Delete</button>
         </td>
-      </tr>`;
+      </tr>
+    `;
   });
 
   updateKPIs();
@@ -331,79 +352,84 @@ async function loadDaily(){
 
 async function loadStage(tab){
 
-  const container=el(tab);
+  const container = el(tab);
   if(!container) return;
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from(tab)
     .select("*")
     .order("id",{ascending:false});
 
   container.innerHTML=`
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Date</th><th>Name</th><th>Email</th>
-        <th>Job</th><th>Client</th><th>Notes</th>
-        ${tab==="submission"?"<th>Move</th>":""}
-        <th>Delete</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${(data||[]).map(r=>`
+    <table class="table table-bordered">
+      <thead>
         <tr>
-          <td>
-            <input type="date" class="form-control form-control-sm"
-              value="${r.date?r.date.split("T")[0]:""}"
-              onchange="supabaseClient.from('${tab}')
-              .update({date:this.value})
-              .eq('id',${r.id})">
-          </td>
-          <td>${r.name||""}</td>
-          <td>${r.email||""}</td>
-          <td>${r.job||""}</td>
-          <td>${r.client||""}</td>
-          <td>
-            <textarea class="form-control form-control-sm"
-              onchange="updateNotes('${tab}',${r.id},this.value)">
-              ${r.notes||""}
-            </textarea>
-          </td>
-          ${tab==="submission"?`
-            <td>
-              <button class="btn btn-sm btn-info me-1"
-                onclick="copyToStage(${r.id},'interview')">Int</button>
-              <button class="btn btn-sm btn-success me-1"
-                onclick="copyToStage(${r.id},'placement')">Place</button>
-              <button class="btn btn-sm btn-dark"
-                onclick="copyToStage(${r.id},'start')">Start</button>
-            </td>`:""}
-          <td>
-            <button class="btn btn-sm btn-danger"
-              onclick="deleteRow('${tab}',${r.id})">X</button>
-          </td>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Job</th>
+          <th>Client</th>
+          <th>Notes</th>
+          ${tab==="submission" ? "<th>Move</th>" : ""}
+          <th>Delete</th>
         </tr>
-      `).join("")}
-    </tbody>
-  </table>`;
+      </thead>
+      <tbody>
+        ${(data||[]).map(r=>`
+          <tr>
+            <td>
+              <input type="date"
+                value="${r.date? r.date.split("T")[0]:""}"
+                onchange="supabaseClient.from('${tab}')
+                  .update({date:this.value})
+                  .eq('id',${r.id})">
+            </td>
+            <td>${r.name||""}</td>
+            <td>${r.email||""}</td>
+            <td>${r.job||""}</td>
+            <td>${r.client||""}</td>
+            <td>
+              <textarea class="form-control"
+                onchange="updateNotes('${tab}',${r.id},this.value)">
+                ${r.notes||""}
+              </textarea>
+            </td>
+            ${tab==="submission" ? `
+              <td>
+                <button class="btn btn-sm btn-info"
+                  onclick="copyBetweenStages('submission',${r.id},'interview')">Interview</button>
+                <button class="btn btn-sm btn-success"
+                  onclick="copyBetweenStages('submission',${r.id},'placement')">Placement</button>
+                <button class="btn btn-sm btn-dark"
+                  onclick="copyBetweenStages('submission',${r.id},'start')">Start</button>
+              </td>` : ""}
+            <td>
+              <button class="btn btn-sm btn-danger"
+                onclick="deleteRow('${tab}',${r.id})">Delete</button>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
 }
 
 
 
 /* ==========================================================
-   HOME MONTHLY REPORT
+   HOME + KPI
 ========================================================== */
 
 async function renderHome(){
 
-  const table=el("yearlyReportTable");
+  const table = el("yearlyReportTable");
   if(!table) return;
 
-  const year=new Date().getFullYear();
+  const year = new Date().getFullYear();
   const months=["Jan","Feb","Mar","Apr","May","Jun",
                 "Jul","Aug","Sep","Oct","Nov","Dec"];
 
-  const [sub,int,pla,sta]=await Promise.all([
+  const [sub,int,pla,sta] = await Promise.all([
     supabaseClient.from("submission").select("date"),
     supabaseClient.from("interview").select("date"),
     supabaseClient.from("placement").select("date"),
@@ -428,27 +454,22 @@ async function renderHome(){
         <td>${count(int.data,i)}</td>
         <td>${count(pla.data,i)}</td>
         <td>${count(sta.data,i)}</td>
-      </tr>`;
+      </tr>
+    `;
   });
 }
 
-
-
-/* ==========================================================
-   KPI
-========================================================== */
-
 async function updateKPIs(){
 
-  const sub=await supabaseClient.from("submission").select("*");
-  const int=await supabaseClient.from("interview").select("*");
-  const pla=await supabaseClient.from("placement").select("*");
-  const sta=await supabaseClient.from("start").select("*");
+  const sub = await supabaseClient.from("submission").select("*");
+  const int = await supabaseClient.from("interview").select("*");
+  const pla = await supabaseClient.from("placement").select("*");
+  const sta = await supabaseClient.from("start").select("*");
 
-  el("subCount").innerText=sub.data?.length||0;
-  el("intCount").innerText=int.data?.length||0;
-  el("placeCount").innerText=pla.data?.length||0;
-  el("startCount").innerText=sta.data?.length||0;
+  el("subCount").innerText = sub.data?.length || 0;
+  el("intCount").innerText = int.data?.length || 0;
+  el("placeCount").innerText = pla.data?.length || 0;
+  el("startCount").innerText = sta.data?.length || 0;
 
   renderHome();
 }
@@ -462,7 +483,6 @@ async function updateKPIs(){
 window.addEventListener("load",()=>{
 
   if(el("dailyTable")){
-
     checkLogin();
 
     loadJD();
