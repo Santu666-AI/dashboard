@@ -102,7 +102,7 @@ async function loadActiveJDs(){
 
   const { data } = await supabaseClient
     .from("jd")
-    .select("*")
+    .select("jdsubject")
     .eq("jdstatus","Active");
 
   const select = el("dailyJobSelect");
@@ -121,7 +121,7 @@ async function loadActiveJDs(){
 
 
 /* ==========================================================
-   CLIENT SUGGESTION (Manual typing allowed)
+   CLIENT SUGGESTION (Manual + Hint)
 ========================================================== */
 
 async function loadClients(){
@@ -170,7 +170,7 @@ function parseResume(text){
 
 
 /* ==========================================================
-   SAVE DAILY (DATE AUTO, NOT EDITABLE)
+   SAVE TO DAILY (AUTO CLEAR RESUME)
 ========================================================== */
 
 async function saveToDaily(){
@@ -190,14 +190,22 @@ async function saveToDaily(){
     notes: el("rpNotes").value
   };
 
-  const { error } = await supabaseClient
-    .from("daily")
-    .insert([row]);
+  const { error } = await supabaseClient.from("daily").insert([row]);
 
   if(error){
     alert(error.message);
     return;
   }
+
+  /* CLEAR RESUME FORM */
+  el("rpName").value="";
+  el("rpEmail").value="";
+  el("rpPhone").value="";
+  el("rpLocation").value="";
+  el("rpVisa").value="";
+  el("rpNotes").value="";
+  el("dailyJobSelect").value="";
+  el("dailyClientInput").value="";
 
   loadDaily();
 }
@@ -254,10 +262,7 @@ async function deleteRow(table,id){
 
   if(!confirm("Delete entry?")) return;
 
-  await supabaseClient
-    .from(table)
-    .delete()
-    .eq("id",id);
+  await supabaseClient.from(table).delete().eq("id",id);
 
   if(table==="daily") loadDaily();
   else if(table==="jd"){
@@ -276,8 +281,7 @@ async function deleteRow(table,id){
 ========================================================== */
 
 async function updateNotes(table,id,value){
-  await supabaseClient
-    .from(table)
+  await supabaseClient.from(table)
     .update({notes:value})
     .eq("id",id);
 }
@@ -337,7 +341,7 @@ async function loadDaily(){
 
 
 /* ==========================================================
-   LOAD STAGES (DATE EDITABLE HERE)
+   LOAD STAGES (DATE EDITABLE)
 ========================================================== */
 
 async function loadStage(tab){
@@ -416,6 +420,8 @@ async function renderHome(){
   if(!table) return;
 
   const year = new Date().getFullYear();
+  const months=["Jan","Feb","Mar","Apr","May","Jun",
+                "Jul","Aug","Sep","Oct","Nov","Dec"];
 
   const [sub,int,pla,sta] = await Promise.all([
     supabaseClient.from("submission").select("date"),
@@ -423,9 +429,6 @@ async function renderHome(){
     supabaseClient.from("placement").select("date"),
     supabaseClient.from("start").select("date")
   ]);
-
-  const months=["Jan","Feb","Mar","Apr","May","Jun",
-                "Jul","Aug","Sep","Oct","Nov","Dec"];
 
   function count(arr,i){
     return (arr||[]).filter(r=>{
