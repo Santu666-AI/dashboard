@@ -42,7 +42,7 @@ function logout(){
 
 
 /* ==========================================================
-   PROFESSIONAL RESUME PARSER (CORRECT FIELD MAPPING)
+   ADVANCED RESUME PARSER (CORRECT FIELD MAPPING)
 ========================================================== */
 
 function parseResume(text){
@@ -54,32 +54,42 @@ function parseResume(text){
     .filter(l=>l.length>0);
 
   /* EMAIL */
-  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if(email) el("rpEmail").value=email[0];
+  const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if(emailMatch){
+    el("rpEmail").value=emailMatch[0];
+  }
 
-  /* PHONE */
-  const phone = text.match(/\+?\d{1,3}?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-  if(phone) el("rpPhone").value=phone[0];
+  /* PHONE (handles +1, (), spaces, dashes etc) */
+  const phoneMatch = text.match(/(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
+  if(phoneMatch){
+    el("rpPhone").value=phoneMatch[0];
+  }
 
-  /* NAME = FIRST CLEAN LINE */
-  if(lines.length>0){
-    const first=lines[0];
-    if(!first.includes("@") && !first.match(/\d{3}/) && first.length<40){
-      el("rpName").value=first;
+  /* NAME (first clean readable line) */
+  for(let line of lines){
+    if(
+      !line.includes("@") &&
+      !line.match(/\d{3}/) &&
+      line.length < 40
+    ){
+      el("rpName").value=line;
+      break;
     }
   }
 
-  /* LOCATION */
-  const location=text.match(/([A-Za-z]+,\s?[A-Z]{2}|United States|USA)/i);
-  if(location){
-    el("rpLocation").value=location[0];
+  /* LOCATION (City, State OR USA formats) */
+  const locationMatch = text.match(
+    /([A-Z][a-z]+,\s?[A-Z]{2}|[A-Z][a-z]+\s[A-Z][a-z]+,\s?[A-Z]{2}|United States|USA)/i
+  );
+  if(locationMatch){
+    el("rpLocation").value=locationMatch[0];
   }
 }
 
 
 
 /* ==========================================================
-   SAVE TO DAILY (DO NOT SAVE FULL RESUME INTO NOTES)
+   SAVE TO DAILY (NO RESUME TEXT SAVED)
 ========================================================== */
 
 async function saveToDaily(){
@@ -96,17 +106,19 @@ async function saveToDaily(){
     client: el("dailyClientInput").value,
     location: el("rpLocation").value,
     visa: el("rpVisa").value,
-    notes: ""   // 🔥 DO NOT SAVE FULL RESUME
+    notes: ""   // Never save resume body
   };
 
   const {error}=await supabaseClient.from("daily").insert([row]);
   if(error){ alert(error.message); return; }
 
-  /* CLEAR RESUME TAB COMPLETELY */
+  /* CLEAR RESUME FORM */
   [
     "rpName","rpEmail","rpPhone","rpLocation",
     "rpVisa","rpNotes","dailyJobSelect","dailyClientInput"
-  ].forEach(id=> el(id).value="");
+  ].forEach(id=>{
+    if(el(id)) el(id).value="";
+  });
 
   loadDaily();
 }
@@ -156,7 +168,19 @@ async function deleteRow(table,id){
 
 
 /* ==========================================================
-   LOAD DAILY (SMALL CLEAN ACTION BUTTONS)
+   UPDATE NOTES
+========================================================== */
+
+async function updateNotes(table,id,value){
+  await supabaseClient.from(table)
+    .update({notes:value})
+    .eq("id",id);
+}
+
+
+
+/* ==========================================================
+   LOAD DAILY (CLEAN BUTTONS, NO OVERLAP)
 ========================================================== */
 
 async function loadDaily(){
@@ -208,7 +232,7 @@ async function loadDaily(){
 
 
 /* ==========================================================
-   LOAD STAGES (SMALL BUTTONS + CLEAN LABELS)
+   LOAD STAGES
 ========================================================== */
 
 async function loadStage(tab){
@@ -269,18 +293,6 @@ async function loadStage(tab){
       </tbody>
     </table>
   `;
-}
-
-
-
-/* ==========================================================
-   UPDATE NOTES
-========================================================== */
-
-async function updateNotes(table,id,value){
-  await supabaseClient.from(table)
-    .update({notes:value})
-    .eq("id",id);
 }
 
 
