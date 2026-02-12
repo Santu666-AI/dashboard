@@ -11,6 +11,22 @@ const now = () => new Date().toISOString();
 
 
 /* ================================
+   LOGIN
+================================ */
+
+function checkLogin(){
+  if(localStorage.getItem("logged") !== "yes"){
+    window.location.href="index.html";
+  }
+}
+
+function logout(){
+  localStorage.removeItem("logged");
+  window.location.href="index.html";
+}
+
+
+/* ================================
    LOAD ACTIVE JDs
 ================================ */
 
@@ -24,11 +40,71 @@ async function loadActiveJDs(){
   const select = el("dailyJobSelect");
   if(!select) return;
 
-  select.innerHTML = `<option value="">Select Job</option>`;
+  select.innerHTML=`<option value="">Select Active Requirement</option>`;
 
   (data||[]).forEach(j=>{
-    select.innerHTML += `<option value="${j.jdsubject}">${j.jdsubject}</option>`;
+    select.innerHTML+=`<option value="${j.jdsubject}">
+      ${j.jdsubject}
+    </option>`;
   });
+}
+
+
+/* ================================
+   CLIENT MASTER
+================================ */
+
+async function loadClients(){
+
+  const { data } = await supabaseClient
+    .from("clients")
+    .select("*")
+    .order("client_name");
+
+  const select = el("dailyClientSelect");
+  if(!select) return;
+
+  select.innerHTML=`<option value="">Select Client</option>`;
+
+  (data||[]).forEach(c=>{
+    select.innerHTML+=`<option value="${c.client_name}">
+      ${c.client_name}
+    </option>`;
+  });
+}
+
+async function addClient(){
+
+  const name = el("newClientInput").value.trim();
+  if(!name) return alert("Enter client name");
+
+  const { error } = await supabaseClient
+    .from("clients")
+    .insert([{client_name:name}]);
+
+  if(error){
+    alert("Client may already exist");
+    return;
+  }
+
+  el("newClientInput").value="";
+  loadClients();
+}
+
+
+/* ================================
+   RESUME PARSER
+================================ */
+
+function parseResume(text){
+
+  if(!text) return;
+
+  const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if(emailMatch) el("rpEmail").value=emailMatch[0];
+
+  const phoneMatch = text.match(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/);
+  if(phoneMatch) el("rpPhone").value=phoneMatch[0];
 }
 
 
@@ -38,57 +114,39 @@ async function loadActiveJDs(){
 
 async function saveToDaily(){
 
+  if(!el("dailyJobSelect").value)
+    return alert("Select Active Requirement");
+
+  if(!el("dailyClientSelect").value)
+    return alert("Select Client");
+
   const row = {
     date: now(),
     name: el("rpName").value,
     email: el("rpEmail").value,
     phone: el("rpPhone").value,
     job: el("dailyJobSelect").value,
-    client: el("dailyClientInput").value,
-    source: "",
+    client: el("dailyClientSelect").value,
     location: el("rpLocation").value,
     visa: el("rpVisa").value,
-    followup: "",
     notes: el("rpNotes").value
   };
 
-  const { error } = await supabaseClient.from("daily").insert([row]);
-  if(error){ alert(error.message); return; }
+  const { error } = await supabaseClient
+    .from("daily")
+    .insert([row]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
 
   loadDaily();
 }
 
 
 /* ================================
-   COMMON INSERT
-================================ */
-
-async function insertToTarget(data,target){
-
-  let row = {
-    date: data.date,
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    job: data.job,
-    client: data.client,
-    location: data.location,
-    visa: data.visa,
-    notes: data.notes
-  };
-
-  if(target==="proposal") row.program_name="";
-  if(target==="interview") row.interview_scheduled_on=null;
-  if(target==="start") row.start_date=null;
-
-  await supabaseClient.from(target).insert([row]);
-  loadStage(target);
-  updateKPIs();
-}
-
-
-/* ================================
-   COPY
+   COPY PIPELINE
 ================================ */
 
 async function copyToStage(id,target){
@@ -99,7 +157,14 @@ async function copyToStage(id,target){
     .eq("id",id)
     .single();
 
-  if(data) insertToTarget(data,target);
+  if(!data) return;
+
+  delete data.id;
+
+  await supabaseClient.from(target).insert([data]);
+
+  loadStage(target);
+  updateKPIs();
 }
 
 async function copyBetweenStages(source,id,target){
@@ -110,7 +175,14 @@ async function copyBetweenStages(source,id,target){
     .eq("id",id)
     .single();
 
-  if(data) insertToTarget(data,target);
+  if(!data) return;
+
+  delete data.id;
+
+  await supabaseClient.from(target).insert([data]);
+
+  loadStage(target);
+  updateKPIs();
 }
 
 
@@ -119,24 +191,37 @@ async function copyBetweenStages(source,id,target){
 ================================ */
 
 async function deleteRow(table,id){
+
   if(!confirm("Delete entry?")) return;
-  await supabaseClient.from(table).delete().eq("id",id);
+
+  await supabaseClient
+    .from(table)
+    .delete()
+    .eq("id",id);
+
   if(table==="daily") loadDaily();
   else loadStage(table);
+
   updateKPIs();
 }
 
 
 /* ================================
-   UPDATE DATE
+   UPDATE FIELDS
 ================================ */
 
 async function updateDate(table,id,value){
-  await supabaseClient.from(table).update({date:value}).eq("id",id);
+  await supabaseClient
+    .from(table)
+    .update({date:value})
+    .eq("id",id);
 }
 
 async function updateNotes(table,id,value){
-  await supabaseClient.from(table).update({notes:value}).eq("id",id);
+  await supabaseClient
+    .from(table)
+    .update({notes:value})
+    .eq("id",id);
 }
 
 
@@ -152,6 +237,8 @@ async function loadDaily(){
     .order("id",{ascending:false});
 
   const table = el("dailyTable");
+  if(!table) return;
+
   table.innerHTML="";
 
   (data||[]).forEach((r,i)=>{
@@ -159,8 +246,11 @@ async function loadDaily(){
     table.innerHTML+=`
     <tr>
       <td>${i+1}</td>
-      <td><input type="date" value="${r.date? r.date.split("T")[0]:""}"
-          onchange="updateDate('daily',${r.id},this.value)"></td>
+      <td>
+        <input type="date"
+        value="${r.date? r.date.split("T")[0]:""}"
+        onchange="updateDate('daily',${r.id},this.value)">
+      </td>
       <td>${r.name||""}</td>
       <td>${r.email||""}</td>
       <td>${r.phone||""}</td>
@@ -170,7 +260,7 @@ async function loadDaily(){
       <td>${r.visa||""}</td>
       <td>
         <textarea onchange="updateNotes('daily',${r.id},this.value)">
-          ${r.notes||""}
+        ${r.notes||""}
         </textarea>
       </td>
       <td>
@@ -197,14 +287,19 @@ async function loadStage(tab){
     .order("id",{ascending:false});
 
   const container = el(tab);
+  if(!container) return;
+
   container.innerHTML=`
   <table class="table table-bordered">
     <thead>
       <tr>
-        <th>Date</th><th>Name</th><th>Email</th>
-        <th>Job</th><th>Client</th>
+        <th>Date</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Job</th>
+        <th>Client</th>
         <th>Notes</th>
-        ${tab==="submission"?"<th>Action</th>":""}
+        ${tab==="submission"?"<th>Move</th>":""}
         <th>Delete</th>
       </tr>
     </thead>
@@ -212,16 +307,18 @@ async function loadStage(tab){
       ${
         (data||[]).map(r=>`
         <tr>
-          <td><input type="date"
-            value="${r.date? r.date.split("T")[0]:""}"
-            onchange="updateDate('${tab}',${r.id},this.value)"></td>
+          <td>
+            <input type="date"
+              value="${r.date? r.date.split("T")[0]:""}"
+              onchange="updateDate('${tab}',${r.id},this.value)">
+          </td>
           <td>${r.name||""}</td>
           <td>${r.email||""}</td>
           <td>${r.job||""}</td>
           <td>${r.client||""}</td>
           <td>
             <textarea onchange="updateNotes('${tab}',${r.id},this.value)">
-              ${r.notes||""}
+            ${r.notes||""}
             </textarea>
           </td>
           ${
@@ -233,7 +330,9 @@ async function loadStage(tab){
               </td>`
             : ""
           }
-          <td><button onclick="deleteRow('${tab}',${r.id})">Delete</button></td>
+          <td>
+            <button onclick="deleteRow('${tab}',${r.id})">Delete</button>
+          </td>
         </tr>
         `).join("")
       }
@@ -265,11 +364,15 @@ async function updateKPIs(){
 ================================ */
 
 window.addEventListener("load",()=>{
+
   loadActiveJDs();
+  loadClients();
+
   loadDaily();
   loadStage("submission");
   loadStage("proposal");
   loadStage("interview");
   loadStage("placement");
   loadStage("start");
+
 });
