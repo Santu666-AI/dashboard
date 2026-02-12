@@ -13,7 +13,7 @@ const now = () => new Date().toISOString();
 
 
 /* ==========================================================
-   LOGIN SYSTEM
+   LOGIN
 ========================================================== */
 
 function login(){
@@ -42,7 +42,7 @@ function logout(){
 
 
 /* ==========================================================
-   JD MANAGEMENT
+   JD MANAGEMENT (FIXED)
 ========================================================== */
 
 async function saveJD(){
@@ -56,7 +56,7 @@ async function saveJD(){
   };
 
   const {error} = await supabaseClient.from("jd").insert([row]);
-  if(error){ alert(error.message); return; }
+  if(error){ console.error(error); alert(error.message); return; }
 
   el("jdNvr").value="";
   el("jdSubject").value="";
@@ -69,12 +69,14 @@ async function saveJD(){
 async function loadJD(){
 
   const table = el("jdTable");
-  if(!table) return;
+  if(!table){ console.log("jdTable not found"); return; }
 
-  const {data} = await supabaseClient
+  const {data,error} = await supabaseClient
     .from("jd")
     .select("*")
     .order("id",{ascending:false});
+
+  if(error){ console.error(error); return; }
 
   table.innerHTML="";
 
@@ -96,10 +98,12 @@ async function loadJD(){
 
 async function loadActiveJDs(){
 
-  const {data} = await supabaseClient
+  const {data,error} = await supabaseClient
     .from("jd")
     .select("jdsubject")
     .eq("jdstatus","Active");
+
+  if(error){ console.error(error); return; }
 
   const select = el("dailyJobSelect");
   if(!select) return;
@@ -117,72 +121,7 @@ async function loadActiveJDs(){
 
 
 /* ==========================================================
-   CLIENT AUTO SUGGEST
-========================================================== */
-
-async function loadClients(){
-
-  const {data} = await supabaseClient
-    .from("clients")
-    .select("*")
-    .order("client_name");
-
-  const input = el("dailyClientInput");
-  if(!input) return;
-
-  input.setAttribute("list","clientList");
-
-  let datalist = document.getElementById("clientList");
-  if(!datalist){
-    datalist=document.createElement("datalist");
-    datalist.id="clientList";
-    document.body.appendChild(datalist);
-  }
-
-  datalist.innerHTML="";
-
-  (data||[]).forEach(c=>{
-    datalist.innerHTML+=`<option value="${c.client_name}">`;
-  });
-}
-
-
-
-/* ==========================================================
-   PROFESSIONAL RESUME PARSER (FIXED)
-========================================================== */
-
-function parseResume(text){
-
-  if(!text) return;
-
-  const lines = text.split("\n")
-    .map(l=>l.trim())
-    .filter(l=>l.length>0);
-
-  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if(email) el("rpEmail").value=email[0];
-
-  const phone = text.match(/\+?\d[\d\s\-()]{8,15}\d/);
-  if(phone) el("rpPhone").value=phone[0];
-
-  if(lines.length>0){
-    const first=lines[0];
-    if(!first.includes("@") && !first.match(/\d{3}/) && first.length<40){
-      el("rpName").value=first;
-    }
-  }
-
-  const location=text.match(/([A-Za-z\s]+,\s?[A-Za-z\s]+|United States|USA)/i);
-  if(location){
-    el("rpLocation").value=location[0];
-  }
-}
-
-
-
-/* ==========================================================
-   SAVE TO DAILY
+   SAVE DAILY
 ========================================================== */
 
 async function saveToDaily(){
@@ -203,56 +142,9 @@ async function saveToDaily(){
   };
 
   const {error}=await supabaseClient.from("daily").insert([row]);
-  if(error){ alert(error.message); return; }
-
-  ["rpName","rpEmail","rpPhone","rpLocation",
-   "rpVisa","rpNotes","dailyJobSelect","dailyClientInput"]
-  .forEach(id=> el(id).value="");
+  if(error){ console.error(error); alert(error.message); return; }
 
   loadDaily();
-}
-
-
-
-/* ==========================================================
-   COPY PIPELINE
-========================================================== */
-
-async function copyToStage(id,target){
-
-  const {data}=await supabaseClient
-    .from("daily")
-    .select("*")
-    .eq("id",id)
-    .single();
-
-  if(!data) return;
-
-  delete data.id;
-
-  await supabaseClient.from(target).insert([data]);
-
-  loadStage(target);
-  updateKPIs();
-}
-
-
-
-/* ==========================================================
-   DELETE
-========================================================== */
-
-async function deleteRow(table,id){
-
-  if(!confirm("Delete entry?")) return;
-
-  await supabaseClient.from(table).delete().eq("id",id);
-
-  if(table==="daily") loadDaily();
-  else if(table==="jd"){ loadJD(); loadActiveJDs(); }
-  else loadStage(table);
-
-  updateKPIs();
 }
 
 
@@ -264,12 +156,14 @@ async function deleteRow(table,id){
 async function loadDaily(){
 
   const table=el("dailyTable");
-  if(!table) return;
+  if(!table){ console.log("dailyTable not found"); return; }
 
-  const {data}=await supabaseClient
+  const {data,error}=await supabaseClient
     .from("daily")
     .select("*")
     .order("id",{ascending:false});
+
+  if(error){ console.error(error); return; }
 
   table.innerHTML="";
 
@@ -303,18 +197,45 @@ async function loadDaily(){
 
 
 /* ==========================================================
-   LOAD STAGES (ALL COLUMNS RESTORED)
+   COPY TO STAGE (FIXED)
+========================================================== */
+
+async function copyToStage(id,target){
+
+  const {data,error}=await supabaseClient
+    .from("daily")
+    .select("*")
+    .eq("id",id)
+    .single();
+
+  if(error){ console.error(error); return; }
+  if(!data) return;
+
+  delete data.id;
+
+  await supabaseClient.from(target).insert([data]);
+
+  loadStage(target);
+  updateKPIs();
+}
+
+
+
+/* ==========================================================
+   LOAD STAGES (FULL FIXED)
 ========================================================== */
 
 async function loadStage(tab){
 
   const container=el(tab);
-  if(!container) return;
+  if(!container){ console.log(tab+" container missing"); return; }
 
-  const {data}=await supabaseClient
+  const {data,error}=await supabaseClient
     .from(tab)
     .select("*")
     .order("id",{ascending:false});
+
+  if(error){ console.error(error); return; }
 
   container.innerHTML=`
     <table class="table table-bordered">
@@ -360,45 +281,19 @@ async function loadStage(tab){
 
 
 /* ==========================================================
-   HOME MONTHLY REPORT
+   DELETE
 ========================================================== */
 
-async function renderHome(){
+async function deleteRow(table,id){
+  if(!confirm("Delete entry?")) return;
 
-  const table=el("yearlyReportTable");
-  if(!table) return;
+  await supabaseClient.from(table).delete().eq("id",id);
 
-  const year=new Date().getFullYear();
-  const months=["Jan","Feb","Mar","Apr","May","Jun",
-                "Jul","Aug","Sep","Oct","Nov","Dec"];
+  if(table==="daily") loadDaily();
+  else if(table==="jd") loadJD();
+  else loadStage(table);
 
-  const [sub,int,pla,sta]=await Promise.all([
-    supabaseClient.from("submission").select("date"),
-    supabaseClient.from("interview").select("date"),
-    supabaseClient.from("placement").select("date"),
-    supabaseClient.from("start").select("date")
-  ]);
-
-  function count(arr,i){
-    return (arr||[]).filter(r=>{
-      if(!r.date) return false;
-      const d=new Date(r.date);
-      return d.getFullYear()===year && d.getMonth()===i;
-    }).length;
-  }
-
-  table.innerHTML="";
-
-  months.forEach((m,i)=>{
-    table.innerHTML+=`
-      <tr>
-        <td><b>${m}</b></td>
-        <td>${count(sub.data,i)}</td>
-        <td>${count(int.data,i)}</td>
-        <td>${count(pla.data,i)}</td>
-        <td>${count(sta.data,i)}</td>
-      </tr>`;
-  });
+  updateKPIs();
 }
 
 
@@ -414,12 +309,10 @@ async function updateKPIs(){
   const pla=await supabaseClient.from("placement").select("*");
   const sta=await supabaseClient.from("start").select("*");
 
-  el("subCount").innerText=sub.data?.length||0;
-  el("intCount").innerText=int.data?.length||0;
-  el("placeCount").innerText=pla.data?.length||0;
-  el("startCount").innerText=sta.data?.length||0;
-
-  renderHome();
+  if(el("subCount")) el("subCount").innerText=sub.data?.length||0;
+  if(el("intCount")) el("intCount").innerText=int.data?.length||0;
+  if(el("placeCount")) el("placeCount").innerText=pla.data?.length||0;
+  if(el("startCount")) el("startCount").innerText=sta.data?.length||0;
 }
 
 
@@ -430,21 +323,17 @@ async function updateKPIs(){
 
 window.addEventListener("load",()=>{
 
-  if(el("dailyTable")){
+  checkLogin();
 
-    checkLogin();
+  loadJD();
+  loadActiveJDs();
+  loadDaily();
 
-    loadJD();
-    loadActiveJDs();
-    loadClients();
+  loadStage("submission");
+  loadStage("proposal");
+  loadStage("interview");
+  loadStage("placement");
+  loadStage("start");
 
-    loadDaily();
-    loadStage("submission");
-    loadStage("proposal");
-    loadStage("interview");
-    loadStage("placement");
-    loadStage("start");
-
-    renderHome();
-  }
+  updateKPIs();
 });
