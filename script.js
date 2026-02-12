@@ -4,23 +4,21 @@
 
 const SUPABASE_URL = "https://jpmmciputroyyrjmyeya.supabase.co";
 const SUPABASE_KEY = "sb_publishable_afZSYp99Z_Xwb5Wl_W7J8g_m7fPHPTE";
-
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
 /* ================================
-   LOGIN SYSTEM (WORKS ON GITHUB)
+   LOGIN SYSTEM
 ================================ */
 
 function login(){
-  const u = document.getElementById("username").value.trim();
-  const p = document.getElementById("password").value.trim();
+  const u = el("username").value.trim();
+  const p = el("password").value.trim();
 
-  // 👉 You can change username/password here
   if(u === "admin" && p === "admin"){
     localStorage.setItem("logged","yes");
     window.location.href = "dashboard.html";
-  }else{
+  } else {
     alert("Invalid Username or Password");
   }
 }
@@ -46,21 +44,7 @@ const now = () => new Date().toISOString();
 
 
 /* ================================
-   RESUME PARSER
-================================ */
-
-function parseResume(t){
-  if(!t || t.length < 10) return;
-
-  const e = t.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if(e && el("rpEmail") && !el("rpEmail").value){
-    el("rpEmail").value = e[0];
-  }
-}
-
-
-/* ================================
-   SAVE TO DAILY (SUPABASE)
+   SAVE TO DAILY
 ================================ */
 
 async function saveToDaily(){
@@ -84,7 +68,7 @@ async function saveToDaily(){
     .insert([row]);
 
   if(error){
-    alert("Supabase Insert Error");
+    alert(error.message);
     console.error(error);
     return;
   }
@@ -94,7 +78,7 @@ async function saveToDaily(){
 
 
 /* ================================
-   LOAD DAILY TABLE
+   LOAD DAILY
 ================================ */
 
 async function loadDaily(){
@@ -108,13 +92,13 @@ async function loadDaily(){
     .order("id",{ascending:false});
 
   if(error){
-    console.log(error);
+    console.error(error);
     return;
   }
 
   table.innerHTML = "";
 
-  data.forEach((r,i)=>{
+  (data||[]).forEach((r,i)=>{
 
     table.innerHTML += `
     <tr>
@@ -131,8 +115,11 @@ async function loadDaily(){
       <td>${r.followup||""}</td>
       <td>${r.notes||""}</td>
       <td>
-        <button onclick="moveStage(${r.id},'submission')">Submission</button>
-        <button onclick="moveStage(${r.id},'proposal')">Proposal</button>
+        <button onclick="copyToStage(${r.id},'submission')">Submission</button>
+        <button onclick="copyToStage(${r.id},'proposal')">Proposal</button>
+        <button onclick="copyToStage(${r.id},'interview')">Interview</button>
+        <button onclick="copyToStage(${r.id},'placement')">Placement</button>
+        <button onclick="copyToStage(${r.id},'start')">Start</button>
       </td>
     </tr>`;
   });
@@ -142,31 +129,63 @@ async function loadDaily(){
 
 
 /* ================================
-   MOVE BETWEEN STAGES
+   COPY TO STAGE (NOT MOVE)
 ================================ */
 
-async function moveStage(id,table){
+async function copyToStage(id, target){
 
-  const { data } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from("daily")
     .select("*")
-    .eq("id",id)
+    .eq("id", id)
     .single();
 
-  if(!data) return;
+  if(error || !data){
+    console.error(error);
+    return;
+  }
 
-  delete data.id;
+  let row = {
+    date: data.date,
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    job: data.job,
+    client: data.client,
+    location: data.location,
+    visa: data.visa,
+    notes: data.notes
+  };
 
-  await supabaseClient.from(table).insert([data]);
+  if(target === "proposal"){
+    row.program_name = "";
+  }
 
-  loadDaily();
-  loadStage("submission");
-  loadStage("proposal");
+  if(target === "interview"){
+    row.interview_scheduled_on = null;
+  }
+
+  if(target === "start"){
+    row.start_date = null;
+  }
+
+  const { error: insertError } = await supabaseClient
+    .from(target)
+    .insert([row]);
+
+  if(insertError){
+    alert(insertError.message);
+    console.error(insertError);
+    return;
+  }
+
+  loadStage(target);
+  updateKPIs();
 }
 
 
 /* ================================
-   LOAD OTHER TABS
+   LOAD STAGE TABLES
 ================================ */
 
 async function loadStage(tab){
@@ -186,6 +205,27 @@ async function loadStage(tab){
     .select("*")
     .order("id",{ascending:false});
 
+  let extraHeader = "";
+  let extraCell = "";
+
+  if(tab === "proposal"){
+    extraHeader = "<th>Program</th>";
+    extraCell = r => `<td><input type="text" value="${r.program_name||""}" 
+                     onchange="updateProposal(${r.id}, this.value)"></td>`;
+  }
+
+  if(tab === "interview"){
+    extraHeader = "<th>Interview Date</th>";
+    extraCell = r => `<td><input type="date" value="${r.interview_scheduled_on||""}" 
+                     onchange="updateInterviewDate(${r.id}, this.value)"></td>`;
+  }
+
+  if(tab === "start"){
+    extraHeader = "<th>Start Date</th>";
+    extraCell = r => `<td><input type="date" value="${r.start_date||""}" 
+                     onchange="updateStartDate(${r.id}, this.value)"></td>`;
+  }
+
   container.innerHTML = `
   <table class="table table-bordered">
     <thead>
@@ -196,6 +236,7 @@ async function loadStage(tab){
         <th>Phone</th>
         <th>Job</th>
         <th>Client</th>
+        ${extraHeader}
         <th>Notes</th>
       </tr>
     </thead>
@@ -209,6 +250,7 @@ async function loadStage(tab){
             <td>${r.phone||""}</td>
             <td>${r.job||""}</td>
             <td>${r.client||""}</td>
+            ${extraCell ? extraCell(r) : ""}
             <td>${r.notes||""}</td>
           </tr>
         `).join("")
@@ -219,7 +261,30 @@ async function loadStage(tab){
 
 
 /* ================================
-   KPI + HOME MONTHLY
+   UPDATE FUNCTIONS
+================================ */
+
+async function updateProposal(id,value){
+  await supabaseClient.from("proposal")
+    .update({ program_name:value })
+    .eq("id",id);
+}
+
+async function updateInterviewDate(id,value){
+  await supabaseClient.from("interview")
+    .update({ interview_scheduled_on:value })
+    .eq("id",id);
+}
+
+async function updateStartDate(id,value){
+  await supabaseClient.from("start")
+    .update({ start_date:value })
+    .eq("id",id);
+}
+
+
+/* ================================
+   KPI
 ================================ */
 
 async function updateKPIs(){
@@ -233,49 +298,17 @@ async function updateKPIs(){
   if(el("intCount")) el("intCount").innerText = int.data?.length || 0;
   if(el("placeCount")) el("placeCount").innerText = pla.data?.length || 0;
   if(el("startCount")) el("startCount").innerText = sta.data?.length || 0;
-
-  renderHome(sub.data||[],int.data||[],pla.data||[],sta.data||[]);
-}
-
-
-function renderHome(sub,int,pla,sta){
-
-  const tb = el("yearlyReportTable");
-  if(!tb) return;
-
-  const year = new Date().getFullYear();
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
-  tb.innerHTML="";
-
-  const count = (arr,m)=>arr.filter(r=>{
-    const d = new Date(r.date);
-    return d.getFullYear()===year && d.getMonth()===m;
-  }).length;
-
-  months.forEach((m,i)=>{
-    tb.innerHTML+=`
-    <tr>
-      <td><b>${m}</b></td>
-      <td>${count(sub,i)}</td>
-      <td>${count(int,i)}</td>
-      <td>${count(pla,i)}</td>
-      <td>${count(sta,i)}</td>
-    </tr>`;
-  });
 }
 
 
 /* ================================
-   INIT DASHBOARD
+   INIT
 ================================ */
 
 window.addEventListener("load",()=>{
 
-  // only run on dashboard page
   if(el("dailyTable")){
     checkLogin();
-
     loadDaily();
     loadStage("submission");
     loadStage("proposal");
