@@ -42,7 +42,7 @@ function logout(){
 
 
 /* ==========================================================
-   ADVANCED RESUME PARSER (CORRECT FIELD MAPPING)
+   RESUME PARSER (CORPORATE ACCURATE VERSION)
 ========================================================== */
 
 function parseResume(text){
@@ -53,43 +53,33 @@ function parseResume(text){
     .map(l=>l.trim())
     .filter(l=>l.length>0);
 
-  /* EMAIL */
+  // EMAIL
   const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if(emailMatch){
-    el("rpEmail").value=emailMatch[0];
-  }
+  if(emailMatch) el("rpEmail").value = emailMatch[0];
 
-  /* PHONE (handles +1, (), spaces, dashes etc) */
-  const phoneMatch = text.match(/(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
-  if(phoneMatch){
-    el("rpPhone").value=phoneMatch[0];
-  }
+  // PHONE
+  const phoneMatch = text.match(/\+?\d{1,3}?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+  if(phoneMatch) el("rpPhone").value = phoneMatch[0];
 
-  /* NAME (first clean readable line) */
-  for(let line of lines){
-    if(
-      !line.includes("@") &&
-      !line.match(/\d{3}/) &&
-      line.length < 40
-    ){
-      el("rpName").value=line;
-      break;
+  // NAME (First clean short line without numbers/email)
+  if(lines.length>0){
+    const firstLine = lines[0];
+    if(!firstLine.match(/\d/) && !firstLine.includes("@") && firstLine.length < 40){
+      el("rpName").value = firstLine;
     }
   }
 
-  /* LOCATION (City, State OR USA formats) */
-  const locationMatch = text.match(
-    /([A-Z][a-z]+,\s?[A-Z]{2}|[A-Z][a-z]+\s[A-Z][a-z]+,\s?[A-Z]{2}|United States|USA)/i
-  );
+  // LOCATION
+  const locationMatch = text.match(/([A-Za-z\s]+,\s?[A-Z]{2}|United States|USA)/i);
   if(locationMatch){
-    el("rpLocation").value=locationMatch[0];
+    el("rpLocation").value = locationMatch[0];
   }
 }
 
 
 
 /* ==========================================================
-   SAVE TO DAILY (NO RESUME TEXT SAVED)
+   SAVE TO DAILY (NO RESUME STORED IN NOTES)
 ========================================================== */
 
 async function saveToDaily(){
@@ -97,7 +87,7 @@ async function saveToDaily(){
   if(!el("dailyJobSelect").value)
     return alert("Select Active Requirement");
 
-  const row={
+  const row = {
     date: now(),
     name: el("rpName").value,
     email: el("rpEmail").value,
@@ -106,19 +96,17 @@ async function saveToDaily(){
     client: el("dailyClientInput").value,
     location: el("rpLocation").value,
     visa: el("rpVisa").value,
-    notes: ""   // Never save resume body
+    notes: ""
   };
 
-  const {error}=await supabaseClient.from("daily").insert([row]);
+  const { error } = await supabaseClient.from("daily").insert([row]);
   if(error){ alert(error.message); return; }
 
-  /* CLEAR RESUME FORM */
+  // CLEAR RESUME FORM
   [
     "rpName","rpEmail","rpPhone","rpLocation",
     "rpVisa","rpNotes","dailyJobSelect","dailyClientInput"
-  ].forEach(id=>{
-    if(el(id)) el(id).value="";
-  });
+  ].forEach(id => { if(el(id)) el(id).value=""; });
 
   loadDaily();
 }
@@ -131,7 +119,7 @@ async function saveToDaily(){
 
 async function copyToStage(id,target){
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from("daily")
     .select("*")
     .eq("id",id)
@@ -180,15 +168,15 @@ async function updateNotes(table,id,value){
 
 
 /* ==========================================================
-   LOAD DAILY (CLEAN BUTTONS, NO OVERLAP)
+   LOAD DAILY
 ========================================================== */
 
 async function loadDaily(){
 
-  const table=el("dailyTable");
+  const table = el("dailyTable");
   if(!table) return;
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from("daily")
     .select("*")
     .order("id",{ascending:false});
@@ -232,15 +220,15 @@ async function loadDaily(){
 
 
 /* ==========================================================
-   LOAD STAGES
+   LOAD STAGES (ALL TABS FIXED)
 ========================================================== */
 
 async function loadStage(tab){
 
-  const container=el(tab);
+  const container = el(tab);
   if(!container) return;
 
-  const {data}=await supabaseClient
+  const { data } = await supabaseClient
     .from(tab)
     .select("*")
     .order("id",{ascending:false});
@@ -249,9 +237,15 @@ async function loadStage(tab){
     <table class="table table-bordered">
       <thead>
         <tr>
-          <th>Date</th><th>Name</th><th>Email</th>
-          <th>Job</th><th>Client</th><th>Notes</th>
-          ${tab==="submission"?"<th>Move</th>":""}
+          <th>Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Job</th>
+          <th>Client</th>
+          <th>Location</th>
+          <th>Notes</th>
+          ${tab==="submission" ? "<th>Move</th>" : ""}
           <th>Delete</th>
         </tr>
       </thead>
@@ -262,13 +256,15 @@ async function loadStage(tab){
               <input type="date" class="form-control form-control-sm"
                 value="${r.date?r.date.split("T")[0]:""}"
                 onchange="supabaseClient.from('${tab}')
-                .update({date:this.value})
-                .eq('id',${r.id})">
+                  .update({date:this.value})
+                  .eq('id',${r.id})">
             </td>
             <td>${r.name||""}</td>
             <td>${r.email||""}</td>
+            <td>${r.phone||""}</td>
             <td>${r.job||""}</td>
             <td>${r.client||""}</td>
+            <td>${r.location||""}</td>
             <td>
               <textarea class="form-control form-control-sm"
                 onchange="updateNotes('${tab}',${r.id},this.value)">
@@ -298,20 +294,38 @@ async function loadStage(tab){
 
 
 /* ==========================================================
-   KPI + HOME
+   KPI
 ========================================================== */
 
 async function updateKPIs(){
 
-  const sub=await supabaseClient.from("submission").select("*");
-  const int=await supabaseClient.from("interview").select("*");
-  const pla=await supabaseClient.from("placement").select("*");
-  const sta=await supabaseClient.from("start").select("*");
+  const sub = await supabaseClient.from("submission").select("*");
+  const int = await supabaseClient.from("interview").select("*");
+  const pla = await supabaseClient.from("placement").select("*");
+  const sta = await supabaseClient.from("start").select("*");
 
-  el("subCount").innerText=sub.data?.length||0;
-  el("intCount").innerText=int.data?.length||0;
-  el("placeCount").innerText=pla.data?.length||0;
-  el("startCount").innerText=sta.data?.length||0;
-
-  renderHome();
+  if(el("subCount")) el("subCount").innerText=sub.data?.length||0;
+  if(el("intCount")) el("intCount").innerText=int.data?.length||0;
+  if(el("placeCount")) el("placeCount").innerText=pla.data?.length||0;
+  if(el("startCount")) el("startCount").innerText=sta.data?.length||0;
 }
+
+
+
+/* ==========================================================
+   INIT
+========================================================== */
+
+window.addEventListener("load",()=>{
+
+  checkLogin();
+
+  loadDaily();
+  loadStage("submission");
+  loadStage("proposal");
+  loadStage("interview");
+  loadStage("placement");
+  loadStage("start");
+
+  updateKPIs();
+});
