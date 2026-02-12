@@ -1,34 +1,50 @@
-/* ================================
+/* ==========================================================
    SUPABASE CONNECTION
-================================ */
+========================================================== */
 
 const SUPABASE_URL = "https://jpmmciputroyyrjmyeya.supabase.co";
 const SUPABASE_KEY = "sb_publishable_afZSYp99Z_Xwb5Wl_W7J8g_m7fPHPTE";
+
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const el = id => document.getElementById(id);
 const now = () => new Date().toISOString();
 
 
-/* ================================
-   LOGIN
-================================ */
+
+/* ==========================================================
+   LOGIN SYSTEM (INDEX PAGE)
+========================================================== */
+
+function login(){
+
+  const u = el("username")?.value.trim();
+  const p = el("password")?.value.trim();
+
+  if(u === "admin" && p === "admin"){
+    localStorage.setItem("logged","yes");
+    window.location.href = "dashboard.html";
+  }else{
+    alert("Invalid Username or Password");
+  }
+}
 
 function checkLogin(){
   if(localStorage.getItem("logged") !== "yes"){
-    window.location.href="index.html";
+    window.location.href = "index.html";
   }
 }
 
 function logout(){
   localStorage.removeItem("logged");
-  window.location.href="index.html";
+  window.location.href = "index.html";
 }
 
 
-/* ================================
+
+/* ==========================================================
    LOAD ACTIVE JDs
-================================ */
+========================================================== */
 
 async function loadActiveJDs(){
 
@@ -40,19 +56,21 @@ async function loadActiveJDs(){
   const select = el("dailyJobSelect");
   if(!select) return;
 
-  select.innerHTML=`<option value="">Select Active Requirement</option>`;
+  select.innerHTML = `<option value="">Select Active Requirement</option>`;
 
-  (data||[]).forEach(j=>{
-    select.innerHTML+=`<option value="${j.jdsubject}">
-      ${j.jdsubject}
-    </option>`;
+  (data || []).forEach(j=>{
+    select.innerHTML += `
+      <option value="${j.jdsubject}">
+        ${j.jdsubject}
+      </option>`;
   });
 }
 
 
-/* ================================
+
+/* ==========================================================
    CLIENT MASTER
-================================ */
+========================================================== */
 
 async function loadClients(){
 
@@ -64,60 +82,63 @@ async function loadClients(){
   const select = el("dailyClientSelect");
   if(!select) return;
 
-  select.innerHTML=`<option value="">Select Client</option>`;
+  select.innerHTML = `<option value="">Select Client</option>`;
 
-  (data||[]).forEach(c=>{
-    select.innerHTML+=`<option value="${c.client_name}">
-      ${c.client_name}
-    </option>`;
+  (data || []).forEach(c=>{
+    select.innerHTML += `
+      <option value="${c.client_name}">
+        ${c.client_name}
+      </option>`;
   });
 }
 
 async function addClient(){
 
-  const name = el("newClientInput").value.trim();
+  const name = el("newClientInput")?.value.trim();
   if(!name) return alert("Enter client name");
 
   const { error } = await supabaseClient
     .from("clients")
-    .insert([{client_name:name}]);
+    .insert([{ client_name: name }]);
 
   if(error){
     alert("Client may already exist");
     return;
   }
 
-  el("newClientInput").value="";
+  el("newClientInput").value = "";
   loadClients();
 }
 
 
-/* ================================
+
+/* ==========================================================
    RESUME PARSER
-================================ */
+========================================================== */
 
 function parseResume(text){
 
   if(!text) return;
 
   const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if(emailMatch) el("rpEmail").value=emailMatch[0];
+  if(emailMatch) el("rpEmail").value = emailMatch[0];
 
   const phoneMatch = text.match(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/);
-  if(phoneMatch) el("rpPhone").value=phoneMatch[0];
+  if(phoneMatch) el("rpPhone").value = phoneMatch[0];
 }
 
 
-/* ================================
-   SAVE DAILY
-================================ */
+
+/* ==========================================================
+   SAVE TO DAILY
+========================================================== */
 
 async function saveToDaily(){
 
-  if(!el("dailyJobSelect").value)
+  if(!el("dailyJobSelect")?.value)
     return alert("Select Active Requirement");
 
-  if(!el("dailyClientSelect").value)
+  if(!el("dailyClientSelect")?.value)
     return alert("Select Client");
 
   const row = {
@@ -145,9 +166,10 @@ async function saveToDaily(){
 }
 
 
-/* ================================
+
+/* ==========================================================
    COPY PIPELINE
-================================ */
+========================================================== */
 
 async function copyToStage(id,target){
 
@@ -186,9 +208,10 @@ async function copyBetweenStages(source,id,target){
 }
 
 
-/* ================================
+
+/* ==========================================================
    DELETE
-================================ */
+========================================================== */
 
 async function deleteRow(table,id){
 
@@ -206,90 +229,93 @@ async function deleteRow(table,id){
 }
 
 
-/* ================================
+
+/* ==========================================================
    UPDATE FIELDS
-================================ */
+========================================================== */
 
 async function updateDate(table,id,value){
   await supabaseClient
     .from(table)
-    .update({date:value})
+    .update({ date:value })
     .eq("id",id);
 }
 
 async function updateNotes(table,id,value){
   await supabaseClient
     .from(table)
-    .update({notes:value})
+    .update({ notes:value })
     .eq("id",id);
 }
 
 
-/* ================================
+
+/* ==========================================================
    LOAD DAILY
-================================ */
+========================================================== */
 
 async function loadDaily(){
+
+  const table = el("dailyTable");
+  if(!table) return;
 
   const { data } = await supabaseClient
     .from("daily")
     .select("*")
     .order("id",{ascending:false});
 
-  const table = el("dailyTable");
-  if(!table) return;
-
   table.innerHTML="";
 
-  (data||[]).forEach((r,i)=>{
+  (data || []).forEach((r,i)=>{
 
-    table.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>
-        <input type="date"
-        value="${r.date? r.date.split("T")[0]:""}"
-        onchange="updateDate('daily',${r.id},this.value)">
-      </td>
-      <td>${r.name||""}</td>
-      <td>${r.email||""}</td>
-      <td>${r.phone||""}</td>
-      <td>${r.job||""}</td>
-      <td>${r.client||""}</td>
-      <td>${r.location||""}</td>
-      <td>${r.visa||""}</td>
-      <td>
-        <textarea onchange="updateNotes('daily',${r.id},this.value)">
-        ${r.notes||""}
-        </textarea>
-      </td>
-      <td>
-        <button onclick="copyToStage(${r.id},'submission')">Submission</button>
-        <button onclick="copyToStage(${r.id},'proposal')">Proposal</button>
-        <button onclick="deleteRow('daily',${r.id})">Delete</button>
-      </td>
-    </tr>`;
+    table.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>
+          <input type="date"
+            value="${r.date? r.date.split("T")[0]:""}"
+            onchange="updateDate('daily',${r.id},this.value)">
+        </td>
+        <td>${r.name||""}</td>
+        <td>${r.email||""}</td>
+        <td>${r.phone||""}</td>
+        <td>${r.job||""}</td>
+        <td>${r.client||""}</td>
+        <td>${r.location||""}</td>
+        <td>${r.visa||""}</td>
+        <td>
+          <textarea onchange="updateNotes('daily',${r.id},this.value)">
+            ${r.notes||""}
+          </textarea>
+        </td>
+        <td>
+          <button onclick="copyToStage(${r.id},'submission')">Submission</button>
+          <button onclick="copyToStage(${r.id},'proposal')">Proposal</button>
+          <button onclick="deleteRow('daily',${r.id})">Delete</button>
+        </td>
+      </tr>`;
   });
 
   updateKPIs();
 }
 
 
-/* ================================
+
+/* ==========================================================
    LOAD STAGES
-================================ */
+========================================================== */
 
 async function loadStage(tab){
+
+  const container = el(tab);
+  if(!container) return;
 
   const { data } = await supabaseClient
     .from(tab)
     .select("*")
     .order("id",{ascending:false});
 
-  const container = el(tab);
-  if(!container) return;
-
-  container.innerHTML=`
+  container.innerHTML = `
   <table class="table table-bordered">
     <thead>
       <tr>
@@ -299,13 +325,12 @@ async function loadStage(tab){
         <th>Job</th>
         <th>Client</th>
         <th>Notes</th>
-        ${tab==="submission"?"<th>Move</th>":""}
+        ${tab==="submission" ? "<th>Move</th>" : ""}
         <th>Delete</th>
       </tr>
     </thead>
     <tbody>
-      ${
-        (data||[]).map(r=>`
+      ${(data || []).map(r=>`
         <tr>
           <td>
             <input type="date"
@@ -318,32 +343,29 @@ async function loadStage(tab){
           <td>${r.client||""}</td>
           <td>
             <textarea onchange="updateNotes('${tab}',${r.id},this.value)">
-            ${r.notes||""}
+              ${r.notes||""}
             </textarea>
           </td>
-          ${
-            tab==="submission"
-            ? `<td>
-                <button onclick="copyBetweenStages('submission',${r.id},'interview')">Interview</button>
-                <button onclick="copyBetweenStages('submission',${r.id},'placement')">Placement</button>
-                <button onclick="copyBetweenStages('submission',${r.id},'start')">Start</button>
-              </td>`
-            : ""
-          }
+          ${tab==="submission" ? `
+          <td>
+            <button onclick="copyBetweenStages('submission',${r.id},'interview')">Interview</button>
+            <button onclick="copyBetweenStages('submission',${r.id},'placement')">Placement</button>
+            <button onclick="copyBetweenStages('submission',${r.id},'start')">Start</button>
+          </td>` : ""}
           <td>
             <button onclick="deleteRow('${tab}',${r.id})">Delete</button>
           </td>
         </tr>
-        `).join("")
-      }
+      `).join("")}
     </tbody>
   </table>`;
 }
 
 
-/* ================================
+
+/* ==========================================================
    KPI
-================================ */
+========================================================== */
 
 async function updateKPIs(){
 
@@ -352,27 +374,33 @@ async function updateKPIs(){
   const pla = await supabaseClient.from("placement").select("*");
   const sta = await supabaseClient.from("start").select("*");
 
-  el("subCount").innerText=sub.data?.length||0;
-  el("intCount").innerText=int.data?.length||0;
-  el("placeCount").innerText=pla.data?.length||0;
-  el("startCount").innerText=sta.data?.length||0;
+  el("subCount").innerText = sub.data?.length || 0;
+  el("intCount").innerText = int.data?.length || 0;
+  el("placeCount").innerText = pla.data?.length || 0;
+  el("startCount").innerText = sta.data?.length || 0;
 }
 
 
-/* ================================
-   INIT
-================================ */
+
+/* ==========================================================
+   INIT (Dashboard Only)
+========================================================== */
 
 window.addEventListener("load",()=>{
 
-  loadActiveJDs();
-  loadClients();
+  if(el("dailyTable")){
 
-  loadDaily();
-  loadStage("submission");
-  loadStage("proposal");
-  loadStage("interview");
-  loadStage("placement");
-  loadStage("start");
+    checkLogin();
+
+    loadActiveJDs();
+    loadClients();
+
+    loadDaily();
+    loadStage("submission");
+    loadStage("proposal");
+    loadStage("interview");
+    loadStage("placement");
+    loadStage("start");
+  }
 
 });
