@@ -1,61 +1,71 @@
-/* =========================================================
-   VARADACHARI ATS – SUPABASE CLOUD SCRIPT (FINAL VERSION)
-========================================================= */
-
-/* ========= SUPABASE CONNECTION ========= */
+/* ================================
+   SUPABASE CONNECTION
+================================ */
 
 const SUPABASE_URL = "https://jpmmciputroyyrjmyeya.supabase.co";
 const SUPABASE_KEY = "sb_publishable_afZSYp99Z_Xwb5Wl_W7J8g_m7fPHPTE";
 
-const supabaseClient = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* ========= HELPERS ========= */
 
-const el = id => document.getElementById(id);
-const now = () => new Date().toISOString();
-
-/* ========= LOGIN ========= */
+/* ================================
+   LOGIN SYSTEM (WORKS ON GITHUB)
+================================ */
 
 function login(){
+  const u = document.getElementById("username").value.trim();
+  const p = document.getElementById("password").value.trim();
 
-  const u = document.getElementById("username")?.value;
-  const p = document.getElementById("password")?.value;
-
-  if(u==="admin" && p==="admin"){
+  // 👉 You can change username/password here
+  if(u === "admin" && p === "admin"){
     localStorage.setItem("logged","yes");
-    location.href="dashboard.html";
+    window.location.href = "dashboard.html";
   }else{
-    alert("Invalid Login");
+    alert("Invalid Username or Password");
   }
 }
 
 function checkLogin(){
-  if(localStorage.getItem("logged")!=="yes"){
-    location.href="index.html";
+  if(localStorage.getItem("logged") !== "yes"){
+    window.location.href = "index.html";
   }
 }
 
 function logout(){
   localStorage.removeItem("logged");
-  location.href="index.html";
+  window.location.href = "index.html";
 }
 
-/* ========= RESUME PARSER ========= */
+
+/* ================================
+   HELPERS
+================================ */
+
+const el = id => document.getElementById(id);
+const now = () => new Date().toISOString();
+
+
+/* ================================
+   RESUME PARSER
+================================ */
 
 function parseResume(t){
-  if(!t || t.length<40) return;
-  const e=t.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if(e && !el("rpEmail").value) el("rpEmail").value=e[0];
+  if(!t || t.length < 10) return;
+
+  const e = t.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if(e && el("rpEmail") && !el("rpEmail").value){
+    el("rpEmail").value = e[0];
+  }
 }
 
-/* ========= SAVE TO DAILY (SUPABASE) ========= */
+
+/* ================================
+   SAVE TO DAILY (SUPABASE)
+================================ */
 
 async function saveToDaily(){
 
-  const payload = {
+  const row = {
     date: now(),
     name: el("rpName").value,
     email: el("rpEmail").value,
@@ -71,21 +81,26 @@ async function saveToDaily(){
 
   const { error } = await supabaseClient
     .from("daily")
-    .insert([payload]);
+    .insert([row]);
 
   if(error){
-    console.log(error);
-    alert("Error saving");
+    alert("Supabase Insert Error");
+    console.error(error);
     return;
   }
 
   loadDaily();
-  loadHome();
 }
 
-/* ========= LOAD DAILY TABLE ========= */
+
+/* ================================
+   LOAD DAILY TABLE
+================================ */
 
 async function loadDaily(){
+
+  const table = el("dailyTable");
+  if(!table) return;
 
   const { data, error } = await supabaseClient
     .from("daily")
@@ -97,16 +112,14 @@ async function loadDaily(){
     return;
   }
 
-  const t = el("dailyTable");
-  if(!t) return;
-
-  t.innerHTML="";
+  table.innerHTML = "";
 
   data.forEach((r,i)=>{
-    t.innerHTML+=`
+
+    table.innerHTML += `
     <tr>
       <td>${i+1}</td>
-      <td>${r.date?.split("T")[0]||""}</td>
+      <td>${r.date ? r.date.split("T")[0] : ""}</td>
       <td>${r.name||""}</td>
       <td>${r.email||""}</td>
       <td>${r.phone||""}</td>
@@ -118,17 +131,21 @@ async function loadDaily(){
       <td>${r.followup||""}</td>
       <td>${r.notes||""}</td>
       <td>
-        <button onclick="routeStage(${r.id},'submission')">Submission</button>
-        <button onclick="routeStage(${r.id},'proposal')">Proposal</button>
+        <button onclick="moveStage(${r.id},'submission')">Submission</button>
+        <button onclick="moveStage(${r.id},'proposal')">Proposal</button>
       </td>
     </tr>`;
   });
 
+  updateKPIs();
 }
 
-/* ========= ROUTE BETWEEN STAGES ========= */
 
-async function routeStage(id,table){
+/* ================================
+   MOVE BETWEEN STAGES
+================================ */
+
+async function moveStage(id,table){
 
   const { data } = await supabaseClient
     .from("daily")
@@ -138,26 +155,38 @@ async function routeStage(id,table){
 
   if(!data) return;
 
-  await supabaseClient
-    .from(table)
-    .insert([data]);
+  delete data.id;
 
-  loadHome();
+  await supabaseClient.from(table).insert([data]);
+
+  loadDaily();
+  loadStage("submission");
+  loadStage("proposal");
 }
 
-/* ========= LOAD STAGE TABLES ========= */
 
-async function renderStage(tab){
+/* ================================
+   LOAD OTHER TABS
+================================ */
 
-  const e = el(tab);
-  if(!e) return;
+async function loadStage(tab){
+
+  const container = el(
+    tab==="submission" ? "Submission" :
+    tab==="proposal" ? "Proposal" :
+    tab==="interview" ? "Interview" :
+    tab==="placement" ? "Placement" :
+    "start"
+  );
+
+  if(!container) return;
 
   const { data } = await supabaseClient
-    .from(tab.toLowerCase())
+    .from(tab)
     .select("*")
     .order("id",{ascending:false});
 
-  e.innerHTML=`
+  container.innerHTML = `
   <table class="table table-bordered">
     <thead>
       <tr>
@@ -171,68 +200,87 @@ async function renderStage(tab){
       </tr>
     </thead>
     <tbody>
-      ${data.map(r=>`
-        <tr>
-          <td>${r.date?.split("T")[0]||""}</td>
-          <td>${r.name||""}</td>
-          <td>${r.email||""}</td>
-          <td>${r.phone||""}</td>
-          <td>${r.job||""}</td>
-          <td>${r.client||""}</td>
-          <td>${r.notes||""}</td>
-        </tr>
-      `).join("")}
+      ${
+        (data||[]).map(r=>`
+          <tr>
+            <td>${r.date?r.date.split("T")[0]:""}</td>
+            <td>${r.name||""}</td>
+            <td>${r.email||""}</td>
+            <td>${r.phone||""}</td>
+            <td>${r.job||""}</td>
+            <td>${r.client||""}</td>
+            <td>${r.notes||""}</td>
+          </tr>
+        `).join("")
+      }
     </tbody>
   </table>`;
 }
 
-/* ========= HOME KPI + MONTHLY REPORT ========= */
 
-async function loadHome(){
+/* ================================
+   KPI + HOME MONTHLY
+================================ */
 
-  const getCount = async tab=>{
-    const { count } = await supabaseClient
-      .from(tab)
-      .select("*",{count:"exact",head:true});
-    return count||0;
-  };
+async function updateKPIs(){
 
-  el("subCount").innerText = await getCount("submission");
-  el("intCount").innerText = await getCount("interview");
-  el("placeCount").innerText = await getCount("placement");
-  el("startCount").innerText = await getCount("start");
+  const sub = await supabaseClient.from("submission").select("*");
+  const int = await supabaseClient.from("interview").select("*");
+  const pla = await supabaseClient.from("placement").select("*");
+  const sta = await supabaseClient.from("start").select("*");
 
-  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const tb=el("yearlyReportTable");
+  if(el("subCount")) el("subCount").innerText = sub.data?.length || 0;
+  if(el("intCount")) el("intCount").innerText = int.data?.length || 0;
+  if(el("placeCount")) el("placeCount").innerText = pla.data?.length || 0;
+  if(el("startCount")) el("startCount").innerText = sta.data?.length || 0;
+
+  renderHome(sub.data||[],int.data||[],pla.data||[],sta.data||[]);
+}
+
+
+function renderHome(sub,int,pla,sta){
+
+  const tb = el("yearlyReportTable");
   if(!tb) return;
+
+  const year = new Date().getFullYear();
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   tb.innerHTML="";
 
-  months.forEach(m=>{
+  const count = (arr,m)=>arr.filter(r=>{
+    const d = new Date(r.date);
+    return d.getFullYear()===year && d.getMonth()===m;
+  }).length;
+
+  months.forEach((m,i)=>{
     tb.innerHTML+=`
-      <tr>
-        <td><b>${m}</b></td>
-        <td>0</td>
-        <td>0</td>
-        <td>0</td>
-        <td>0</td>
-      </tr>`;
+    <tr>
+      <td><b>${m}</b></td>
+      <td>${count(sub,i)}</td>
+      <td>${count(int,i)}</td>
+      <td>${count(pla,i)}</td>
+      <td>${count(sta,i)}</td>
+    </tr>`;
   });
 }
 
-/* ========= INIT ========= */
 
-window.onload = async function(){
+/* ================================
+   INIT DASHBOARD
+================================ */
 
-  if(location.pathname.includes("dashboard")){
+window.addEventListener("load",()=>{
+
+  // only run on dashboard page
+  if(el("dailyTable")){
     checkLogin();
-    loadDaily();
-    loadHome();
-    renderStage("Submission");
-    renderStage("Proposal");
-    renderStage("Interview");
-    renderStage("Placement");
-    renderStage("start");
-  }
 
-};
+    loadDaily();
+    loadStage("submission");
+    loadStage("proposal");
+    loadStage("interview");
+    loadStage("placement");
+    loadStage("start");
+  }
+});
