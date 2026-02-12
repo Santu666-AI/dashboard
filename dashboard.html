@@ -2,218 +2,183 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Varadachari – Recruiter ATS Dashboard</title>
+<title>NetVision Resources – Recruiter ATS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body { background:#f4f6f9; }
-
-.kpi-card{
-  padding:25px;
-  border-radius:20px;
-  color:#fff;
-  font-weight:600;
-}
-.blue{background:linear-gradient(135deg,#2f66d0,#5c8df0);}
-.purple{background:linear-gradient(135deg,#6f42c1,#9d6bff);}
-.green{background:linear-gradient(135deg,#1fa64c,#39c172);}
-.orange{background:linear-gradient(135deg,#ff7a18,#ff9f43);}
-
-textarea{ width:100%; min-height:70px; }
-
-.nav-pills .nav-link.active{
-  background:#6f42c1;
-}
-</style>
 </head>
 
 <body onload="checkLogin()">
 
-<div class="container-fluid p-4">
+<div class="wrapper">
 
-<!-- HEADER -->
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="brand">NetVision ATS</div>
+  <ul>
+    <li onclick="showTab('home')">Dashboard</li>
+    <li onclick="showTab('jd')">JD Management</li>
+    <li onclick="showTab('resume')">Resume Entry</li>
+    <li onclick="showTab('daily')">Daily</li>
+    <li onclick="showTab('submission')">Submission</li>
+    <li onclick="showTab('proposal')">Proposal</li>
+    <li onclick="showTab('interview')">Interview</li>
+    <li onclick="showTab('placement')">Placement</li>
+    <li onclick="showTab('start')">Start</li>
+  </ul>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<div class="topbar">
   <div>
-    <h4>Varadachari – Recruiter Dashboard</h4>
-    <small>NetVision Resources • Sr Technical Recruiter</small>
+    <h4>Recruiter Dashboard</h4>
+    <span>Sr Technical Recruiter</span>
   </div>
-  <button class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+  <button class="btn btn-sm btn-outline-light" onclick="logout()">Logout</button>
 </div>
 
 <!-- KPI -->
-<div class="row mb-4">
+<div class="row g-4 mb-4">
   <div class="col-md-3">
-    <div class="kpi-card blue">
-      Total Submissions
+    <div class="kpi blue">
+      <div>Total Submissions</div>
       <h2 id="subCount">0</h2>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="kpi-card purple">
-      Total Interviews
+    <div class="kpi purple">
+      <div>Total Interviews</div>
       <h2 id="intCount">0</h2>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="kpi-card green">
-      Total Placements
+    <div class="kpi green">
+      <div>Total Placements</div>
       <h2 id="placeCount">0</h2>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="kpi-card orange">
-      Total Starts
+    <div class="kpi orange">
+      <div>Total Starts</div>
       <h2 id="startCount">0</h2>
     </div>
   </div>
 </div>
 
-<!-- NAV -->
-<ul class="nav nav-pills mb-3">
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#home">Home</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#jd">JD</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#resume">Resume</a></li>
-  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#daily">Daily</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#submission">Submission</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#proposal">Proposal</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#interview">Interview</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#placement">Placement</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#start">Start</a></li>
-</ul>
+<!-- CONTENT AREA -->
+<div class="content-card">
 
-<div class="tab-content">
+  <div id="home" class="tab">
+    <table class="table table-bordered text-center">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Submissions</th>
+          <th>Interviews</th>
+          <th>Placements</th>
+          <th>Starts</th>
+        </tr>
+      </thead>
+      <tbody id="yearlyReportTable"></tbody>
+    </table>
+  </div>
 
-<!-- HOME -->
-<div class="tab-pane fade" id="home">
-  <table class="table table-bordered text-center">
-    <thead class="table-light">
-      <tr>
-        <th>Month</th>
-        <th>Submissions</th>
-        <th>Interviews</th>
-        <th>Placements</th>
-        <th>Starts</th>
-      </tr>
-    </thead>
-    <tbody id="yearlyReportTable"></tbody>
-  </table>
-</div>
-
-<!-- JD -->
-<div class="tab-pane fade" id="jd">
-  <div class="row">
-    <div class="col-md-4">
-      <input id="jdNvr" class="form-control mb-2" placeholder="NVR Job ID">
-      <input id="jdSubject" class="form-control mb-2" placeholder="Job Title">
-      <textarea id="jdText" class="form-control mb-2" placeholder="Job Description"></textarea>
-      <select id="jdStatus" class="form-select mb-2">
-        <option>Active</option>
-        <option>Hold</option>
-        <option>Closed</option>
-      </select>
-      <button class="btn btn-primary w-100" onclick="saveJD()">Save JD</button>
-    </div>
-
-    <div class="col-md-8">
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>NVR</th>
-            <th>Job Title</th>
-            <th>Status</th>
-            <th>Delete</th>
-          </tr>
-        </thead>
-        <tbody id="jdTable"></tbody>
-      </table>
+  <div id="jd" class="tab d-none">
+    <div class="row">
+      <div class="col-md-4">
+        <input id="jdNvr" class="form-control mb-2" placeholder="NVR ID">
+        <input id="jdSubject" class="form-control mb-2" placeholder="Job Title">
+        <textarea id="jdText" class="form-control mb-2" placeholder="Description"></textarea>
+        <select id="jdStatus" class="form-select mb-2">
+          <option>Active</option>
+          <option>Hold</option>
+          <option>Closed</option>
+        </select>
+        <button class="btn btn-primary w-100" onclick="saveJD()">Save JD</button>
+      </div>
+      <div class="col-md-8">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>NVR</th>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody id="jdTable"></tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- RESUME -->
-<div class="tab-pane fade" id="resume">
-  <div class="row">
-    <div class="col-md-4">
-      <input id="rpName" class="form-control mb-2" placeholder="Candidate Name">
-      <input id="rpEmail" class="form-control mb-2" placeholder="Email">
-      <input id="rpPhone" class="form-control mb-2" placeholder="Phone">
-      <input id="rpLocation" class="form-control mb-2" placeholder="Location">
-
-      <select id="rpVisa" class="form-select mb-2">
-        <option value="">Visa</option>
-        <option>US Citizen</option>
-        <option>Green Card</option>
-        <option>H1B</option>
-        <option>OPT EAD</option>
-      </select>
-
-      <!-- ACTIVE JD -->
-      <select id="dailyJobSelect" class="form-select mb-2">
-        <option value="">Select Active Requirement</option>
-      </select>
-
-      <!-- CLIENT MANUAL -->
-      <input id="dailyClientInput"
-             class="form-control mb-2"
-             placeholder="Client Name">
-    </div>
-
-    <div class="col-md-8">
-      <textarea id="rpNotes"
-                class="form-control mb-2"
-                rows="8"
-                placeholder="Paste Resume Here"
-                oninput="parseResume(this.value)">
-      </textarea>
-
-      <button class="btn btn-success w-100"
-              onclick="saveToDaily()">
-        Save to Daily
-      </button>
+  <div id="resume" class="tab d-none">
+    <div class="row">
+      <div class="col-md-4">
+        <input id="rpName" class="form-control mb-2" placeholder="Candidate Name">
+        <input id="rpEmail" class="form-control mb-2" placeholder="Email">
+        <input id="rpPhone" class="form-control mb-2" placeholder="Phone">
+        <input id="rpLocation" class="form-control mb-2" placeholder="Location">
+        <select id="rpVisa" class="form-select mb-2">
+          <option value="">Visa</option>
+          <option>US Citizen</option>
+          <option>Green Card</option>
+          <option>H1B</option>
+          <option>OPT</option>
+        </select>
+        <select id="dailyJobSelect" class="form-select mb-2"></select>
+        <input id="dailyClientInput" class="form-control mb-2" placeholder="Client">
+      </div>
+      <div class="col-md-8">
+        <textarea id="rpNotes" class="form-control mb-2"
+          rows="8" placeholder="Paste Resume"
+          oninput="parseResume(this.value)"></textarea>
+        <button class="btn btn-success w-100"
+          onclick="saveToDaily()">Save to Daily</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- DAILY -->
-<div class="tab-pane fade show active" id="daily">
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Sl</th>
-        <th>Date</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>Job</th>
-        <th>Client</th>
-        <th>Location</th>
-        <th>Visa</th>
-        <th>Notes</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="dailyTable"></tbody>
-  </table>
-</div>
+  <div id="daily" class="tab d-none">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>#</th><th>Date</th><th>Name</th><th>Email</th>
+          <th>Phone</th><th>Job</th><th>Client</th>
+          <th>Location</th><th>Visa</th>
+          <th>Notes</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="dailyTable"></tbody>
+    </table>
+  </div>
 
-<!-- PIPELINE -->
-<div class="tab-pane fade" id="submission"></div>
-<div class="tab-pane fade" id="proposal"></div>
-<div class="tab-pane fade" id="interview"></div>
-<div class="tab-pane fade" id="placement"></div>
-<div class="tab-pane fade" id="start"></div>
+  <div id="submission" class="tab d-none"></div>
+  <div id="proposal" class="tab d-none"></div>
+  <div id="interview" class="tab d-none"></div>
+  <div id="placement" class="tab d-none"></div>
+  <div id="start" class="tab d-none"></div>
 
 </div>
 </div>
+</div>
 
-<!-- MAIN SCRIPT -->
-<script src="script.js?v=99"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function showTab(id){
+  document.querySelectorAll(".tab")
+    .forEach(t=>t.classList.add("d-none"));
+  document.getElementById(id)
+    .classList.remove("d-none");
+}
+</script>
 
+<script src="script.js"></script>
 </body>
 </html>

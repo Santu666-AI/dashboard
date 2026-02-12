@@ -56,11 +56,7 @@ async function saveJD(){
   };
 
   const { error } = await supabaseClient.from("jd").insert([row]);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
+  if(error){ alert(error.message); return; }
 
   el("jdNvr").value="";
   el("jdSubject").value="";
@@ -121,7 +117,7 @@ async function loadActiveJDs(){
 
 
 /* ==========================================================
-   CLIENT SUGGESTION (Manual + Hint)
+   CLIENT HINT SYSTEM
 ========================================================== */
 
 async function loadClients(){
@@ -153,24 +149,48 @@ async function loadClients(){
 
 
 /* ==========================================================
-   RESUME PARSER
+   IMPROVED RESUME PARSER
 ========================================================== */
 
 function parseResume(text){
 
   if(!text) return;
 
+  const lines = text.split("\n").map(l=>l.trim()).filter(l=>l);
+
+  /* EMAIL */
   const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
   if(emailMatch) el("rpEmail").value = emailMatch[0];
 
-  const phoneMatch = text.match(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/);
+  /* PHONE */
+  const phoneMatch = text.match(/\+?\d{1,3}?\s?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
   if(phoneMatch) el("rpPhone").value = phoneMatch[0];
+
+  /* NAME */
+  if(lines.length > 0){
+    const firstLine = lines[0];
+    if(
+      !firstLine.includes("@") &&
+      !firstLine.match(/\d{3}/) &&
+      firstLine.length < 40
+    ){
+      el("rpName").value = firstLine;
+    }
+  }
+
+  /* LOCATION */
+  const locationMatch = text.match(
+    /([A-Za-z]+,\s?[A-Z]{2}|USA|United States)/i
+  );
+  if(locationMatch){
+    el("rpLocation").value = locationMatch[0];
+  }
 }
 
 
 
 /* ==========================================================
-   SAVE TO DAILY (AUTO CLEAR RESUME)
+   SAVE TO DAILY + AUTO CLEAR
 ========================================================== */
 
 async function saveToDaily(){
@@ -191,21 +211,12 @@ async function saveToDaily(){
   };
 
   const { error } = await supabaseClient.from("daily").insert([row]);
+  if(error){ alert(error.message); return; }
 
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  /* CLEAR RESUME FORM */
-  el("rpName").value="";
-  el("rpEmail").value="";
-  el("rpPhone").value="";
-  el("rpLocation").value="";
-  el("rpVisa").value="";
-  el("rpNotes").value="";
-  el("dailyJobSelect").value="";
-  el("dailyClientInput").value="";
+  /* CLEAR FORM */
+  ["rpName","rpEmail","rpPhone","rpLocation",
+   "rpVisa","rpNotes","dailyJobSelect","dailyClientInput"]
+   .forEach(id=> el(id).value="");
 
   loadDaily();
 }
@@ -227,7 +238,6 @@ async function copyToStage(id,target){
   if(!data) return;
 
   delete data.id;
-
   await supabaseClient.from(target).insert([data]);
 
   loadStage(target);
@@ -245,7 +255,6 @@ async function copyBetweenStages(source,id,target){
   if(!data) return;
 
   delete data.id;
-
   await supabaseClient.from(target).insert([data]);
 
   loadStage(target);
@@ -265,10 +274,7 @@ async function deleteRow(table,id){
   await supabaseClient.from(table).delete().eq("id",id);
 
   if(table==="daily") loadDaily();
-  else if(table==="jd"){
-    loadJD();
-    loadActiveJDs();
-  }
+  else if(table==="jd"){ loadJD(); loadActiveJDs(); }
   else loadStage(table);
 
   updateKPIs();
@@ -289,7 +295,7 @@ async function updateNotes(table,id,value){
 
 
 /* ==========================================================
-   LOAD DAILY (DATE DISPLAY ONLY)
+   LOAD DAILY
 ========================================================== */
 
 async function loadDaily(){
@@ -341,7 +347,7 @@ async function loadDaily(){
 
 
 /* ==========================================================
-   LOAD STAGES (DATE EDITABLE)
+   LOAD STAGES
 ========================================================== */
 
 async function loadStage(tab){
@@ -411,7 +417,7 @@ async function loadStage(tab){
 
 
 /* ==========================================================
-   HOME MONTHLY REPORT
+   HOME + KPI
 ========================================================== */
 
 async function renderHome(){
@@ -453,12 +459,6 @@ async function renderHome(){
   });
 }
 
-
-
-/* ==========================================================
-   KPI
-========================================================== */
-
 async function updateKPIs(){
 
   const sub = await supabaseClient.from("submission").select("*");
@@ -483,7 +483,6 @@ async function updateKPIs(){
 window.addEventListener("load",()=>{
 
   if(el("dailyTable")){
-
     checkLogin();
 
     loadJD();
