@@ -90,7 +90,8 @@ async function loadJD(){
         <td>${j.jdsubject||""}</td>
         <td>${j.jdstatus||""}</td>
         <td>
-          <button onclick="deleteRow('jd',${j.id})">Delete</button>
+          <button class="btn btn-sm btn-danger"
+            onclick="deleteRow('jd',${j.id})">Delete</button>
         </td>
       </tr>
     `;
@@ -120,7 +121,7 @@ async function loadActiveJDs(){
 
 
 /* ==========================================================
-   CLIENT MASTER
+   CLIENT SUGGESTION (Manual typing allowed)
 ========================================================== */
 
 async function loadClients(){
@@ -133,7 +134,6 @@ async function loadClients(){
   const input = el("dailyClientInput");
   if(!input) return;
 
-  // This allows manual typing but also auto-suggest
   input.setAttribute("list","clientList");
 
   let datalist = document.getElementById("clientList");
@@ -146,9 +146,7 @@ async function loadClients(){
   datalist.innerHTML="";
 
   (data||[]).forEach(c=>{
-    datalist.innerHTML+=`
-      <option value="${c.client_name}">
-    `;
+    datalist.innerHTML+=`<option value="${c.client_name}">`;
   });
 }
 
@@ -167,13 +165,12 @@ function parseResume(text){
 
   const phoneMatch = text.match(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/);
   if(phoneMatch) el("rpPhone").value = phoneMatch[0];
-
 }
 
 
 
 /* ==========================================================
-   SAVE DAILY
+   SAVE DAILY (DATE AUTO, NOT EDITABLE)
 ========================================================== */
 
 async function saveToDaily(){
@@ -275,17 +272,12 @@ async function deleteRow(table,id){
 
 
 /* ==========================================================
-   UPDATE
+   UPDATE NOTES
 ========================================================== */
 
-async function updateDate(table,id,value){
-  await supabaseClient.from(table)
-    .update({date:value})
-    .eq("id",id);
-}
-
 async function updateNotes(table,id,value){
-  await supabaseClient.from(table)
+  await supabaseClient
+    .from(table)
     .update({notes:value})
     .eq("id",id);
 }
@@ -293,7 +285,7 @@ async function updateNotes(table,id,value){
 
 
 /* ==========================================================
-   LOAD DAILY
+   LOAD DAILY (DATE DISPLAY ONLY)
 ========================================================== */
 
 async function loadDaily(){
@@ -313,11 +305,7 @@ async function loadDaily(){
     table.innerHTML+=`
       <tr>
         <td>${i+1}</td>
-        <td>
-          <input type="date"
-            value="${r.date? r.date.split("T")[0]:""}"
-            onchange="updateDate('daily',${r.id},this.value)">
-        </td>
+        <td>${r.date ? r.date.split("T")[0]:""}</td>
         <td>${r.name||""}</td>
         <td>${r.email||""}</td>
         <td>${r.phone||""}</td>
@@ -326,14 +314,18 @@ async function loadDaily(){
         <td>${r.location||""}</td>
         <td>${r.visa||""}</td>
         <td>
-          <textarea onchange="updateNotes('daily',${r.id},this.value)">
+          <textarea class="form-control"
+            onchange="updateNotes('daily',${r.id},this.value)">
             ${r.notes||""}
           </textarea>
         </td>
         <td>
-          <button onclick="copyToStage(${r.id},'submission')">Submission</button>
-          <button onclick="copyToStage(${r.id},'proposal')">Proposal</button>
-          <button onclick="deleteRow('daily',${r.id})">Delete</button>
+          <button class="btn btn-sm btn-primary"
+            onclick="copyToStage(${r.id},'submission')">Submission</button>
+          <button class="btn btn-sm btn-warning"
+            onclick="copyToStage(${r.id},'proposal')">Proposal</button>
+          <button class="btn btn-sm btn-danger"
+            onclick="deleteRow('daily',${r.id})">Delete</button>
         </td>
       </tr>
     `;
@@ -345,7 +337,7 @@ async function loadDaily(){
 
 
 /* ==========================================================
-   LOAD STAGES
+   LOAD STAGES (DATE EDITABLE HERE)
 ========================================================== */
 
 async function loadStage(tab){
@@ -378,31 +370,84 @@ async function loadStage(tab){
             <td>
               <input type="date"
                 value="${r.date? r.date.split("T")[0]:""}"
-                onchange="updateDate('${tab}',${r.id},this.value)">
+                onchange="supabaseClient.from('${tab}')
+                  .update({date:this.value})
+                  .eq('id',${r.id})">
             </td>
             <td>${r.name||""}</td>
             <td>${r.email||""}</td>
             <td>${r.job||""}</td>
             <td>${r.client||""}</td>
             <td>
-              <textarea onchange="updateNotes('${tab}',${r.id},this.value)">
+              <textarea class="form-control"
+                onchange="updateNotes('${tab}',${r.id},this.value)">
                 ${r.notes||""}
               </textarea>
             </td>
             ${tab==="submission" ? `
               <td>
-                <button onclick="copyBetweenStages('submission',${r.id},'interview')">Interview</button>
-                <button onclick="copyBetweenStages('submission',${r.id},'placement')">Placement</button>
-                <button onclick="copyBetweenStages('submission',${r.id},'start')">Start</button>
+                <button class="btn btn-sm btn-info"
+                  onclick="copyBetweenStages('submission',${r.id},'interview')">Interview</button>
+                <button class="btn btn-sm btn-success"
+                  onclick="copyBetweenStages('submission',${r.id},'placement')">Placement</button>
+                <button class="btn btn-sm btn-dark"
+                  onclick="copyBetweenStages('submission',${r.id},'start')">Start</button>
               </td>` : ""}
             <td>
-              <button onclick="deleteRow('${tab}',${r.id})">Delete</button>
+              <button class="btn btn-sm btn-danger"
+                onclick="deleteRow('${tab}',${r.id})">Delete</button>
             </td>
           </tr>
         `).join("")}
       </tbody>
     </table>
   `;
+}
+
+
+
+/* ==========================================================
+   HOME MONTHLY REPORT
+========================================================== */
+
+async function renderHome(){
+
+  const table = el("yearlyReportTable");
+  if(!table) return;
+
+  const year = new Date().getFullYear();
+
+  const [sub,int,pla,sta] = await Promise.all([
+    supabaseClient.from("submission").select("date"),
+    supabaseClient.from("interview").select("date"),
+    supabaseClient.from("placement").select("date"),
+    supabaseClient.from("start").select("date")
+  ]);
+
+  const months=["Jan","Feb","Mar","Apr","May","Jun",
+                "Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  function count(arr,i){
+    return (arr||[]).filter(r=>{
+      if(!r.date) return false;
+      const d=new Date(r.date);
+      return d.getFullYear()===year && d.getMonth()===i;
+    }).length;
+  }
+
+  table.innerHTML="";
+
+  months.forEach((m,i)=>{
+    table.innerHTML+=`
+      <tr>
+        <td><b>${m}</b></td>
+        <td>${count(sub.data,i)}</td>
+        <td>${count(int.data,i)}</td>
+        <td>${count(pla.data,i)}</td>
+        <td>${count(sta.data,i)}</td>
+      </tr>
+    `;
+  });
 }
 
 
@@ -422,6 +467,8 @@ async function updateKPIs(){
   el("intCount").innerText = int.data?.length || 0;
   el("placeCount").innerText = pla.data?.length || 0;
   el("startCount").innerText = sta.data?.length || 0;
+
+  renderHome();
 }
 
 
@@ -446,5 +493,7 @@ window.addEventListener("load",()=>{
     loadStage("interview");
     loadStage("placement");
     loadStage("start");
+
+    renderHome();
   }
 });
