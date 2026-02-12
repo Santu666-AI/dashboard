@@ -8,7 +8,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
-<!-- SUPABASE (Must load before script.js) -->
+<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 </head>
@@ -67,119 +67,137 @@
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#start">Start</a></li>
 </ul>
 
-<!-- TAB CONTENT -->
 <div class="tab-content">
 
-  <!-- HOME -->
-  <div class="tab-pane fade" id="home">
-    <table class="table table-bordered text-center">
-      <thead class="table-light">
-        <tr>
-          <th>Month</th>
-          <th>Submissions</th>
-          <th>Interviews</th>
-          <th>Placements</th>
-          <th>Starts</th>
-        </tr>
-      </thead>
-      <tbody id="yearlyReportTable"></tbody>
-    </table>
-  </div>
+<!-- HOME -->
+<div class="tab-pane fade" id="home">
+  <table class="table table-bordered text-center">
+    <thead class="table-light">
+      <tr>
+        <th>Month</th>
+        <th>Submissions</th>
+        <th>Interviews</th>
+        <th>Placements</th>
+        <th>Starts</th>
+      </tr>
+    </thead>
+    <tbody id="yearlyReportTable"></tbody>
+  </table>
+</div>
 
-  <!-- JD -->
-  <div class="tab-pane fade" id="jd">
-    <div class="row">
-      <div class="col-md-4">
-        <input id="jdNvr" class="form-control mb-2" placeholder="NVR Job ID">
-        <input id="jdSubject" class="form-control mb-2" placeholder="Job Title">
-        <textarea id="jdText" class="form-control mb-2" placeholder="Job Description"></textarea>
-        <select id="jdStatus" class="form-select mb-2">
-          <option>Active</option>
-          <option>Hold</option>
-          <option>Closed</option>
-        </select>
-        <button class="btn btn-primary w-100" onclick="saveJD()">Save JD</button>
-      </div>
-      <div class="col-md-8">
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>NVR</th>
-              <th>Job Title</th>
-              <th>Status</th>
-              <th>Delete</th>
-            </tr>
-          </thead>
-          <tbody id="jdTable"></tbody>
-        </table>
-      </div>
+<!-- JD -->
+<div class="tab-pane fade" id="jd">
+  <div class="row">
+    <div class="col-md-4">
+      <input id="jdNvr" class="form-control mb-2" placeholder="NVR Job ID">
+      <input id="jdSubject" class="form-control mb-2" placeholder="Job Title">
+      <textarea id="jdText" class="form-control mb-2" placeholder="Job Description"></textarea>
+      <select id="jdStatus" class="form-select mb-2">
+        <option>Active</option>
+        <option>Hold</option>
+        <option>Closed</option>
+      </select>
+      <button class="btn btn-primary w-100" onclick="saveJD()">Save JD</button>
+    </div>
+
+    <div class="col-md-8">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>NVR</th>
+            <th>Job Title</th>
+            <th>Status</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody id="jdTable"></tbody>
+      </table>
     </div>
   </div>
+</div>
 
-  <!-- RESUME -->
-  <div class="tab-pane fade" id="resume">
-    <div class="row">
-      <div class="col-md-4">
-        <input id="rpName" class="form-control mb-2" placeholder="Candidate Name">
-        <input id="rpEmail" class="form-control mb-2" placeholder="Email">
-        <input id="rpPhone" class="form-control mb-2" placeholder="Phone">
-        <input id="rpLocation" class="form-control mb-2" placeholder="Location">
-        <select id="rpVisa" class="form-select mb-2">
-          <option value="">Visa</option>
-          <option>US Citizen</option>
-          <option>Green Card</option>
-          <option>H1B</option>
-          <option>OPT EAD</option>
-        </select>
-      </div>
-      <div class="col-md-8">
-        <textarea id="rpNotes" class="form-control mb-2" rows="8"
-          placeholder="Paste Resume Here"
-          oninput="parseResume(this.value)"></textarea>
-        <button class="btn btn-success w-100" onclick="saveToDaily()">Save to Daily</button>
-      </div>
+<!-- RESUME (UPDATED) -->
+<div class="tab-pane fade" id="resume">
+  <div class="row">
+
+    <div class="col-md-4">
+
+      <input id="rpName" class="form-control mb-2" placeholder="Candidate Name">
+      <input id="rpEmail" class="form-control mb-2" placeholder="Email">
+      <input id="rpPhone" class="form-control mb-2" placeholder="Phone">
+      <input id="rpLocation" class="form-control mb-2" placeholder="Location">
+
+      <select id="rpVisa" class="form-select mb-2">
+        <option value="">Visa</option>
+        <option>US Citizen</option>
+        <option>Green Card</option>
+        <option>H1B</option>
+        <option>OPT EAD</option>
+      </select>
+
+      <!-- ACTIVE JD DROPDOWN -->
+      <select id="dailyJobSelect" class="form-select mb-2">
+        <option value="">Select Active Requirement</option>
+      </select>
+
+      <!-- CLIENT INPUT -->
+      <input id="dailyClientInput"
+             class="form-control mb-2"
+             placeholder="Client Name">
+
     </div>
-  </div>
 
-  <!-- DAILY -->
-  <div class="tab-pane fade show active" id="daily">
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Sl</th>
-          <th>Date</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Job Title</th>
-          <th>Client</th>
-          <th>Source</th>
-          <th>Location</th>
-          <th>Visa</th>
-          <th>Follow-up</th>
-          <th>Notes</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="dailyTable"></tbody>
-    </table>
-  </div>
+    <div class="col-md-8">
+      <textarea id="rpNotes"
+                class="form-control mb-2"
+                rows="8"
+                placeholder="Paste Resume Here"
+                oninput="parseResume(this.value)">
+      </textarea>
 
-  <!-- STAGE TABS -->
-  <div class="tab-pane fade" id="submission"></div>
-  <div class="tab-pane fade" id="proposal"></div>
-  <div class="tab-pane fade" id="interview"></div>
-  <div class="tab-pane fade" id="placement"></div>
-  <div class="tab-pane fade" id="start"></div>
+      <button class="btn btn-success w-100"
+              onclick="saveToDaily()">
+        Save to Daily
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- DAILY -->
+<div class="tab-pane fade show active" id="daily">
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Sl</th>
+        <th>Date</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Job Title</th>
+        <th>Client</th>
+        <th>Location</th>
+        <th>Visa</th>
+        <th>Notes</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="dailyTable"></tbody>
+  </table>
+</div>
+
+<!-- STAGE TABS -->
+<div class="tab-pane fade" id="submission"></div>
+<div class="tab-pane fade" id="proposal"></div>
+<div class="tab-pane fade" id="interview"></div>
+<div class="tab-pane fade" id="placement"></div>
+<div class="tab-pane fade" id="start"></div>
 
 </div>
 </div>
 
-<!-- MAIN SCRIPT -->
 <script src="script.js"></script>
-
-<!-- BOOTSTRAP -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
