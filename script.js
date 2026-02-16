@@ -160,37 +160,49 @@ async function renderResume(){
 }
 
 function parseResume(){
-  const text=el("resume_text").value;
+  const text = el("resume_text").value;
 
-  const email=text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  if(email) el("res_email").value=email[0];
+  // EMAIL
+  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if(email) el("res_email").value = email[0];
 
-  const phone=text.match(/\d{10}/);
-  if(phone) el("res_phone").value=phone[0];
+  // PHONE (handles dots, dashes, spaces)
+  const phone = text.match(/(\+?\d[\d\.\-\s]{8,}\d)/);
+  if(phone){
+    const cleanPhone = phone[0].replace(/[^\d]/g,'');
+    el("res_phone").value = cleanPhone;
+  }
 
-  const lines=text.split("\n").filter(l=>l.trim()!=="");
-  if(lines.length>0) el("res_name").value=lines[0];
+  // NAME (first non-empty line)
+  const lines = text.split("\n").map(l=>l.trim()).filter(l=>l!=="");
+  if(lines.length > 0){
+    el("res_name").value = lines[0].replace(/[^a-zA-Z\s,\.]/g,'');
+  }
 
-  const loc=text.match(/Location\s*([A-Za-z,\s]+)/i);
-  if(loc) el("res_location").value=loc[1].trim();
+  // LOCATION (look for common US format)
+  const locationMatch = text.match(/[A-Za-z\s]+,\s?[A-Za-z\s]+,\s?United States/i);
+  if(locationMatch){
+    el("res_location").value = locationMatch[0];
+  }
 
-  const visa=text.match(/Work authorization\s*([A-Za-z\s]+)/i);
-  if(visa) el("res_visa").value=visa[1].trim();
+  // VISA detection (common keywords)
+  const visaKeywords = [
+    "US Citizen",
+    "Green Card",
+    "H1B",
+    "OPT",
+    "EAD",
+    "GC"
+  ];
+
+  for(const visa of visaKeywords){
+    if(text.toLowerCase().includes(visa.toLowerCase())){
+      el("res_visa").value = visa;
+      break;
+    }
+  }
 }
 
-async function saveToDaily(){
-  await supabaseClient.from("daily").insert({
-    date:now(),
-    name:el("res_name").value,
-    email:el("res_email").value,
-    phone:el("res_phone").value,
-    job:el("res_job").value,
-    client:el("res_client").value,
-    location:el("res_location").value,
-    visa:el("res_visa").value,
-    notes:""
-  });
-}
 
 /* ================================
    DAILY (EDIT/SAVE SYSTEM)
