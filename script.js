@@ -1,60 +1,40 @@
-/* =========================================================
+/* ================================
    SUPABASE CONFIG
-========================================================= */
+================================ */
 
 const SUPABASE_URL = "https://jpmmciputroyyrjmyeya.supabase.co";
 const SUPABASE_KEY = "sb_publishable_afZSYp99Z_Xwb5Wl_W7J8g_m7fPHPTE";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const el = (id) => document.getElementById(id);
+const el = id => document.getElementById(id);
 const now = () => new Date().toISOString();
 
-/* =========================================================
+/* ================================
    LOGIN
-========================================================= */
+================================ */
 
-function login() {
-  const user = el("username")?.value;
-  const pass = el("password")?.value;
-
-  if (user === "admin" && pass === "admin") {
-    localStorage.setItem("logged", "yes");
-    location.href = "dashboard.html";
-  } else {
-    alert("Invalid Login");
-  }
+function login(){
+  if(el("username").value==="admin" && el("password").value==="admin"){
+    localStorage.setItem("logged","yes");
+    location.href="dashboard.html";
+  } else alert("Invalid Login");
 }
 
-function logout() {
+function logout(){
   localStorage.removeItem("logged");
-  location.href = "index.html";
+  location.href="index.html";
 }
 
-function checkLogin() {
-  if (localStorage.getItem("logged") !== "yes") {
-    location.href = "index.html";
-  }
+function checkLogin(){
+  if(localStorage.getItem("logged")!=="yes")
+    location.href="index.html";
 }
 
-/* =========================================================
-   TAB SWITCH
-========================================================= */
+/* ================================
+   KPI + MONTHLY
+================================ */
 
-function switchTab(tabId, ref) {
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.getElementById(tabId).classList.add("active");
-
-  document.querySelectorAll(".nav-link").forEach(n => n.classList.remove("active"));
-  if (ref) ref.classList.add("active");
-
-  renderTab(tabId);
-}
-
-/* =========================================================
-   KPI + MONTHLY REPORT
-========================================================= */
-
-async function updateKPIs() {
+async function updateKPIs(){
   const sub = await supabaseClient.from("submission").select("id");
   const int = await supabaseClient.from("interview").select("id");
   const pla = await supabaseClient.from("placement").select("id");
@@ -68,72 +48,49 @@ async function updateKPIs() {
   renderMonthly();
 }
 
-async function renderMonthly() {
-  const year = new Date().getFullYear();
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const tables = ["submission","interview","placement","start"];
-
-  const responses = await Promise.all(
-    tables.map(t => supabaseClient.from(t).select("date"))
-  );
-
-  const tbody = el("yearlyReportTable");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  months.forEach((m, i) => {
-    function count(arr) {
-      return (arr || []).filter(r => {
-        if (!r.date) return false;
-        const d = new Date(r.date);
-        return d.getFullYear() === year && d.getMonth() === i;
+async function renderMonthly(){
+  const year=new Date().getFullYear();
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const tables=["submission","interview","placement","start"];
+  const responses=await Promise.all(tables.map(t=>supabaseClient.from(t).select("date")));
+  const tbody=el("yearlyReportTable");
+  if(!tbody) return;
+  tbody.innerHTML="";
+  months.forEach((m,i)=>{
+    function count(arr){
+      return (arr||[]).filter(r=>{
+        if(!r.date) return false;
+        const d=new Date(r.date);
+        return d.getFullYear()===year && d.getMonth()===i;
       }).length;
     }
-
-    tbody.innerHTML += `
+    tbody.innerHTML+=`
       <tr>
         <td>${m}</td>
         <td>${count(responses[0].data)}</td>
         <td>${count(responses[1].data)}</td>
         <td>${count(responses[2].data)}</td>
         <td>${count(responses[3].data)}</td>
-      </tr>
-    `;
+      </tr>`;
   });
 }
 
-async function refreshDashboard() {
-  await updateKPIs();
+async function refreshDashboard(){ await updateKPIs(); }
+
+/* ================================
+   TAB SWITCH
+================================ */
+
+function switchTab(tabId,ref){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById(tabId).classList.add("active");
+  document.querySelectorAll(".nav-link").forEach(n=>n.classList.remove("active"));
+  if(ref) ref.classList.add("active");
+  renderTab(tabId);
 }
 
-/* =========================================================
-   GENERIC DELETE
-========================================================= */
-
-async function deleteRow(table, id, reloadFn) {
-  await supabaseClient.from(table).delete().eq("id", id);
-  if (reloadFn) reloadFn();
-  refreshDashboard();
-}
-
-/* =========================================================
-   GENERIC UPDATE
-========================================================= */
-
-async function updateRow(table, id, data, reloadFn) {
-  await supabaseClient.from(table).update(data).eq("id", id);
-  if (reloadFn) reloadFn();
-  refreshDashboard();
-}
-
-/* =========================================================
-   RENDER CONTROLLER
-========================================================= */
-
-function renderTab(tabId) {
-  switch(tabId) {
-    case "jd": renderJD(); break;
+function renderTab(tabId){
+  switch(tabId){
     case "resume": renderResume(); break;
     case "daily": renderDaily(); break;
     case "submission": renderSubmission(); break;
@@ -144,108 +101,41 @@ function renderTab(tabId) {
   }
 }
 
-/* =========================================================
-   INIT
-========================================================= */
-
-async function initDashboard() {
+async function initDashboard(){
   checkLogin();
   await updateKPIs();
 }
-/* =========================================================
-   JD TAB
-========================================================= */
 
-async function renderJD() {
-  const container = el("jd");
+/* ================================
+   GENERIC UPDATE & DELETE
+================================ */
 
-  container.innerHTML = `
-    <h5>Add Job Description</h5>
-
-    <input id="jd_nvr" class="form-control mb-2" placeholder="NVR ID">
-    <input id="jd_subject" class="form-control mb-2" placeholder="Job Title">
-    <textarea id="jd_text" class="form-control mb-2" placeholder="Description"></textarea>
-    <select id="jd_status" class="form-control mb-2">
-      <option value="Active">Active</option>
-      <option value="Hold">Hold</option>
-      <option value="Closed">Closed</option>
-    </select>
-    <button class="btn btn-primary mb-3" onclick="addJD()">Save JD</button>
-
-    <hr>
-
-    <h5>JD List</h5>
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>SL</th>
-          <th>Date</th>
-          <th>NVR</th>
-          <th>Title</th>
-          <th>Status</th>
-          <th>Delete</th>
-        </tr>
-      </thead>
-      <tbody id="jdBody"></tbody>
-    </table>
-  `;
-
-  loadJD();
+async function updateRow(table,id,data,reload){
+  await supabaseClient.from(table).update(data).eq("id",id);
+  if(reload) reload();
+  refreshDashboard();
 }
 
-async function addJD() {
-  await supabaseClient.from("jd").insert({
-    date: now(),
-    jdnvr: el("jd_nvr").value,
-    jdsubject: el("jd_subject").value,
-    jdtext: el("jd_text").value,
-    jdstatus: el("jd_status").value
-  });
-
-  renderJD();
+async function deleteRow(table,id,reload){
+  await supabaseClient.from(table).delete().eq("id",id);
+  if(reload) reload();
+  refreshDashboard();
 }
 
-async function loadJD() {
-  const { data } = await supabaseClient.from("jd").select("*").order("id",{ascending:false});
-  const body = el("jdBody");
-  body.innerHTML = "";
+/* ================================
+   RESUME (CLIENT + SMART PARSER)
+================================ */
 
-  data.forEach((row, index) => {
-    body.innerHTML += `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${new Date(row.date).toLocaleDateString()}</td>
-        <td>${row.jdnvr}</td>
-        <td>${row.jdsubject}</td>
-        <td>${row.jdstatus}</td>
-        <td><button class="btn btn-sm btn-danger" onclick="deleteRow('jd',${row.id},renderJD)">X</button></td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   RESUME TAB (Manual + Parse)
-========================================================= */
-
-async function renderResume() {
-  const container = el("resume");
-
-  const { data: jdList } = await supabaseClient
-    .from("jd")
-    .select("*")
-    .eq("jdstatus","Active");
-
-  const options = jdList.map(j => `<option value="${j.jdsubject}">${j.jdsubject}</option>`).join("");
-
-  container.innerHTML = `
+async function renderResume(){
+  const container=el("resume");
+  container.innerHTML=`
     <h5>Resume Entry</h5>
 
-    <label>Active Requirement</label>
-    <select id="res_job" class="form-control mb-2">
-      <option value="">Select JD</option>
-      ${options}
-    </select>
+    <label>Job</label>
+    <input id="res_job" class="form-control mb-2">
+
+    <label>Client</label>
+    <input id="res_client" class="form-control mb-2">
 
     <label>Name</label>
     <input id="res_name" class="form-control mb-2">
@@ -260,27 +150,8 @@ async function renderResume() {
     <input id="res_location" class="form-control mb-2">
 
     <label>Visa</label>
-    <select id="res_visa" class="form-control mb-2">
-      <option>US Citizen</option>
-      <option>Green Card</option>
-      <option>EAD</option>
-      <option>H1B</option>
-      <option>OPT</option>
-    </select>
+    <input id="res_visa" class="form-control mb-2">
 
-    <label>Source</label>
-    <select id="res_source" class="form-control mb-2">
-      <option>LinkedIn</option>
-      <option>Dice</option>
-      <option>Monster</option>
-      <option>CareerBuilder</option>
-      <option>Referral</option>
-      <option>Internal DB</option>
-      <option>Vendor</option>
-      <option>Other</option>
-    </select>
-
-    <label>Resume Text (Parse Mode)</label>
     <textarea id="resume_text" class="form-control mb-2" rows="4"></textarea>
 
     <button class="btn btn-secondary mb-2" onclick="parseResume()">Parse</button>
@@ -288,352 +159,109 @@ async function renderResume() {
   `;
 }
 
-function parseResume() {
-  const text = el("resume_text").value;
+function parseResume(){
+  const text=el("resume_text").value;
 
-  const email = text.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i);
-  const phone = text.match(/\b\d{10}\b/);
+  const email=text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if(email) el("res_email").value=email[0];
 
-  if (email) el("res_email").value = email[0];
-  if (phone) el("res_phone").value = phone[0];
+  const phone=text.match(/\d{10}/);
+  if(phone) el("res_phone").value=phone[0];
 
-  const lines = text.split("\n").filter(l => l.trim() !== "");
-  if (lines.length > 0) el("res_name").value = lines[0];
+  const lines=text.split("\n").filter(l=>l.trim()!=="");
+  if(lines.length>0) el("res_name").value=lines[0];
+
+  const loc=text.match(/Location\s*([A-Za-z,\s]+)/i);
+  if(loc) el("res_location").value=loc[1].trim();
+
+  const visa=text.match(/Work authorization\s*([A-Za-z\s]+)/i);
+  if(visa) el("res_visa").value=visa[1].trim();
 }
 
-async function saveToDaily() {
-  if (!el("res_name").value || !el("res_job").value) {
-    alert("Name and JD required");
-    return;
-  }
-
+async function saveToDaily(){
   await supabaseClient.from("daily").insert({
-    date: now(),
-    name: el("res_name").value,
-    email: el("res_email").value,
-    phone: el("res_phone").value,
-    job: el("res_job").value,
-    client: "",
-    source: el("res_source").value,
-    location: el("res_location").value,
-    visa: el("res_visa").value,
-    followup: "",
-    notes: ""
+    date:now(),
+    name:el("res_name").value,
+    email:el("res_email").value,
+    phone:el("res_phone").value,
+    job:el("res_job").value,
+    client:el("res_client").value,
+    location:el("res_location").value,
+    visa:el("res_visa").value,
+    notes:""
   });
-
-  renderResume();
 }
 
-/* =========================================================
-   DAILY TAB (Enterprise Editable)
-========================================================= */
+/* ================================
+   DAILY (EDIT/SAVE SYSTEM)
+================================ */
 
-async function renderDaily() {
-  const container = el("daily");
-
-  container.innerHTML = `
-    <h5>Daily Candidates</h5>
-
+async function renderDaily(){
+  const container=el("daily");
+  container.innerHTML=`
+    <h5>Daily</h5>
     <table class="table table-bordered">
       <thead>
         <tr>
-          <th>SL</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Job</th>
-          <th>Visa</th>
-          <th>Date</th>
-          <th>Notes</th>
-          <th>Actions</th>
+          <th>SL</th><th>Name</th><th>Email</th><th>Phone</th>
+          <th>Job</th><th>Client</th><th>Visa</th>
+          <th>Date</th><th>Notes</th><th>Actions</th>
         </tr>
       </thead>
       <tbody id="dailyBody"></tbody>
-    </table>
-  `;
-
+    </table>`;
   loadDaily();
 }
 
-async function loadDaily() {
-  const { data } = await supabaseClient.from("daily").select("*").order("id",{ascending:false});
-  const body = el("dailyBody");
-  body.innerHTML = "";
-
-  data.forEach((row, index) => {
-    body.innerHTML += `
-      <tr id="dailyRow${row.id}">
-        <td>${index + 1}</td>
-        <td>${row.name}</td>
-        <td>${row.email || ''}</td>
-        <td>${row.phone || ''}</td>
-        <td>${row.job}</td>
-        <td>${row.visa || ''}</td>
-        <td>${row.date ? row.date.split("T")[0] : ''}</td>
-        <td>${row.notes || ''}</td>
+async function loadDaily(){
+  const {data}=await supabaseClient.from("daily").select("*").order("id",{ascending:false});
+  const body=el("dailyBody");
+  body.innerHTML="";
+  data.forEach((r,i)=>{
+    body.innerHTML+=`
+      <tr id="dailyRow${r.id}">
+        <td>${i+1}</td>
+        <td>${r.name}</td>
+        <td>${r.email||''}</td>
+        <td>${r.phone||''}</td>
+        <td>${r.job}</td>
+        <td>${r.client||''}</td>
+        <td>${r.visa||''}</td>
+        <td>${r.date.split("T")[0]}</td>
+        <td>${r.notes||''}</td>
         <td>
-          <button class="btn btn-sm btn-info" onclick="editDaily(${row.id})">Edit</button>
-          <button class="btn btn-sm btn-primary" onclick="moveToSubmission(${row.id})">Submission</button>
-          <button class="btn btn-sm btn-warning" onclick="moveToProposal(${row.id})">Proposal</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteRow('daily',${row.id},renderDaily)">X</button>
+          <button class="btn btn-sm btn-info" onclick="editDaily(${r.id})">Edit</button>
+          <button class="btn btn-sm btn-primary" onclick="moveToSubmission(${r.id})">Submission</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteRow('daily',${r.id},renderDaily)">X</button>
         </td>
-      </tr>
-    `;
+      </tr>`;
   });
 }
 
-async function editDaily(id) {
-  const { data } = await supabaseClient.from("daily").select("*").eq("id",id).single();
-  const row = document.getElementById(`dailyRow${id}`);
-
-  row.innerHTML = `
+async function editDaily(id){
+  const {data}=await supabaseClient.from("daily").select("*").eq("id",id).single();
+  const row=document.getElementById(`dailyRow${id}`);
+  row.innerHTML=`
     <td>#</td>
     <td><input id="d_name${id}" value="${data.name}"></td>
-    <td><input id="d_email${id}" value="${data.email || ''}"></td>
-    <td><input id="d_phone${id}" value="${data.phone || ''}"></td>
+    <td><input id="d_email${id}" value="${data.email||''}"></td>
+    <td><input id="d_phone${id}" value="${data.phone||''}"></td>
     <td>${data.job}</td>
-    <td>${data.visa || ''}</td>
+    <td><input id="d_client${id}" value="${data.client||''}"></td>
+    <td><input id="d_visa${id}" value="${data.visa||''}"></td>
     <td><input type="date" id="d_date${id}" value="${data.date.split("T")[0]}"></td>
-    <td><textarea id="d_notes${id}">${data.notes || ''}</textarea></td>
-    <td>
-      <button class="btn btn-sm btn-success" onclick="saveDaily(${id})">Save</button>
-    </td>
-  `;
+    <td><textarea id="d_notes${id}">${data.notes||''}</textarea></td>
+    <td><button class="btn btn-sm btn-success" onclick="saveDaily(${id})">Save</button></td>`;
 }
 
-async function saveDaily(id) {
-  await updateRow("daily", id, {
-    name: el(`d_name${id}`).value,
-    email: el(`d_email${id}`).value,
-    phone: el(`d_phone${id}`).value,
-    date: el(`d_date${id}`).value,
-    notes: el(`d_notes${id}`).value
-  }, renderDaily);
-}
-/* =========================================================
-   SUBMISSION TAB (Control Hub)
-========================================================= */
-
-async function renderSubmission() {
-  const container = el("submission");
-
-  container.innerHTML = `
-    <h5>Submission</h5>
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>SL</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Job</th>
-          <th>Visa</th>
-          <th>Date</th>
-          <th>Notes</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="subBody"></tbody>
-    </table>
-  `;
-
-  loadSubmission();
-}
-
-async function loadSubmission() {
-  const { data } = await supabaseClient.from("submission").select("*").order("id",{ascending:false});
-  const body = el("subBody");
-  body.innerHTML = "";
-
-  data.forEach((row, index) => {
-    body.innerHTML += `
-      <tr id="subRow${row.id}">
-        <td>${index + 1}</td>
-        <td>${row.name}</td>
-        <td>${row.email || ''}</td>
-        <td>${row.phone || ''}</td>
-        <td>${row.job}</td>
-        <td>${row.visa || ''}</td>
-        <td>${row.date ? row.date.split("T")[0] : ''}</td>
-        <td>${row.notes || ''}</td>
-        <td>
-          <button class="btn btn-sm btn-info" onclick="editSubmission(${row.id})">Edit</button>
-          <button class="btn btn-sm btn-secondary" onclick="moveToInterview(${row.id})">Interview</button>
-          <button class="btn btn-sm btn-success" onclick="moveToPlacement(${row.id})">Placement</button>
-          <button class="btn btn-sm btn-dark" onclick="moveToStart(${row.id})">Start</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteRow('submission',${row.id},renderSubmission)">X</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-async function editSubmission(id) {
-  const { data } = await supabaseClient.from("submission").select("*").eq("id",id).single();
-  const row = document.getElementById(`subRow${id}`);
-
-  row.innerHTML = `
-    <td>#</td>
-    <td><input id="s_name${id}" value="${data.name}"></td>
-    <td><input id="s_email${id}" value="${data.email || ''}"></td>
-    <td><input id="s_phone${id}" value="${data.phone || ''}"></td>
-    <td>${data.job}</td>
-    <td>${data.visa || ''}</td>
-    <td><input type="date" id="s_date${id}" value="${data.date.split("T")[0]}"></td>
-    <td><textarea id="s_notes${id}">${data.notes || ''}</textarea></td>
-    <td><button class="btn btn-sm btn-success" onclick="saveSubmission(${id})">Save</button></td>
-  `;
-}
-
-async function saveSubmission(id) {
-  await updateRow("submission", id, {
-    name: el(`s_name${id}`).value,
-    email: el(`s_email${id}`).value,
-    phone: el(`s_phone${id}`).value,
-    date: el(`s_date${id}`).value,
-    notes: el(`s_notes${id}`).value
-  }, renderSubmission);
-}
-
-/* =========================================================
-   MOVE FUNCTIONS (COPY MODE)
-========================================================= */
-
-async function moveToInterview(id) {
-  const { data } = await supabaseClient.from("submission").select("*").eq("id",id).single();
-
-  await supabaseClient.from("interview").insert({
-    date: now(),
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    job: data.job,
-    client: data.client,
-    location: data.location,
-    visa: data.visa,
-    interview_scheduled_on: null,
-    notes: ""
-  });
-
-  refreshDashboard();
-}
-
-async function moveToPlacement(id) {
-  const { data } = await supabaseClient.from("submission").select("*").eq("id",id).single();
-
-  await supabaseClient.from("placement").insert({
-    date: now(),
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    job: data.job,
-    client: data.client,
-    location: data.location,
-    visa: data.visa,
-    notes: ""
-  });
-
-  refreshDashboard();
-}
-
-async function moveToStart(id) {
-  const { data } = await supabaseClient.from("submission").select("*").eq("id",id).single();
-
-  await supabaseClient.from("start").insert({
-    date: now(),
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    job: data.job,
-    client: data.client,
-    location: data.location,
-    visa: data.visa,
-    start_date: null,
-    notes: ""
-  });
-
-  refreshDashboard();
-}
-
-/* =========================================================
-   PROPOSAL TAB
-========================================================= */
-
-async function renderProposal() {
-  const container = el("proposal");
-
-  container.innerHTML = `
-    <h5>Proposal</h5>
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>SL</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Job</th>
-          <th>Program</th>
-          <th>Date</th>
-          <th>Notes</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="propBody"></tbody>
-    </table>
-  `;
-
-  loadProposal();
-}
-
-async function loadProposal() {
-  const { data } = await supabaseClient.from("proposal").select("*").order("id",{ascending:false});
-  const body = el("propBody");
-  body.innerHTML = "";
-
-  data.forEach((row,index) => {
-    body.innerHTML += `
-      <tr id="propRow${row.id}">
-        <td>${index+1}</td>
-        <td>${row.name}</td>
-        <td>${row.email || ''}</td>
-        <td>${row.phone || ''}</td>
-        <td>${row.job}</td>
-        <td>${row.program_name || ''}</td>
-        <td>${row.date.split("T")[0]}</td>
-        <td>${row.notes || ''}</td>
-        <td>
-          <button class="btn btn-sm btn-info" onclick="editProposal(${row.id})">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteRow('proposal',${row.id},renderProposal)">X</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-async function editProposal(id) {
-  const { data } = await supabaseClient.from("proposal").select("*").eq("id",id).single();
-  const row = document.getElementById(`propRow${id}`);
-
-  row.innerHTML = `
-    <td>#</td>
-    <td><input id="p_name${id}" value="${data.name}"></td>
-    <td><input id="p_email${id}" value="${data.email || ''}"></td>
-    <td><input id="p_phone${id}" value="${data.phone || ''}"></td>
-    <td>${data.job}</td>
-    <td><input id="p_program${id}" value="${data.program_name || ''}"></td>
-    <td><input type="date" id="p_date${id}" value="${data.date.split("T")[0]}"></td>
-    <td><textarea id="p_notes${id}">${data.notes || ''}</textarea></td>
-    <td><button class="btn btn-sm btn-success" onclick="saveProposal(${id})">Save</button></td>
-  `;
-}
-
-async function saveProposal(id) {
-  await updateRow("proposal", id, {
-    name: el(`p_name${id}`).value,
-    email: el(`p_email${id}`).value,
-    phone: el(`p_phone${id}`).value,
-    program_name: el(`p_program${id}`).value,
-    date: el(`p_date${id}`).value,
-    notes: el(`p_notes${id}`).value
-  }, renderProposal);
+async function saveDaily(id){
+  await updateRow("daily",id,{
+    name:el(`d_name${id}`).value,
+    email:el(`d_email${id}`).value,
+    phone:el(`d_phone${id}`).value,
+    client:el(`d_client${id}`).value,
+    visa:el(`d_visa${id}`).value,
+    date:el(`d_date${id}`).value,
+    notes:el(`d_notes${id}`).value
+  },renderDaily);
 }
