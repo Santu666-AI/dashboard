@@ -1,85 +1,81 @@
-body {
-  font-family: 'Inter', sans-serif;
-  background: #f4f6fa;
-  margin: 0;
+body{
+font-family:Inter, sans-serif;
+background:#f3f6fb;
+margin:0
 }
 
-.wrapper {
-  display: flex;
-  height: 100vh;
+.sidebar{
+width:260px;
+background:#0f172a;
+min-height:100vh;
+color:#fff;
+position:fixed;
+padding:30px 20px
 }
 
-.sidebar {
-  width: 240px;
-  background: #111827;
-  color: white;
-  padding: 25px 20px;
+.sidebar h4{
+font-weight:700;
+margin-bottom:30px
 }
 
-.sidebar .brand {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 30px;
+.sidebar .nav-link{
+color:#cbd5e1;
+border-radius:8px;
+margin-bottom:6px;
+cursor:pointer;
+padding:8px 12px
 }
 
-.sidebar ul {
-  list-style: none;
-  padding: 0;
+.sidebar .nav-link.active,
+.sidebar .nav-link:hover{
+background:#1e293b;
+color:#fff
 }
 
-.sidebar li {
-  padding: 12px 10px;
-  cursor: pointer;
-  border-radius: 8px;
-  margin-bottom: 5px;
+.main{
+margin-left:260px;
+padding:30px
 }
 
-.sidebar li:hover {
-  background: #1f2937;
+.topbar{
+background:#fff;
+padding:20px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,0.05);
+margin-bottom:25px
 }
 
-.main {
-  flex: 1;
-  padding: 25px;
-  overflow-y: auto;
+.kpi{
+border-radius:16px;
+padding:20px;
+color:#fff
 }
 
-.topbar {
-  background: linear-gradient(90deg,#2563eb,#1d4ed8);
-  color: white;
-  padding: 18px 25px;
-  border-radius: 14px;
-  margin-bottom: 25px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.kpi-sub{background:#2563eb}
+.kpi-int{background:#7c3aed}
+.kpi-place{background:#059669}
+.kpi-start{background:#ea580c}
+
+.section-card{
+background:#fff;
+border-radius:16px;
+padding:25px;
+box-shadow:0 10px 30px rgba(0,0,0,0.05)
 }
 
-.kpi {
-  border-radius: 16px;
-  padding: 25px;
-  color: white;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+.tab{display:none}
+.tab.active{display:block}
+
+.table input,
+.table textarea,
+.table select{
+width:100%
 }
 
-.kpi h2 {
-  font-size: 38px;
-  font-weight: 700;
-  margin-top: 10px;
+.form-section{
+margin-bottom:20px
 }
 
-.blue { background: #2563eb; }
-.purple { background: #7c3aed; }
-.green { background: #059669; }
-.orange { background: #ea580c; }
-
-.content-card {
-  background: white;
-  padding: 25px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-}
-
-.table {
-  font-size: 14px;
+.search-box{
+margin-bottom:15px
 }
