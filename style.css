@@ -1,81 +1,113 @@
-body{
-font-family:Inter, sans-serif;
-background:#f3f6fb;
-margin:0
+const SUPABASE_URL = "https://jpmmciputroyyrjmyeya.supabase.co";
+const SUPABASE_KEY = "sb_publishable_afZSYp99Z_Xwb5Wl_W7J8g_m7fPHPTE";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const el = id => document.getElementById(id);
+
+// =================================
+// SWITCH TAB
+// =================================
+
+function switchTab(tabId, ref){
+
+  document.querySelectorAll(".tab").forEach(tab=>{
+    tab.classList.remove("active");
+  });
+
+  document.getElementById(tabId).classList.add("active");
+
+  document.querySelectorAll(".nav-link").forEach(link=>{
+    link.classList.remove("active");
+  });
+
+  if(ref) ref.classList.add("active");
+
+  const renderMap = {
+    dashboard: renderHome,
+    jd: renderJD,
+    resume: renderResume,
+    daily: renderDaily,
+    submission: renderSubmission,
+    proposal: renderProposal,
+    interview: renderInterview,
+    placement: renderPlacement,
+    start: renderStart
+  };
+
+  if(renderMap[tabId]) renderMap[tabId]();
 }
 
-.sidebar{
-width:260px;
-background:#0f172a;
-min-height:100vh;
-color:#fff;
-position:fixed;
-padding:30px 20px
+// =================================
+// INIT
+// =================================
+
+document.addEventListener("DOMContentLoaded",()=>{
+  switchTab("dashboard", document.querySelector(".nav-link.active"));
+});
+
+// =================================
+// DASHBOARD
+// =================================
+
+async function renderHome(){
+  await updateKPIs();
+  await calculateMonthly();
 }
 
-.sidebar h4{
-font-weight:700;
-margin-bottom:30px
+async function updateKPIs(){
+
+  const sub = await supabaseClient.from("submission").select("*",{count:"exact",head:true});
+  const int = await supabaseClient.from("interview").select("*",{count:"exact",head:true});
+  const pla = await supabaseClient.from("placement").select("*",{count:"exact",head:true});
+  const sta = await supabaseClient.from("start").select("*",{count:"exact",head:true});
+
+  el("subCount").innerText = sub.count || 0;
+  el("intCount").innerText = int.count || 0;
+  el("placeCount").innerText = pla.count || 0;
+  el("startCount").innerText = sta.count || 0;
 }
 
-.sidebar .nav-link{
-color:#cbd5e1;
-border-radius:8px;
-margin-bottom:6px;
-cursor:pointer;
-padding:8px 12px
+async function calculateMonthly(){
+
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const year=new Date().getFullYear();
+
+  const sub=await supabaseClient.from("submission").select("date");
+  const int=await supabaseClient.from("interview").select("interview_scheduled_on");
+  const pla=await supabaseClient.from("placement").select("date");
+  const sta=await supabaseClient.from("start").select("start_date");
+
+  let rows="";
+
+  for(let m=0;m<12;m++){
+
+    const subCount=(sub.data||[]).filter(r=>new Date(r.date).getFullYear()===year && new Date(r.date).getMonth()===m).length;
+    const intCount=(int.data||[]).filter(r=>r.interview_scheduled_on && new Date(r.interview_scheduled_on).getFullYear()===year && new Date(r.interview_scheduled_on).getMonth()===m).length;
+    const placeCount=(pla.data||[]).filter(r=>new Date(r.date).getFullYear()===year && new Date(r.date).getMonth()===m).length;
+    const startCount=(sta.data||[]).filter(r=>r.start_date && new Date(r.start_date).getFullYear()===year && new Date(r.start_date).getMonth()===m).length;
+
+    rows+=`<tr>
+      <td>${months[m]}</td>
+      <td>${subCount}</td>
+      <td>${intCount}</td>
+      <td>${placeCount}</td>
+      <td>${startCount}</td>
+    </tr>`;
+  }
+
+  el("yearlyReportTable").innerHTML=rows;
 }
 
-.sidebar .nav-link.active,
-.sidebar .nav-link:hover{
-background:#1e293b;
-color:#fff
-}
+// =================================
+// SIMPLE EMPTY TAB RENDERS
+// =================================
 
-.main{
-margin-left:260px;
-padding:30px
-}
-
-.topbar{
-background:#fff;
-padding:20px;
-border-radius:16px;
-box-shadow:0 10px 25px rgba(0,0,0,0.05);
-margin-bottom:25px
-}
-
-.kpi{
-border-radius:16px;
-padding:20px;
-color:#fff
-}
-
-.kpi-sub{background:#2563eb}
-.kpi-int{background:#7c3aed}
-.kpi-place{background:#059669}
-.kpi-start{background:#ea580c}
-
-.section-card{
-background:#fff;
-border-radius:16px;
-padding:25px;
-box-shadow:0 10px 30px rgba(0,0,0,0.05)
-}
-
-.tab{display:none}
-.tab.active{display:block}
-
-.table input,
-.table textarea,
-.table select{
-width:100%
-}
-
-.form-section{
-margin-bottom:20px
-}
-
-.search-box{
-margin-bottom:15px
-}
+function renderJD(){ el("jd").innerHTML="<h4>JD Tab Working</h4>"; }
+function renderResume(){ el("resume").innerHTML="<h4>Resume Tab Working</h4>"; }
+function renderDaily(){ el("daily").innerHTML="<h4>Daily Tab Working</h4>"; }
+function renderSubmission(){ el("submission").innerHTML="<h4>Submission Tab Working</h4>"; }
+function renderProposal(){ el("proposal").innerHTML="<h4>Proposal Tab Working</h4>"; }
+function renderInterview(){ el("interview").innerHTML="<h4>Interview Tab Working</h4>"; }
+function renderPlacement(){ el("placement").innerHTML="<h4>Placement Tab Working</h4>"; }
+function renderStart(){ el("start").innerHTML="<h4>Start Tab Working</h4>"; }
