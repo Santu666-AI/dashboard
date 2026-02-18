@@ -1,113 +1,75 @@
-const SUPABASE_URL = "https://jpmmciputroyyrjmyeya.supabase.co";
-const SUPABASE_KEY = "sb_publishable_afZSYp99Z_Xwb5Wl_W7J8g_m7fPHPTE";
+/* ===================================
+   ATS ACTION BUTTON SYSTEM (ADD ONLY)
+=================================== */
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const el = id => document.getElementById(id);
-
-// =================================
-// SWITCH TAB
-// =================================
-
-function switchTab(tabId, ref){
-
-  document.querySelectorAll(".tab").forEach(tab=>{
-    tab.classList.remove("active");
-  });
-
-  document.getElementById(tabId).classList.add("active");
-
-  document.querySelectorAll(".nav-link").forEach(link=>{
-    link.classList.remove("active");
-  });
-
-  if(ref) ref.classList.add("active");
-
-  const renderMap = {
-    dashboard: renderHome,
-    jd: renderJD,
-    resume: renderResume,
-    daily: renderDaily,
-    submission: renderSubmission,
-    proposal: renderProposal,
-    interview: renderInterview,
-    placement: renderPlacement,
-    start: renderStart
-  };
-
-  if(renderMap[tabId]) renderMap[tabId]();
+.action-cell {
+  white-space: nowrap;
+  text-align: center;
 }
 
-// =================================
-// INIT
-// =================================
-
-document.addEventListener("DOMContentLoaded",()=>{
-  switchTab("dashboard", document.querySelector(".nav-link.active"));
-});
-
-// =================================
-// DASHBOARD
-// =================================
-
-async function renderHome(){
-  await updateKPIs();
-  await calculateMonthly();
+/* Base Button */
+.action-btn {
+  border: none;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 10px;
+  margin: 2px;
+  cursor: pointer;
+  min-width: 68px;
+  font-weight: 500;
+  transition: all 0.18s ease-in-out;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-async function updateKPIs(){
-
-  const sub = await supabaseClient.from("submission").select("*",{count:"exact",head:true});
-  const int = await supabaseClient.from("interview").select("*",{count:"exact",head:true});
-  const pla = await supabaseClient.from("placement").select("*",{count:"exact",head:true});
-  const sta = await supabaseClient.from("start").select("*",{count:"exact",head:true});
-
-  el("subCount").innerText = sub.count || 0;
-  el("intCount").innerText = int.count || 0;
-  el("placeCount").innerText = pla.count || 0;
-  el("startCount").innerText = sta.count || 0;
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+  opacity: 0.95;
 }
 
-async function calculateMonthly(){
+/* Button Types */
 
-  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const year=new Date().getFullYear();
-
-  const sub=await supabaseClient.from("submission").select("date");
-  const int=await supabaseClient.from("interview").select("interview_scheduled_on");
-  const pla=await supabaseClient.from("placement").select("date");
-  const sta=await supabaseClient.from("start").select("start_date");
-
-  let rows="";
-
-  for(let m=0;m<12;m++){
-
-    const subCount=(sub.data||[]).filter(r=>new Date(r.date).getFullYear()===year && new Date(r.date).getMonth()===m).length;
-    const intCount=(int.data||[]).filter(r=>r.interview_scheduled_on && new Date(r.interview_scheduled_on).getFullYear()===year && new Date(r.interview_scheduled_on).getMonth()===m).length;
-    const placeCount=(pla.data||[]).filter(r=>new Date(r.date).getFullYear()===year && new Date(r.date).getMonth()===m).length;
-    const startCount=(sta.data||[]).filter(r=>r.start_date && new Date(r.start_date).getFullYear()===year && new Date(r.start_date).getMonth()===m).length;
-
-    rows+=`<tr>
-      <td>${months[m]}</td>
-      <td>${subCount}</td>
-      <td>${intCount}</td>
-      <td>${placeCount}</td>
-      <td>${startCount}</td>
-    </tr>`;
-  }
-
-  el("yearlyReportTable").innerHTML=rows;
+.btn-edit {
+  background: linear-gradient(135deg, #4c8bf5, #6fa9ff);
+  color: #fff;
 }
 
-// =================================
-// SIMPLE EMPTY TAB RENDERS
-// =================================
+.btn-save {
+  background: linear-gradient(135deg, #2bb673, #52d89f);
+  color: #fff;
+}
 
-function renderJD(){ el("jd").innerHTML="<h4>JD Tab Working</h4>"; }
-function renderResume(){ el("resume").innerHTML="<h4>Resume Tab Working</h4>"; }
-function renderDaily(){ el("daily").innerHTML="<h4>Daily Tab Working</h4>"; }
-function renderSubmission(){ el("submission").innerHTML="<h4>Submission Tab Working</h4>"; }
-function renderProposal(){ el("proposal").innerHTML="<h4>Proposal Tab Working</h4>"; }
-function renderInterview(){ el("interview").innerHTML="<h4>Interview Tab Working</h4>"; }
-function renderPlacement(){ el("placement").innerHTML="<h4>Placement Tab Working</h4>"; }
-function renderStart(){ el("start").innerHTML="<h4>Start Tab Working</h4>"; }
+.btn-cancel {
+  background: linear-gradient(135deg, #858796, #a5a8b1);
+  color: #fff;
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #e74a3b, #ff6b5f);
+  color: #fff;
+}
+
+.btn-sub {
+  background: linear-gradient(135deg, #36b9cc, #5fd3e0);
+  color: #fff;
+}
+
+.btn-prop {
+  background: linear-gradient(135deg, #f6c23e, #ffd76a);
+  color: #333;
+}
+
+.btn-int {
+  background: linear-gradient(135deg, #20c997, #4de0b6);
+  color: #fff;
+}
+
+.btn-place {
+  background: linear-gradient(135deg, #6f42c1, #9a6dfd);
+  color: #fff;
+}
+
+.btn-start {
+  background: linear-gradient(135deg, #fd7e14, #ff9f50);
+  color: #fff;
+}
