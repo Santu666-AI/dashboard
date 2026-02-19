@@ -1,362 +1,341 @@
-/* ===============================
-   NETVISION ATS – MASTER OFFLINE
-   =============================== */
+/* ============================================================
+   NETVISION ATS – COMPLETE STABLE MASTER ENGINE
+   Clean Flow | Stable DB | Full Stage Control
+============================================================ */
 
-const db = {
-  jd: JSON.parse(localStorage.getItem("jd") || "[]"),
-  resume: JSON.parse(localStorage.getItem("resume") || "[]"),
-  daily: JSON.parse(localStorage.getItem("daily") || "[]"),
-  submission: JSON.parse(localStorage.getItem("submission") || "[]"),
-  proposal: JSON.parse(localStorage.getItem("proposal") || "[]"),
-  interview: JSON.parse(localStorage.getItem("interview") || "[]"),
-  placement: JSON.parse(localStorage.getItem("placement") || "[]"),
-  start: JSON.parse(localStorage.getItem("start") || "[]")
+/* ================== CONSTANTS ================== */
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
+                "Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* ================== DATABASE ================== */
+
+let DB = JSON.parse(localStorage.getItem("ATS_DB")) || {
+  jd: [],
+  daily: [],
+  submission: [],
+  proposal: [],
+  interview: [],
+  placement: [],
+  start: []
 };
 
-function saveAll(){
-  Object.keys(db).forEach(k=>{
-    localStorage.setItem(k, JSON.stringify(db[k]));
-  });
-  updateKPI();
-  renderMonthly();
+function saveDB(){
+  localStorage.setItem("ATS_DB", JSON.stringify(DB));
 }
 
-/* ================= TAB SWITCH ================= */
+function today(){
+  return new Date().toISOString().split("T")[0];
+}
+
+/* ================== TAB SWITCH ================== */
 
 function switchTab(id){
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-
-  document.querySelectorAll(".sidebar a").forEach(a=>a.classList.remove("active"));
-  event.target.classList.add("active");
-
-  renderAll();
 }
 
-/* ================= HELPERS ================= */
-
-function today(){ return new Date().toISOString().split("T")[0]; }
-function month(d){ return new Date(d).getMonth(); }
-function year(d){ return new Date(d).getFullYear(); }
-
-/* ================= JD ================= */
+/* ================== JD ================== */
 
 function addJD(){
-  const nvr = jdNvr.value.trim();
-  if(db.jd.some(j=>j.nvr===nvr)){ alert("Duplicate NVR"); return; }
-
-  db.jd.push({
-    nvr,
-    title: jdTitle.value,
-    client: jdClient.value,
-    desc: jdDesc.value,
-    status: jdStatus.value,
-    date: today()
+  DB.jd.unshift({
+    date: jdDate.value || today(),
+    nvr: jdNvr.value.trim(),
+    title: jdTitle.value.trim(),
+    client: jdClient.value.trim(),
+    status: jdStatus.value
   });
+  saveAndRender();
+}
 
-  jdNvr.value=jdTitle.value=jdClient.value=jdDesc.value="";
-  saveAll();
-  renderJD();
-  loadActiveJD();
+function updateJDStatus(i,val){
+  DB.jd[i].status = val;
+  saveAndRender();
 }
 
 function renderJD(){
   jdBody.innerHTML="";
-  db.jd.forEach((j,i)=>{
+  DB.jd.forEach((r,i)=>{
     jdBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${j.nvr}</td>
-      <td>${j.title}</td>
-      <td>${j.client}</td>
-      <td>${j.status}</td>
-      <td>${j.date}</td>
-    </tr>`;
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.date}</td>
+        <td>${r.nvr}</td>
+        <td>${r.title}</td>
+        <td>${r.client}</td>
+        <td>
+          <select onchange="updateJDStatus(${i},this.value)">
+            <option ${r.status==="Active"?"selected":""}>Active</option>
+            <option ${r.status==="Hold"?"selected":""}>Hold</option>
+            <option ${r.status==="Closed"?"selected":""}>Closed</option>
+          </select>
+        </td>
+        <td><button onclick="deleteRow('jd',${i})">Delete</button></td>
+      </tr>`;
+  });
+
+  loadActiveRequirements();
+}
+
+function loadActiveRequirements(){
+  dailyRequirement.innerHTML='<option value="">Select Requirement</option>';
+  DB.jd.filter(j=>j.status==="Active").forEach(j=>{
+    dailyRequirement.innerHTML+=
+      `<option value="${j.nvr}">${j.nvr} - ${j.title}</option>`;
   });
 }
 
-function loadActiveJD(){
-  dailyJob.innerHTML="";
-  db.jd.filter(j=>j.status==="Active")
-  .forEach(j=>{
-    dailyJob.innerHTML+=`<option value="${j.nvr}">${j.title}</option>`;
-  });
+function autoFillClient(){
+  const req = dailyRequirement.value;
+  const jd = DB.jd.find(j=>j.nvr===req);
+  dailyClient.value = jd ? jd.client : "";
 }
 
-dailyJob?.addEventListener("change",()=>{
-  const selected = db.jd.find(j=>j.nvr===dailyJob.value);
-  if(selected) dailyClient.value = selected.client;
-});
-
-/* ================= RESUME ================= */
+/* ================== RESUME ================== */
 
 function parseResume(){
-  const text = resumeText.value;
-  const email = text.match(/\S+@\S+\.\S+/);
-  const phone = text.match(/\b\d{10}\b/);
-  const name = text.split("\n")[0];
 
-  db.resume.push({
-    name:name || "",
-    email:email?email[0]:"",
-    phone:phone?phone[0]:"",
-    visa:resumeVisa.value,
-    date:today(),
-    raw:text
-  });
+  const txt = resumeText.value.trim();
 
-  saveAll();
-  renderResume();
+  const email = txt.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  const phone = txt.match(/\+?\d[\d\-\s]{8,}/);
+  const lines = txt.split("\n").map(x=>x.trim()).filter(Boolean);
+
+  const name = lines[0] || "";
+  const location = lines.find(l=>l.includes(",")) || "";
+
+  resumeName.value = name;
+  resumeEmail.value = email?email[0]:"";
+  resumePhone.value = phone?phone[0]:"";
+  resumeLocation.value = location;
+
+  // Mirror to Daily
+  dailyName.value = name;
+  dailyEmail.value = email?email[0]:"";
+  dailyPhone.value = phone?phone[0]:"";
+  dailyLocation.value = location;
 }
 
-function renderResume(){
-  resumeBody.innerHTML="";
-  db.resume.forEach((r,i)=>{
-    resumeBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${r.name}</td>
-      <td>${r.email}</td>
-      <td>${r.visa}</td>
-      <td>${r.date}</td>
-      <td><button onclick="deleteResume(${i})">Delete</button></td>
-    </tr>`;
-  });
-}
+/* ================== DAILY ================== */
 
-function deleteResume(i){
-  db.resume.splice(i,1);
-  saveAll();
-  renderResume();
-}
+function saveDaily(){
 
-/* ================= DAILY ================= */
-
-function addDaily(){
-  db.daily.push({
-    date:today(),
-    name:dailyName.value,
-    email:dailyEmail.value,
-    phone:dailyPhone.value,
-    job:dailyJob.value,
-    client:dailyClient.value,
-    source:dailySource.value,
-    location:dailyLocation.value,
-    visa:dailyVisa.value,
-    notes:dailyNotes.value
+  DB.daily.unshift({
+    entry_date: today(),
+    name: dailyName.value,
+    email: dailyEmail.value,
+    phone: dailyPhone.value,
+    requirement: dailyRequirement.value,
+    client: dailyClient.value,
+    location: dailyLocation.value,
+    visa: dailyVisa.value,
+    notes: dailyNotes.value
   });
 
-  saveAll();
-  renderDaily();
+  clearDaily();
+  saveAndRender();
+}
+
+function clearDaily(){
+  dailyName.value="";
+  dailyEmail.value="";
+  dailyPhone.value="";
+  dailyRequirement.value="";
+  dailyClient.value="";
+  dailyLocation.value="";
+  dailyVisa.value="US Citizen";
+  dailyNotes.value="";
+  resumeText.value="";
 }
 
 function renderDaily(){
   dailyBody.innerHTML="";
-  db.daily.forEach((d,i)=>{
+  DB.daily.forEach((r,i)=>{
     dailyBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${d.date}</td>
-      <td>${d.name}</td>
-      <td>${d.job}</td>
-      <td>${d.client}</td>
-      <td>${d.source}</td>
-      <td>
-        <button onclick="copyTo('submission',${i})">To Sub</button>
-        <button onclick="copyTo('proposal',${i})">To Proposal</button>
-      </td>
-    </tr>`;
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.entry_date}</td>
+        <td>${r.name}</td>
+        <td>${r.email}</td>
+        <td>${r.phone}</td>
+        <td>${r.requirement}</td>
+        <td>${r.client}</td>
+        <td>${r.location}</td>
+        <td>${r.visa}</td>
+        <td>
+          <input value="${r.notes||""}"
+            onchange="updateNote('daily',${i},this.value)">
+        </td>
+        <td>
+          <button onclick="moveToSubmission(${i})">Sub</button>
+          <button onclick="moveToProposal(${i})">Proposal</button>
+          <button onclick="deleteRow('daily',${i})">Del</button>
+        </td>
+      </tr>`;
   });
 }
 
-/* ================= COPY ENGINE ================= */
+/* ================== STAGE MOVEMENT ================== */
 
-function copyTo(stage,i){
-  const item = {...db.daily[i]};
-  if(stage==="proposal") item.program="";
-  db[stage].push(item);
-  saveAll();
-  renderAll();
+function moveToSubmission(index){
+  const base = {...DB.daily[index]};
+  base.submission_date = today();
+  DB.submission.unshift(base);
+  saveAndRender();
 }
 
-/* ================= SUBMISSION ================= */
+function moveToProposal(index){
+  const base = {...DB.daily[index]};
+  base.proposal_date = today();
+  DB.proposal.unshift(base);
+  saveAndRender();
+}
 
-function renderSubmission(){
-  submissionBody.innerHTML="";
-  db.submission.forEach((s,i)=>{
-    submissionBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td><input type="date" value="${s.date}" onchange="editSubDate(${i},this.value)"></td>
-      <td>${s.name}</td>
-      <td>${s.job}</td>
-      <td>${s.client}</td>
-      <td>
-        <button onclick="copyFromSub('interview',${i})">To Interview</button>
-        <button onclick="copyFromSub('placement',${i})">To Placement</button>
-      </td>
-    </tr>`;
+function moveToInterview(index){
+  const base = {...DB.submission[index]};
+  base.interview_scheduled_on = today();
+  DB.interview.unshift(base);
+  saveAndRender();
+}
+
+function moveToPlacement(index){
+  const base = {...DB.interview[index]};
+  base.placement_date = today();
+  DB.placement.unshift(base);
+  saveAndRender();
+}
+
+function moveToStart(index){
+  const base = {...DB.placement[index]};
+  base.start_date = today();
+  DB.start.unshift(base);
+  saveAndRender();
+}
+
+/* ================== GENERIC DELETE ================== */
+
+function deleteRow(tab,index){
+  DB[tab].splice(index,1);
+  saveAndRender();
+}
+
+function updateNote(tab,index,val){
+  DB[tab][index].notes = val;
+  saveDB();
+}
+
+/* ================== STAGE RENDER ================== */
+
+function renderStage(stage, bodyId){
+
+  const body = document.getElementById(bodyId);
+  body.innerHTML="";
+
+  DB[stage].forEach((r,i)=>{
+
+    let actionButton = "";
+
+    if(stage==="submission"){
+      actionButton = `<button onclick="moveToInterview(${i})">Interview</button>`;
+    }
+    if(stage==="interview"){
+      actionButton = `<button onclick="moveToPlacement(${i})">Placement</button>`;
+    }
+    if(stage==="placement"){
+      actionButton = `<button onclick="moveToStart(${i})">Start</button>`;
+    }
+
+    body.innerHTML+=`
+      <tr>
+        <td>${i+1}</td>
+        <td>
+          <input type="date"
+            value="${r.submission_date||r.interview_scheduled_on||r.placement_date||r.start_date||""}"
+            onchange="updateStageDate('${stage}',${i},this.value)">
+        </td>
+        <td>${r.name||""}</td>
+        <td>${r.email||""}</td>
+        <td>${r.phone||""}</td>
+        <td>${r.requirement||""}</td>
+        <td>${r.client||""}</td>
+        <td>${r.location||""}</td>
+        <td>${r.visa||""}</td>
+        <td>
+          <input value="${r.notes||""}"
+            onchange="updateNote('${stage}',${i},this.value)">
+        </td>
+        <td>
+          ${actionButton}
+          <button onclick="deleteRow('${stage}',${i})">Del</button>
+        </td>
+      </tr>`;
   });
 }
 
-function editSubDate(i,val){
-  db.submission[i].date=val;
-  saveAll();
+function updateStageDate(stage,index,val){
+
+  if(stage==="submission") DB.submission[index].submission_date = val;
+  if(stage==="interview") DB.interview[index].interview_scheduled_on = val;
+  if(stage==="placement") DB.placement[index].placement_date = val;
+  if(stage==="start") DB.start[index].start_date = val;
+
+  saveAndRender();
 }
 
-function copyFromSub(stage,i){
-  db[stage].push({...db.submission[i]});
-  saveAll();
-  renderAll();
-}
+/* ================== KPI ================== */
 
-/* ================= PROPOSAL ================= */
+function renderKPI(){
 
-function renderProposal(){
-  proposalBody.innerHTML="";
-  db.proposal.forEach((p,i)=>{
-    proposalBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${p.date}</td>
-      <td>${p.name}</td>
-      <td><input value="${p.program||""}" onchange="db.proposal[${i}].program=this.value;saveAll()"></td>
-      <td><button onclick="deleteRow('proposal',${i})">Delete</button></td>
-    </tr>`;
-  });
-}
+  kpiSub.innerText = DB.submission.length;
+  kpiInt.innerText = DB.interview.length;
+  kpiPlace.innerText = DB.placement.length;
+  kpiStart.innerText = DB.start.length;
 
-/* ================= INTERVIEW ================= */
-
-function renderInterview(){
-  interviewBody.innerHTML="";
-  db.interview.forEach((iv,i)=>{
-    interviewBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${iv.date}</td>
-      <td><input type="date" value="${iv.interviewOn||today()}" onchange="db.interview[${i}].interviewOn=this.value;saveAll()"></td>
-      <td>${iv.name}</td>
-      <td>
-        <button onclick="copyFromInterview(${i})">To Placement</button>
-        <button onclick="deleteRow('interview',${i})">Delete</button>
-      </td>
-    </tr>`;
-  });
-}
-
-function copyFromInterview(i){
-  db.placement.push({...db.interview[i]});
-  saveAll();
-  renderAll();
-}
-
-/* ================= PLACEMENT ================= */
-
-function renderPlacement(){
-  placementBody.innerHTML="";
-  db.placement.forEach((p,i)=>{
-    placementBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${p.date}</td>
-      <td>${p.name}</td>
-      <td>
-        <button onclick="copyFromPlacement(${i})">To Start</button>
-        <button onclick="deleteRow('placement',${i})">Delete</button>
-      </td>
-    </tr>`;
-  });
-}
-
-function copyFromPlacement(i){
-  db.start.push({...db.placement[i], startOn:today()});
-  saveAll();
-  renderAll();
-}
-
-/* ================= START ================= */
-
-function renderStart(){
-  startBody.innerHTML="";
-  db.start.forEach((s,i)=>{
-    startBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${s.date}</td>
-      <td><input type="date" value="${s.startOn||today()}" onchange="db.start[${i}].startOn=this.value;saveAll()"></td>
-      <td>${s.name}</td>
-      <td><button onclick="deleteRow('start',${i})">Delete</button></td>
-    </tr>`;
-  });
-}
-
-/* ================= DELETE ================= */
-
-function deleteRow(stage,i){
-  db[stage].splice(i,1);
-  saveAll();
-  renderAll();
-}
-
-/* ================= KPI ================= */
-
-function updateKPI(){
-  kpiSub.innerText=db.submission.length;
-  kpiInt.innerText=db.interview.length;
-  kpiPlace.innerText=db.placement.length;
-  kpiStart.innerText=db.start.length;
-}
-
-/* ================= MONTHLY ================= */
-
-function renderMonthly(){
-  const yr=parseInt(yearSelect.value);
   monthlyBody.innerHTML="";
-  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   for(let m=0;m<12;m++){
-    const sub=db.submission.filter(x=>year(x.date)===yr && month(x.date)===m).length;
-    const intv=db.interview.filter(x=>x.interviewOn && year(x.interviewOn)===yr && month(x.interviewOn)===m).length;
-    const place=db.placement.filter(x=>year(x.date)===yr && month(x.date)===m).length;
-    const start=db.start.filter(x=>x.startOn && year(x.startOn)===yr && month(x.startOn)===m).length;
+
+    const sub = countMonth(DB.submission,"submission_date",m);
+    const int = countMonth(DB.interview,"interview_scheduled_on",m);
+    const place = countMonth(DB.placement,"placement_date",m);
+    const start = countMonth(DB.start,"start_date",m);
 
     monthlyBody.innerHTML+=`
-    <tr>
-      <td>${months[m]}</td>
-      <td>${sub}</td>
-      <td>${intv}</td>
-      <td>${place}</td>
-      <td>${start}</td>
-    </tr>`;
+      <tr>
+        <td>${MONTHS[m]}</td>
+        <td>${sub}</td>
+        <td>${int}</td>
+        <td>${place}</td>
+        <td>${start}</td>
+      </tr>`;
   }
 }
 
-/* ================= INIT ================= */
+function countMonth(arr,field,month){
+  return arr.filter(r=>{
+    if(!r[field]) return false;
+    return new Date(r[field]).getMonth()===month;
+  }).length;
+}
 
-function initYear(){
-  const current=new Date().getFullYear();
-  for(let y=2026;y<=current+3;y++){
-    yearSelect.innerHTML+=`<option>${y}</option>`;
-  }
-  yearSelect.value=current;
+/* ================== MASTER RENDER ================== */
+
+function saveAndRender(){
+  saveDB();
+  renderAll();
 }
 
 function renderAll(){
   renderJD();
-  renderResume();
   renderDaily();
-  renderSubmission();
-  renderProposal();
-  renderInterview();
-  renderPlacement();
-  renderStart();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
+  renderKPI();
 }
 
-document.addEventListener("DOMContentLoaded",()=>{
-  initYear();
-  loadActiveJD();
-  renderAll();
-  updateKPI();
-  renderMonthly();
-});
+/* ================== INIT ================== */
+
+renderAll();
