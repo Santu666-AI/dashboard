@@ -4,11 +4,23 @@
 <meta charset="UTF-8">
 <title>NetVision ATS</title>
 <link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
+
 <body>
 
+<!-- ================= SIDEBAR ================= -->
+
 <div class="sidebar">
-  <h3>NetVision ATS</h3>
+
+  <div class="brand">
+    <img src="logo.png" class="brand-logo">
+    <div class="brand-text">
+      <div class="brand-title">NetVision ATS</div>
+      <div class="brand-sub">Recruiting Platform</div>
+    </div>
+  </div>
+
   <a onclick="switchTab('dashboard')">Dashboard</a>
   <a onclick="switchTab('jd')">JD</a>
   <a onclick="switchTab('resume')">Resume</a>
@@ -18,18 +30,23 @@
   <a onclick="switchTab('interview')">Interview</a>
   <a onclick="switchTab('placement')">Placement</a>
   <a onclick="switchTab('start')">Start</a>
+
 </div>
+
+<!-- ================= MAIN ================= -->
 
 <div class="main">
 
-<!-- DASHBOARD -->
+<!-- ================= DASHBOARD ================= -->
+
 <div id="dashboard" class="section active">
-  <h2>Dashboard</h2>
+  <h2>Dashboard Overview</h2>
+
   <div class="kpi-cards">
-    <div class="card sub">Submissions <span id="kpiSub">0</span></div>
-    <div class="card int">Interviews <span id="kpiInt">0</span></div>
-    <div class="card place">Placements <span id="kpiPlace">0</span></div>
-    <div class="card start">Starts <span id="kpiStart">0</span></div>
+    <div class="card">Submissions <span id="kpiSub">0</span></div>
+    <div class="card">Interviews <span id="kpiInt">0</span></div>
+    <div class="card">Placements <span id="kpiPlace">0</span></div>
+    <div class="card">Starts <span id="kpiStart">0</span></div>
   </div>
 
   <table>
@@ -46,19 +63,23 @@
   </table>
 </div>
 
-<!-- JD -->
+<!-- ================= JD ================= -->
+
 <div id="jd" class="section">
-  <h2>JD</h2>
-  <input type="date" id="jdDate">
-  <input id="jdNvr" placeholder="NVR">
-  <input id="jdTitle" placeholder="Job Title">
-  <input id="jdClient" placeholder="Client">
-  <select id="jdStatus">
-    <option>Active</option>
-    <option>Hold</option>
-    <option>Closed</option>
-  </select>
-  <button onclick="addJD()">Add</button>
+  <h2>Job Requirements</h2>
+
+  <div class="form-row">
+    <input type="date" id="jdDate">
+    <input id="jdNvr" placeholder="NVR">
+    <input id="jdTitle" placeholder="Job Title">
+    <input id="jdClient" placeholder="Client">
+    <select id="jdStatus">
+      <option>Active</option>
+      <option>Hold</option>
+      <option>Closed</option>
+    </select>
+    <button onclick="addJD()">Add JD</button>
+  </div>
 
   <table>
     <thead>
@@ -76,41 +97,49 @@
   </table>
 </div>
 
-<!-- RESUME -->
+<!-- ================= RESUME ================= -->
+
 <div id="resume" class="section">
   <h2>Resume Parser</h2>
-  <textarea id="resumeText" rows="6" style="width:100%;"></textarea>
-  <button onclick="parseResume()">Parse</button>
-  <br>
-  <input id="resumeName" placeholder="Name">
-  <input id="resumeEmail" placeholder="Email">
-  <input id="resumePhone" placeholder="Phone">
-  <input id="resumeLocation" placeholder="Location">
-  <select id="resumeVisa">
-    <option>US Citizen</option>
-    <option>GC</option>
-    <option>H1B</option>
-  </select>
-  <button onclick="sendToDaily()">Send to Daily</button>
+
+  <textarea id="resumeText" placeholder="Paste resume content here..."></textarea>
+  <button onclick="parseResume()">Parse Resume</button>
+
+  <div class="form-row">
+    <input id="resumeName" placeholder="Name">
+    <input id="resumeEmail" placeholder="Email">
+    <input id="resumePhone" placeholder="Phone">
+    <input id="resumeLocation" placeholder="Location">
+    <select id="resumeVisa">
+      <option>US Citizen</option>
+      <option>GC</option>
+      <option>H1B</option>
+    </select>
+  </div>
 </div>
 
-<!-- DAILY -->
+<!-- ================= DAILY ================= -->
+
 <div id="daily" class="section">
-  <h2>Daily</h2>
-  <input type="date" id="dailyDate">
-  <input id="dailyName" placeholder="Name">
-  <input id="dailyEmail" placeholder="Email">
-  <input id="dailyPhone" placeholder="Phone">
-  <select id="dailyRequirement" onchange="autoFillClient()"></select>
-  <input id="dailyClient" placeholder="Client" readonly>
-  <input id="dailyLocation" placeholder="Location">
-  <select id="dailyVisa">
-    <option>US Citizen</option>
-    <option>GC</option>
-    <option>H1B</option>
-  </select>
+  <h2>Daily Tracker</h2>
+
+  <div class="form-row">
+    <input type="date" id="dailyDate">
+    <input id="dailyName" placeholder="Name">
+    <input id="dailyEmail" placeholder="Email">
+    <input id="dailyPhone" placeholder="Phone">
+    <select id="dailyRequirement" onchange="autoFillClient()"></select>
+    <input id="dailyClient" placeholder="Client" readonly>
+    <input id="dailyLocation" placeholder="Location">
+    <select id="dailyVisa">
+      <option>US Citizen</option>
+      <option>GC</option>
+      <option>H1B</option>
+    </select>
+  </div>
+
   <textarea id="dailyNotes" placeholder="Notes"></textarea>
-  <button onclick="saveDaily()">Save</button>
+  <button onclick="saveDaily()">Save Candidate</button>
 
   <table>
     <thead>
@@ -132,9 +161,10 @@
   </table>
 </div>
 
-<!-- SUBMISSION -->
+<!-- ================= SUBMISSION ================= -->
+
 <div id="submission" class="section">
-  <h2>Submission</h2>
+  <h2>Submissions</h2>
   <table>
     <thead>
       <tr>
@@ -155,9 +185,10 @@
   </table>
 </div>
 
-<!-- PROPOSAL -->
+<!-- ================= PROPOSAL ================= -->
+
 <div id="proposal" class="section">
-  <h2>Proposal</h2>
+  <h2>Proposals</h2>
   <table>
     <thead>
       <tr>
@@ -178,14 +209,15 @@
   </table>
 </div>
 
-<!-- INTERVIEW -->
+<!-- ================= INTERVIEW ================= -->
+
 <div id="interview" class="section">
-  <h2>Interview</h2>
+  <h2>Interviews</h2>
   <table>
     <thead>
       <tr>
         <th>Sl</th>
-        <th>Entry Date</th>
+        <th>Date</th>
         <th>Name</th>
         <th>Email</th>
         <th>Phone</th>
@@ -202,9 +234,10 @@
   </table>
 </div>
 
-<!-- PLACEMENT -->
+<!-- ================= PLACEMENT ================= -->
+
 <div id="placement" class="section">
-  <h2>Placement</h2>
+  <h2>Placements</h2>
   <table>
     <thead>
       <tr>
@@ -225,9 +258,10 @@
   </table>
 </div>
 
-<!-- START -->
+<!-- ================= START ================= -->
+
 <div id="start" class="section">
-  <h2>Start</h2>
+  <h2>Starts</h2>
   <table>
     <thead>
       <tr>
@@ -250,6 +284,8 @@
 </div>
 
 </div>
+
 <script src="script.js"></script>
+
 </body>
 </html>

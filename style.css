@@ -1,73 +1,83 @@
-/* =========================================
-   NETVISION ATS – APPLE INSPIRED UI
-========================================= */
+/* ==================================================
+   NETVISION ATS – PREMIUM RECRUITING UI
+   Clean SaaS Layout | Apple Inspired | Modern
+================================================== */
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
                "Segoe UI", Roboto, sans-serif;
-  background: linear-gradient(135deg,#f5f7fa,#e4ecf7);
+  background: #f4f7fb;
   display: flex;
   min-height: 100vh;
-  color: #1d1d1f;
+  color: #1f2937;
 }
 
 /* ================= SIDEBAR ================= */
 
 .sidebar {
-  width: 240px;
-  backdrop-filter: blur(20px);
-  background: rgba(255,255,255,0.65);
-  border-right: 1px solid rgba(0,0,0,0.06);
-  padding: 24px 18px;
-  box-shadow: 8px 0 20px rgba(0,0,0,0.04);
+  width: 260px;
+  background: #0f172a;
+  color: white;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
 }
 
-.sidebar h3 {
-  margin: 0 0 30px 0;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.brand-logo {
+  width: 42px;
+  height: auto;
+}
+
+.brand-title {
   font-weight: 600;
-  font-size: 20px;
+  font-size: 18px;
+}
+
+.brand-sub {
+  font-size: 12px;
+  opacity: 0.6;
 }
 
 .sidebar a {
-  display: block;
-  padding: 10px 14px;
-  border-radius: 12px;
-  margin-bottom: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #cbd5e1;
   text-decoration: none;
-  color: #374151;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  margin-bottom: 6px;
+  font-size: 14px;
+  transition: 0.2s ease;
 }
 
 .sidebar a:hover {
-  background: rgba(0,0,0,0.05);
-  transform: translateX(4px);
+  background: rgba(255,255,255,0.08);
+  color: white;
 }
 
 /* ================= MAIN ================= */
 
 .main {
   flex: 1;
-  padding: 35px;
+  padding: 35px 40px;
 }
+
+/* ================= SECTIONS ================= */
 
 .section {
   display: none;
-  animation: fadeIn 0.3s ease;
 }
 
 .section.active {
   display: block;
-}
-
-@keyframes fadeIn {
-  from {opacity:0; transform:translateY(5px);}
-  to {opacity:1; transform:translateY(0);}
 }
 
 /* ================= KPI CARDS ================= */
@@ -80,82 +90,73 @@ body {
 }
 
 .card {
-  padding: 25px;
-  border-radius: 20px;
-  color: white;
-  font-size: 15px;
-  font-weight: 500;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  transition: all 0.25s ease;
+  padding: 22px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+  transition: 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
 }
 
 .card span {
   display: block;
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 600;
   margin-top: 8px;
 }
 
-.card:hover {
-  transform: translateY(-6px);
-}
-
-.sub { background: linear-gradient(135deg,#3b82f6,#2563eb); }
-.int { background: linear-gradient(135deg,#8b5cf6,#7c3aed); }
-.place { background: linear-gradient(135deg,#22c55e,#16a34a); }
-.start { background: linear-gradient(135deg,#fb923c,#ea580c); }
-
-/* ================= TABLES ================= */
+/* ================= TABLE ================= */
 
 table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  border-radius: 18px;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.05);
-  margin-top: 15px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
 }
 
 thead {
-  background: #f9fafb;
+  background: #f1f5f9;
 }
 
 th {
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #6b7280;
   padding: 14px;
+  color: #64748b;
+  letter-spacing: 0.5px;
 }
 
 td {
   padding: 12px 14px;
-  border-top: 1px solid #f1f1f1;
   font-size: 14px;
+  border-top: 1px solid #f1f5f9;
 }
 
 tbody tr:hover {
-  background: #f5f9ff;
+  background: #f9fbff;
 }
 
 /* ================= INPUTS ================= */
 
 input, select, textarea {
-  padding: 9px 12px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
   font-size: 14px;
-  transition: all 0.2s ease;
+  transition: 0.2s ease;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
 }
 
 textarea {
@@ -166,55 +167,33 @@ textarea {
 /* ================= BUTTONS ================= */
 
 button {
-  padding: 8px 14px;
-  border-radius: 12px;
+  padding: 7px 12px;
+  border-radius: 8px;
   border: none;
-  background: #2563eb;
-  color: white;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-size: 13px;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
-button:hover {
-  background: #1d4ed8;
-  transform: translateY(-2px);
-}
+/* Action Colors */
+button { background:#2563eb; color:white; }
+button:hover { opacity:0.9; }
 
-/* ================= ACTION BUTTONS ================= */
-
-.action-btn {
-  border-radius: 10px;
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  margin: 2px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-}
-
-.btn-delete { background:#ef4444; color:white; }
-.btn-sub { background:#06b6d4; color:white; }
-.btn-proposal { background:#facc15; color:black; }
-.btn-int { background:#22c55e; color:white; }
-.btn-place { background:#8b5cf6; color:white; }
-.btn-start { background:#fb923c; color:white; }
+button.delete { background:#ef4444; }
+button.sub { background:#06b6d4; }
+button.proposal { background:#facc15; color:black; }
+button.interview { background:#22c55e; }
+button.place { background:#8b5cf6; }
+button.start { background:#fb923c; }
 
 /* ================= RESPONSIVE ================= */
 
-@media(max-width:1200px){
-  .kpi-cards{
-    grid-template-columns: repeat(2,1fr);
-  }
+@media(max-width:1100px){
+  .kpi-cards { grid-template-columns: repeat(2,1fr); }
 }
 
 @media(max-width:768px){
-  body{flex-direction:column;}
-  .sidebar{width:100%;}
-  .kpi-cards{grid-template-columns:1fr;}
+  body { flex-direction: column; }
+  .sidebar { width:100%; }
+  .kpi-cards { grid-template-columns: 1fr; }
 }
