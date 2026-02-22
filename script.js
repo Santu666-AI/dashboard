@@ -1,9 +1,9 @@
 /* =========================================================
-   NETVISION ATS – FINAL MASTER PRODUCTION SCRIPT
+   NETVISION ATS – ENTERPRISE MASTER SCRIPT
 ========================================================= */
 
 const SUPABASE_URL = "https://ftxrrgdmkpnghxilnpsk.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eHJyZ2Rta3BuZ2h4aWxucHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDY0MzYsImV4cCI6MjA4NzE4MjQzNn0.KcqIN2ynBQWmglQ_-6eaFi3TGPSclB0TgeJ83XU_OWI";
 
 const supabase = window.supabase.createClient(
   SUPABASE_URL,
@@ -12,18 +12,6 @@ const supabase = window.supabase.createClient(
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
                 "Jul","Aug","Sep","Oct","Nov","Dec"];
-
-/* ================= AUTH ================= */
-
-async function checkAuth(){
-  const { data:{user} } = await supabase.auth.getUser();
-  if(!user) window.location="index.html";
-}
-
-async function logout(){
-  await supabase.auth.signOut();
-  window.location="index.html";
-}
 
 /* ================= UTIL ================= */
 
@@ -36,76 +24,32 @@ function switchTab(id){
   document.getElementById(id).classList.add("active");
 }
 
+async function logout(){
+  await supabase.auth.signOut();
+  window.location="index.html";
+}
+
 async function deleteRecord(table,id){
   await supabase.from(table).delete().eq("id",id);
   loadAll();
 }
 
-/* ================= JD ================= */
-
-async function addJD(){
-  await supabase.from("jd").insert([{
-    date: jdDate.value || today(),
-    nvr: jdNvr.value,
-    title: jdTitle.value,
-    client: jdClient.value,
-    status: jdStatus.value
-  }]);
-  loadAll();
-}
-
-async function loadJD(){
-  const { data } = await supabase.from("jd").select("*");
-  jdBody.innerHTML="";
-  dailyRequirement.innerHTML='<option value="">Select Requirement</option>';
-
-  data?.forEach((r,i)=>{
-    jdBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${r.date||""}</td>
-      <td>${r.nvr||""}</td>
-      <td>${r.title||""}</td>
-      <td>${r.client||""}</td>
-      <td>${r.status||""}</td>
-      <td><button onclick="deleteRecord('jd','${r.id}')">Delete</button></td>
-    </tr>`;
-
-    if(r.status==="Active"){
-      dailyRequirement.innerHTML+=`<option value="${r.nvr}">${r.nvr}</option>`;
-    }
-  });
-}
-
 /* ================= DAILY ================= */
 
-function parseResume(){
-  const txt = resumeText.value.trim();
-  if(!txt) return;
-
-  const email = txt.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  const phone = txt.match(/\+?\d[\d\-\s]{8,}/);
-
-  const lines = txt.split("\n").map(x=>x.trim()).filter(Boolean);
-
-  dailyName.value = lines[0] || "";
-  dailyEmail.value = email?.[0] || "";
-  dailyPhone.value = phone?.[0] || "";
-}
-
-async function saveDaily(){
+async function addDaily(){
   await supabase.from("daily").insert([{
     entry_date: today(),
     name: dailyName.value,
     email: dailyEmail.value,
     phone: dailyPhone.value,
+    visa: dailyVisa.value,
     requirement: dailyRequirement.value,
     client: dailyClient.value,
     source: dailySource.value,
     location: dailyLocation.value,
-    visa: dailyVisa.value,
     notes: dailyNotes.value
   }]);
+
   loadAll();
 }
 
@@ -113,49 +57,64 @@ async function loadDaily(){
   const { data } = await supabase.from("daily").select("*");
   dailyBody.innerHTML="";
 
-  data?.forEach((r,i)=>{
+  data?.forEach(r=>{
     dailyBody.innerHTML+=`
-    <tr>
-      <td>${i+1}</td>
-      <td>${r.entry_date||""}</td>
-      <td>${r.name||""}</td>
-      <td>${r.email||""}</td>
-      <td>${r.phone||""}</td>
-      <td>${r.requirement||""}</td>
-      <td>${r.client||""}</td>
-      <td>${r.source||""}</td>
-      <td>${r.location||""}</td>
-      <td>${r.visa||""}</td>
-      <td>${r.notes||""}</td>
-      <td>
-        <button onclick="copyToSubmission('${r.id}')">Sub</button>
-        <button onclick="copyToProposal('${r.id}')">Proposal</button>
-        <button onclick="deleteRecord('daily','${r.id}')">Del</button>
-      </td>
-    </tr>`;
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.email||""}</td>
+        <td>${r.phone||""}</td>
+        <td>${r.requirement||""}</td>
+        <td>${r.client||""}</td>
+        <td>${r.visa||""}</td>
+        <td>
+          <button onclick="copyToSubmission('${r.id}')">Sub</button>
+          <button onclick="copyToProposal('${r.id}')">Proposal</button>
+          <button onclick="deleteRecord('daily','${r.id}')">Del</button>
+        </td>
+      </tr>`;
   });
 }
 
-/* ================= COPY STAGES ================= */
+/* ================= SUBMISSION ================= */
 
 async function copyToSubmission(id){
   const { data } = await supabase.from("daily").select("*").eq("id",id).single();
+
   await supabase.from("submission").insert([{
     submission_date: today(),
     name: data.name,
     email: data.email,
     phone: data.phone,
+    visa: data.visa,
     requirement: data.requirement,
-    client: data.client,
-    source: data.source,
-    location: data.location,
-    visa: data.visa
+    client: data.client
   }]);
+
   loadAll();
 }
 
+async function loadSubmission(){
+  const { data } = await supabase.from("submission").select("*");
+  submissionBody.innerHTML="";
+
+  data?.forEach(r=>{
+    submissionBody.innerHTML+=`
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.client||""}</td>
+        <td>
+          <button onclick="copyToInterview('${r.id}')">Interview</button>
+          <button onclick="deleteRecord('submission','${r.id}')">Del</button>
+        </td>
+      </tr>`;
+  });
+}
+
+/* ================= PROPOSAL ================= */
+
 async function copyToProposal(id){
   const { data } = await supabase.from("daily").select("*").eq("id",id).single();
+
   await supabase.from("proposal").insert([{
     proposal_date: today(),
     name: data.name,
@@ -164,46 +123,187 @@ async function copyToProposal(id){
     client: data.client,
     requirement: data.requirement
   }]);
+
   loadAll();
 }
+
+async function loadProposal(){
+  const { data } = await supabase.from("proposal").select("*");
+  proposalBody.innerHTML="";
+
+  data?.forEach(r=>{
+    proposalBody.innerHTML+=`
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.client||""}</td>
+        <td>
+          <button onclick="deleteRecord('proposal','${r.id}')">Del</button>
+        </td>
+      </tr>`;
+  });
+}
+
+/* ================= INTERVIEW ================= */
 
 async function copyToInterview(id){
   const { data } = await supabase.from("submission").select("*").eq("id",id).single();
+
   await supabase.from("interview").insert([{
-    interview_date: today(),
+    interview_scheduled_on: today(),
     name: data.name,
-    email: data.email,
-    phone: data.phone,
-    visa: data.visa,
     client: data.client,
-    requirement: data.requirement
+    visa: data.visa
   }]);
+
   loadAll();
 }
+
+async function loadInterview(){
+  const { data } = await supabase.from("interview").select("*");
+  interviewBody.innerHTML="";
+
+  data?.forEach(r=>{
+    interviewBody.innerHTML+=`
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.client||""}</td>
+        <td>
+          <button onclick="copyToPlacement('${r.id}')">Placement</button>
+          <button onclick="deleteRecord('interview','${r.id}')">Del</button>
+        </td>
+      </tr>`;
+  });
+}
+
+/* ================= PLACEMENT ================= */
 
 async function copyToPlacement(id){
   const { data } = await supabase.from("interview").select("*").eq("id",id).single();
+
   await supabase.from("placement").insert([{
     placement_date: today(),
     name: data.name,
-    email: data.email,
-    phone: data.phone,
-    visa: data.visa,
     client: data.client,
-    requirement: data.requirement
+    visa: data.visa
+  }]);
+
+  loadAll();
+}
+
+async function loadPlacement(){
+  const { data } = await supabase.from("placement").select("*");
+  placementBody.innerHTML="";
+
+  data?.forEach(r=>{
+    placementBody.innerHTML+=`
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.client||""}</td>
+        <td>
+          <button onclick="copyToStart('${r.id}')">Start</button>
+          <button onclick="deleteRecord('placement','${r.id}')">Del</button>
+        </td>
+      </tr>`;
+  });
+}
+
+/* ================= START ================= */
+
+async function copyToStart(id){
+  const { data } = await supabase.from("placement").select("*").eq("id",id).single();
+
+  await supabase.from("start").insert([{
+    start_date: today(),
+    name: data.name,
+    client: data.client
+  }]);
+
+  loadAll();
+}
+
+async function loadStart(){
+  const { data } = await supabase.from("start").select("*");
+  startBody.innerHTML="";
+
+  data?.forEach(r=>{
+    startBody.innerHTML+=`
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.client||""}</td>
+        <td>
+          <button onclick="deleteRecord('start','${r.id}')">Del</button>
+        </td>
+      </tr>`;
+  });
+}
+
+/* ================= TASK MANAGER ================= */
+
+async function addTask(){
+  await supabase.from("tasks").insert([{
+    title: taskTitle.value,
+    remarks: taskRemarks.value,
+    due_date: taskDue.value,
+    status: "pending"
   }]);
   loadAll();
 }
 
-async function copyToStart(id){
-  const { data } = await supabase.from("placement").select("*").eq("id",id).single();
-  await supabase.from("start").insert([{
-    start_date: today(),
-    name: data.name,
-    client: data.client,
-    requirement: data.requirement
+async function completeTask(id){
+  await supabase.from("tasks").update({status:"completed"}).eq("id",id);
+  loadAll();
+}
+
+async function loadTasks(){
+  const { data } = await supabase.from("tasks").select("*");
+  taskBody.innerHTML="";
+  data?.forEach(t=>{
+    taskBody.innerHTML+=`
+      <tr>
+        <td>${t.title}</td>
+        <td>${t.due_date||""}</td>
+        <td>${t.status}</td>
+        <td>
+          ${t.status==="pending" ? `<button onclick="completeTask('${t.id}')">Complete</button>` : ""}
+          <button onclick="deleteRecord('tasks','${t.id}')">Del</button>
+        </td>
+      </tr>`;
+  });
+}
+
+/* Hourly Reminder */
+setInterval(async()=>{
+  const { data } = await supabase.from("tasks").select("*").eq("status","pending");
+  if(data && data.length>0){
+    alert("You have pending tasks. Please complete them.");
+  }
+},3600000);
+
+/* ================= MEETINGS ================= */
+
+async function addMeeting(){
+  await supabase.from("meetings").insert([{
+    meeting_date: meetingDate.value,
+    title: meetingTitle.value,
+    notes: meetingNotes.value
   }]);
   loadAll();
+}
+
+async function loadMeetings(){
+  const { data } = await supabase.from("meetings").select("*");
+  meetingBody.innerHTML="";
+  data?.forEach(m=>{
+    meetingBody.innerHTML+=`
+      <tr>
+        <td>${m.meeting_date||""}</td>
+        <td>${m.title||""}</td>
+        <td>${m.notes||""}</td>
+        <td>
+          <button onclick="deleteRecord('meetings','${m.id}')">Del</button>
+        </td>
+      </tr>`;
+  });
 }
 
 /* ================= KPI ================= */
@@ -238,87 +338,20 @@ async function renderKPI(){
   }
 }
 
-/* ================= TASKS ================= */
-
-async function addTask(){
-  await supabase.from("tasks").insert([{
-    title: taskTitle.value,
-    remarks: taskRemarks.value,
-    due_date: taskDue.value,
-    status: "pending"
-  }]);
-  loadAll();
-}
-
-async function completeTask(id){
-  await supabase.from("tasks").update({status:"completed"}).eq("id",id);
-  loadAll();
-}
-
-async function loadTasks(){
-  const { data } = await supabase.from("tasks").select("*");
-  taskBody.innerHTML="";
-  data?.forEach(t=>{
-    taskBody.innerHTML+=`
-    <tr>
-      <td>${t.title}</td>
-      <td>${t.remarks||""}</td>
-      <td>${t.due_date||""}</td>
-      <td>${t.status}</td>
-      <td>
-        ${t.status==="pending" ? `<button onclick="completeTask('${t.id}')">Complete</button>` : ""}
-        <button onclick="deleteRecord('tasks','${t.id}')">Delete</button>
-      </td>
-    </tr>`;
-  });
-}
-
-function startReminder(){
-  setInterval(async()=>{
-    const { data } = await supabase.from("tasks").select("*").eq("status","pending");
-    if(data && data.length>0){
-      alert("You have pending tasks.");
-    }
-  },3600000);
-}
-
-/* ================= MEETINGS ================= */
-
-async function addMeeting(){
-  await supabase.from("meetings").insert([{
-    meeting_date: meetingDate.value,
-    title: meetingTitle.value,
-    notes: meetingNotes.value
-  }]);
-  loadAll();
-}
-
-async function loadMeetings(){
-  const { data } = await supabase.from("meetings").select("*");
-  meetingBody.innerHTML="";
-  data?.forEach(m=>{
-    meetingBody.innerHTML+=`
-    <tr>
-      <td>${m.meeting_date}</td>
-      <td>${m.title}</td>
-      <td>${m.notes||""}</td>
-      <td><button onclick="deleteRecord('meetings','${m.id}')">Delete</button></td>
-    </tr>`;
-  });
-}
-
 /* ================= MASTER LOAD ================= */
 
 async function loadAll(){
-  await loadJD();
   await loadDaily();
+  await loadSubmission();
+  await loadProposal();
+  await loadInterview();
+  await loadPlacement();
+  await loadStart();
   await loadTasks();
   await loadMeetings();
   await renderKPI();
 }
 
-window.onload=async function(){
-  await checkAuth();
-  await loadAll();
-  startReminder();
+window.onload = async function(){
+  loadAll();
 };
