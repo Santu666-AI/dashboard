@@ -1,6 +1,6 @@
 /* =========================================================
-   NETVISION ATS – TRUE MASTER CLOUD BUILD
-   Supabase Connected | KEEP COPY LOGIC
+   NETVISION ATS – PRODUCTION MASTER BUILD
+   Full Workflow | GitHub Safe | Session Stable
 ========================================================= */
 
 const SUPABASE_URL = "https://ftxrrgdmkpnghxilnpsk.supabase.co";
@@ -8,7 +8,14 @@ const SUPABASE_ANON_KEY = "sb_publishable_8_jiydwm4YMDg3Nuf9T0xg_1S_jMGpc";
 
 const supabase = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  SUPABASE_ANON_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
@@ -18,12 +25,14 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
 
 async function checkAuth(){
   const { data:{user} } = await supabase.auth.getUser();
-  if(!user) window.location="index.html";
+  if(!user){
+    window.location = "index.html";
+  }
 }
 
 async function logout(){
   await supabase.auth.signOut();
-  window.location="index.html";
+  window.location = "index.html";
 }
 
 /* ================= UTIL ================= */
@@ -37,22 +46,26 @@ function switchTab(id){
   document.getElementById(id).classList.add("active");
 
   document.querySelectorAll(".sidebar a").forEach(a=>a.classList.remove("active-link"));
-  document.querySelectorAll(".sidebar a").forEach(link=>{
-    if(link.getAttribute("onclick")?.includes(id)){
-      link.classList.add("active-link");
-    }
-  });
+  event.target.classList.add("active-link");
 }
-/* ================= JD ================= */
+
+/* ================= JD SYSTEM ================= */
 
 async function addJD(){
+  if(!jdNvr.value || !jdTitle.value) return;
+
   await supabase.from("jd").insert([{
-    date: jdDate?.value || today(),
+    date: jdDate.value || today(),
     nvr: jdNvr.value.trim(),
     title: jdTitle.value.trim(),
     client: jdClient.value.trim(),
     status: jdStatus.value
   }]);
+
+  jdNvr.value="";
+  jdTitle.value="";
+  jdClient.value="";
+
   loadJD();
 }
 
@@ -64,12 +77,13 @@ async function updateJDStatus(id,val){
 }
 
 async function deleteJD(id){
-  await supabase.from("jd").delete().eq("id",id);
+  await supabase.from("jd")
+    .delete()
+    .eq("id",id);
   loadJD();
 }
 
 async function loadJD(){
-  if(!jdBody) return;
 
   const { data } = await supabase
     .from("jd")
@@ -78,7 +92,7 @@ async function loadJD(){
 
   jdBody.innerHTML="";
 
-  data.forEach((r,i)=>{
+  data?.forEach((r,i)=>{
     jdBody.innerHTML+=`
       <tr>
         <td>${i+1}</td>
@@ -93,7 +107,9 @@ async function loadJD(){
             <option ${r.status==="Closed"?"selected":""}>Closed</option>
           </select>
         </td>
-        <td><button onclick="deleteJD('${r.id}')">Delete</button></td>
+        <td>
+          <button onclick="deleteJD('${r.id}')">Delete</button>
+        </td>
       </tr>`;
   });
 
@@ -101,7 +117,6 @@ async function loadJD(){
 }
 
 async function loadActiveRequirements(){
-  if(!dailyRequirement) return;
 
   const { data } = await supabase
     .from("jd")
@@ -110,14 +125,17 @@ async function loadActiveRequirements(){
 
   dailyRequirement.innerHTML='<option value="">Select Requirement</option>';
 
-  data.forEach(j=>{
+  data?.forEach(j=>{
     dailyRequirement.innerHTML+=
       `<option value="${j.nvr}">${j.nvr} - ${j.title}</option>`;
   });
 }
 
 async function autoFillClient(){
+
   const req = dailyRequirement.value;
+
+  if(!req) return;
 
   const { data } = await supabase
     .from("jd")
@@ -131,28 +149,29 @@ async function autoFillClient(){
 /* ================= RESUME PARSER ================= */
 
 function parseResume(){
+
   const txt = resumeText.value.trim();
+  if(!txt) return;
+
   const email = txt.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
   const phone = txt.match(/\+?\d[\d\-\s]{8,}/);
-  const lines = txt.split("\n").map(x=>x.trim()).filter(Boolean);
 
-  const name = lines[0] || "";
-  const location = lines.find(l=>l.includes(",")) || "";
+  const lines = txt.split("\n")
+                   .map(x=>x.trim())
+                   .filter(Boolean);
 
-  resumeName.value = name;
-  resumeEmail.value = email?email[0]:"";
-  resumePhone.value = phone?phone[0]:"";
-  resumeLocation.value = location;
-
-  dailyName.value = name;
-  dailyEmail.value = email?email[0]:"";
-  dailyPhone.value = phone?phone[0]:"";
-  dailyLocation.value = location;
+  dailyName.value = lines[0] || "";
+  dailyEmail.value = email ? email[0] : "";
+  dailyPhone.value = phone ? phone[0] : "";
+  dailyLocation.value = lines.find(l=>l.includes(",")) || "";
 }
 
-/* ================= DAILY ================= */
+/* ================= DAILY SYSTEM ================= */
 
 async function saveDaily(){
+
+  if(!dailyName.value || !dailyRequirement.value) return;
+
   await supabase.from("daily").insert([{
     entry_date: today(),
     name: dailyName.value,
@@ -160,7 +179,7 @@ async function saveDaily(){
     phone: dailyPhone.value,
     requirement: dailyRequirement.value,
     client: dailyClient.value,
-    source: dailySource?.value || "",
+    source: dailySource.value,
     location: dailyLocation.value,
     visa: dailyVisa.value,
     notes: dailyNotes.value
@@ -196,7 +215,6 @@ async function deleteRecord(table,id){
 }
 
 async function loadDaily(){
-  if(!dailyBody) return;
 
   const { data } = await supabase
     .from("daily")
@@ -205,7 +223,7 @@ async function loadDaily(){
 
   dailyBody.innerHTML="";
 
-  data.forEach((r,i)=>{
+  data?.forEach((r,i)=>{
     dailyBody.innerHTML+=`
       <tr>
         <td>${i+1}</td>
@@ -230,10 +248,10 @@ async function loadDaily(){
       </tr>`;
   });
 }
-
-/* ================= STAGE COPY (KEEP COPY LOGIC) ================= */
+/* ================= COPY CHAIN SYSTEM ================= */
 
 async function moveToSubmission(id){
+
   const { data } = await supabase
     .from("daily")
     .select("*")
@@ -245,10 +263,12 @@ async function moveToSubmission(id){
   payload.submission_date = today();
 
   await supabase.from("submission").insert([payload]);
+
   loadAll();
 }
 
 async function moveToProposal(id){
+
   const { data } = await supabase
     .from("daily")
     .select("*")
@@ -260,11 +280,12 @@ async function moveToProposal(id){
   payload.proposal_date = today();
 
   await supabase.from("proposal").insert([payload]);
+
   loadAll();
 }
-/* ================= STAGE COPY CHAIN ================= */
 
 async function moveToInterview(id){
+
   const { data } = await supabase
     .from("submission")
     .select("*")
@@ -276,10 +297,12 @@ async function moveToInterview(id){
   payload.interview_scheduled_on = today();
 
   await supabase.from("interview").insert([payload]);
+
   loadAll();
 }
 
 async function moveToPlacement(id){
+
   const { data } = await supabase
     .from("interview")
     .select("*")
@@ -291,10 +314,12 @@ async function moveToPlacement(id){
   payload.placement_date = today();
 
   await supabase.from("placement").insert([payload]);
+
   loadAll();
 }
 
 async function moveToStart(id){
+
   const { data } = await supabase
     .from("placement")
     .select("*")
@@ -306,6 +331,7 @@ async function moveToStart(id){
   payload.start_date = today();
 
   await supabase.from("start").insert([payload]);
+
   loadAll();
 }
 
@@ -349,7 +375,7 @@ async function renderStage(stage, bodyId){
 
   body.innerHTML="";
 
-  data.forEach((r,i)=>{
+  data?.forEach((r,i)=>{
 
     let action="";
 
@@ -371,13 +397,8 @@ async function renderStage(stage, bodyId){
             onchange="updateStageDate('${stage}','${r.id}',this.value)">
         </td>
         <td>${r.name||""}</td>
-        <td>${r.email||""}</td>
-        <td>${r.phone||""}</td>
-        <td>${r.requirement||""}</td>
         <td>${r.client||""}</td>
-        <td>${r.source||""}</td>
-        <td>${r.location||""}</td>
-        <td>${r.visa||""}</td>
+        <td>${r.requirement||""}</td>
         <td>
           <input value="${r.notes||""}"
             onchange="updateNote('${stage}','${r.id}',this.value)">
@@ -389,31 +410,29 @@ async function renderStage(stage, bodyId){
       </tr>`;
   });
 }
+
 /* ================= KPI SYSTEM ================= */
 
 async function renderKPI(){
-
-  if(!kpiSub) return;
 
   const { data:sub } = await supabase.from("submission").select("*");
   const { data:int } = await supabase.from("interview").select("*");
   const { data:place } = await supabase.from("placement").select("*");
   const { data:start } = await supabase.from("start").select("*");
 
-  kpiSub.innerText = sub.length;
-  kpiInt.innerText = int.length;
-  kpiPlace.innerText = place.length;
-  kpiStart.innerText = start.length;
+  kpiSub.innerText = sub?.length || 0;
+  kpiInt.innerText = int?.length || 0;
+  kpiPlace.innerText = place?.length || 0;
+  kpiStart.innerText = start?.length || 0;
 
-  if(!monthlyBody) return;
   monthlyBody.innerHTML="";
 
   for(let m=0;m<12;m++){
 
-    const subCount = countMonth(sub,"submission_date",m);
-    const intCount = countMonth(int,"interview_scheduled_on",m);
-    const placeCount = countMonth(place,"placement_date",m);
-    const startCount = countMonth(start,"start_date",m);
+    const subCount = sub?.filter(r=>r.submission_date && new Date(r.submission_date).getMonth()===m).length || 0;
+    const intCount = int?.filter(r=>r.interview_scheduled_on && new Date(r.interview_scheduled_on).getMonth()===m).length || 0;
+    const placeCount = place?.filter(r=>r.placement_date && new Date(r.placement_date).getMonth()===m).length || 0;
+    const startCount = start?.filter(r=>r.start_date && new Date(r.start_date).getMonth()===m).length || 0;
 
     monthlyBody.innerHTML+=`
       <tr>
@@ -426,16 +445,10 @@ async function renderKPI(){
   }
 }
 
-function countMonth(arr,field,month){
-  return arr.filter(r=>{
-    if(!r[field]) return false;
-    return new Date(r[field]).getMonth()===month;
-  }).length;
-}
-
 /* ================= TASK SYSTEM ================= */
 
 async function addTask(){
+
   if(!taskTitle.value || !taskDue.value) return;
 
   await supabase.from("tasks").insert([{
@@ -446,30 +459,16 @@ async function addTask(){
 
   taskTitle.value="";
   taskDue.value="";
+
   loadTasks();
 }
 
 async function updateTask(id,status){
 
   if(status==="delete"){
-    const { data } = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("id",id)
-      .single();
-
     await supabase.from("tasks").delete().eq("id",id);
-
-    await supabase.from("meetings").insert([{
-      date: today(),
-      title: "Deleted Task",
-      notes: data.title
-    }]);
-
   }else{
-    await supabase.from("tasks")
-      .update({status:status})
-      .eq("id",id);
+    await supabase.from("tasks").update({status}).eq("id",id);
   }
 
   loadTasks();
@@ -477,32 +476,22 @@ async function updateTask(id,status){
 
 async function loadTasks(){
 
-  if(!taskList) return;
-
   const { data } = await supabase
     .from("tasks")
     .select("*")
     .order("due",{ascending:true});
 
   taskList.innerHTML="";
-  const now = today();
 
-  data.forEach(t=>{
-
-    let cls="";
-    if(t.status==="pending" && t.due < now) cls="task-overdue";
-    else if(t.status==="pending" && t.due===now) cls="task-today";
-    else if(t.status==="done") cls="task-done";
+  data?.forEach(t=>{
 
     taskList.innerHTML+=`
-      <div class="task ${cls}">
-        <div>
-          <strong>${t.title}</strong><br>
-          <small>Due: ${t.due}</small>
-        </div>
+      <div class="task">
+        <strong>${t.title}</strong>
+        <small>Due: ${t.due}</small>
         <div>
           ${t.status==="pending"
-            ? `<button onclick="updateTask('${t.id}','done')">Submit ✔</button>`
+            ? `<button onclick="updateTask('${t.id}','done')">Done</button>`
             : ""}
           <button onclick="updateTask('${t.id}','delete')">Delete</button>
         </div>
@@ -513,6 +502,7 @@ async function loadTasks(){
 /* ================= MEETING SYSTEM ================= */
 
 async function addMeeting(){
+
   if(!meetingDate.value || !meetingTitle.value) return;
 
   await supabase.from("meetings").insert([{
@@ -524,12 +514,11 @@ async function addMeeting(){
   meetingDate.value="";
   meetingTitle.value="";
   meetingNotes.value="";
+
   loadMeetings();
 }
 
 async function loadMeetings(){
-
-  if(!meetingList) return;
 
   const { data } = await supabase
     .from("meetings")
@@ -538,10 +527,10 @@ async function loadMeetings(){
 
   meetingList.innerHTML="";
 
-  data.forEach(m=>{
+  data?.forEach(m=>{
     meetingList.innerHTML+=`
       <div class="meeting">
-        <strong>${m.title}</strong><br>
+        <strong>${m.title}</strong>
         <small>${m.date}</small>
         <p>${m.notes||""}</p>
       </div>`;
@@ -563,18 +552,9 @@ function startHourlyReminder(){
       .select("*")
       .eq("status","pending");
 
-    if(data.length===0) return;
+    if(!data || data.length===0) return;
 
-    const audio=new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-    audio.loop=true;
-    audio.play();
-
-    setTimeout(()=>{
-      audio.pause();
-      audio.currentTime=0;
-    },30000);
-
-    alert("You have pending tasks. Please submit if completed.");
+    alert("You have pending tasks. Please update status.");
 
   },60*60*1000);
 }

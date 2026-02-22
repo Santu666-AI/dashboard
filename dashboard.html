@@ -2,83 +2,202 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>NetVision ATS – Cloud Master</title>
+<title>NetVision ATS – Production Master</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 
-<style>
-body{display:flex;margin:0;font-family:Segoe UI;background:#f4f6f9;}
-.sidebar{
-  width:230px;background:#111827;color:white;height:100vh;
-  padding:20px;position:fixed;
-}
-.sidebar h4{margin-bottom:20px;}
-.sidebar a{
-  display:block;color:#cbd5e1;padding:8px;margin-bottom:5px;
-  text-decoration:none;border-radius:6px;cursor:pointer;
-}
-.sidebar a:hover,.active-link{background:#2563eb;color:white;}
-.main{margin-left:230px;padding:25px;width:100%;}
-.section{display:none;}
-.section.active{display:block;}
-.card{padding:15px;margin-bottom:15px;}
-table{width:100%;}
-</style>
 </head>
-
 <body>
 
 <div class="sidebar">
-  <h4>NetVision ATS</h4>
-  <a onclick="switchTab('dashboard')">Dashboard</a>
+  <h4 class="text-white">NetVision ATS</h4>
+
+  <a onclick="switchTab('dashboard')" class="active-link">Dashboard</a>
   <a onclick="switchTab('jd')">JD</a>
-  <a onclick="switchTab('resume')">Resume</a>
   <a onclick="switchTab('daily')">Daily</a>
   <a onclick="switchTab('submission')">Submission</a>
   <a onclick="switchTab('proposal')">Proposal</a>
   <a onclick="switchTab('interview')">Interview</a>
   <a onclick="switchTab('placement')">Placement</a>
   <a onclick="switchTab('start')">Start</a>
-  <a onclick="switchTab('productivity')">Productivity</a>
+  <a onclick="switchTab('tasks')">Tasks</a>
+  <a onclick="switchTab('meetings')">Meetings</a>
   <a onclick="logout()">Logout</a>
 </div>
 
 <div class="main">
 
+<!-- ================= KPI DASHBOARD ================= -->
+
 <div id="dashboard" class="section active">
-  <h3>KPI Overview</h3>
-  <div class="row">
-    <div class="col"><div class="card bg-light">Submissions <h4 id="kpiSub">0</h4></div></div>
-    <div class="col"><div class="card bg-light">Interviews <h4 id="kpiInt">0</h4></div></div>
-    <div class="col"><div class="card bg-light">Placements <h4 id="kpiPlace">0</h4></div></div>
-    <div class="col"><div class="card bg-light">Starts <h4 id="kpiStart">0</h4></div></div>
+  <h2>KPI Overview</h2>
+
+  <div class="kpi-cards">
+    <div class="card">Submissions <span id="kpiSub">0</span></div>
+    <div class="card">Interviews <span id="kpiInt">0</span></div>
+    <div class="card">Placements <span id="kpiPlace">0</span></div>
+    <div class="card">Starts <span id="kpiStart">0</span></div>
   </div>
-  <table class="table table-bordered mt-3">
-    <thead>
-      <tr><th>Month</th><th>Sub</th><th>Int</th><th>Place</th><th>Start</th></tr>
-    </thead>
-    <tbody id="monthlyBody"></tbody>
-  </table>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Sub</th>
+          <th>Int</th>
+          <th>Place</th>
+          <th>Start</th>
+        </tr>
+      </thead>
+      <tbody id="monthlyBody"></tbody>
+    </table>
+  </div>
 </div>
 
-<div id="jd" class="section"><h3>JD</h3><table class="table"><tbody id="jdBody"></tbody></table></div>
-<div id="resume" class="section"><h3>Resume</h3></div>
-<div id="daily" class="section"><h3>Daily</h3><table class="table"><tbody id="dailyBody"></tbody></table></div>
-<div id="submission" class="section"><h3>Submission</h3><table class="table"><tbody id="submissionBody"></tbody></table></div>
-<div id="proposal" class="section"><h3>Proposal</h3><table class="table"><tbody id="proposalBody"></tbody></table></div>
-<div id="interview" class="section"><h3>Interview</h3><table class="table"><tbody id="interviewBody"></tbody></table></div>
-<div id="placement" class="section"><h3>Placement</h3><table class="table"><tbody id="placementBody"></tbody></table></div>
-<div id="start" class="section"><h3>Start</h3><table class="table"><tbody id="startBody"></tbody></table></div>
-<div id="productivity" class="section"><h3>Productivity</h3></div>
+<!-- ================= JD ================= -->
+
+<div id="jd" class="section">
+  <h2>JD Management</h2>
+
+  <div class="form-row">
+    <input id="jdDate" type="date">
+    <input id="jdNvr" placeholder="NVR ID">
+    <input id="jdTitle" placeholder="Job Title">
+    <input id="jdClient" placeholder="Client">
+    <select id="jdStatus">
+      <option>Active</option>
+      <option>Hold</option>
+      <option>Closed</option>
+    </select>
+    <button onclick="addJD()">Add JD</button>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Date</th><th>NVR</th><th>Title</th>
+          <th>Client</th><th>Status</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="jdBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= DAILY ================= -->
+
+<div id="daily" class="section">
+  <h2>Daily Entry</h2>
+
+  <textarea id="resumeText" placeholder="Paste Resume Here"></textarea>
+  <button onclick="parseResume()">Parse Resume</button>
+
+  <div class="form-row">
+    <input id="dailyName" placeholder="Name">
+    <input id="dailyEmail" placeholder="Email">
+    <input id="dailyPhone" placeholder="Phone">
+    <input id="dailyLocation" placeholder="Location">
+
+    <select id="dailyRequirement" onchange="autoFillClient()"></select>
+    <input id="dailyClient" placeholder="Client">
+
+    <select id="dailySource">
+      <option>LinkedIn</option>
+      <option>Dice</option>
+      <option>Monster</option>
+      <option>Referral</option>
+      <option>Indeed</option>
+    </select>
+
+    <select id="dailyVisa">
+      <option>US Citizen</option>
+      <option>GC</option>
+      <option>H1B</option>
+    </select>
+
+    <input id="dailyNotes" placeholder="Notes">
+    <button onclick="saveDaily()">Save</button>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Date</th><th>Name</th><th>Email</th>
+          <th>Phone</th><th>Req</th><th>Client</th>
+          <th>Source</th><th>Location</th><th>Visa</th>
+          <th>Notes</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="dailyBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= STAGE TABLES ================= -->
+
+<div id="submission" class="section">
+  <h2>Submission</h2>
+  <div class="table-container"><table><tbody id="submissionBody"></tbody></table></div>
+</div>
+
+<div id="proposal" class="section">
+  <h2>Proposal</h2>
+  <div class="table-container"><table><tbody id="proposalBody"></tbody></table></div>
+</div>
+
+<div id="interview" class="section">
+  <h2>Interview</h2>
+  <div class="table-container"><table><tbody id="interviewBody"></tbody></table></div>
+</div>
+
+<div id="placement" class="section">
+  <h2>Placement</h2>
+  <div class="table-container"><table><tbody id="placementBody"></tbody></table></div>
+</div>
+
+<div id="start" class="section">
+  <h2>Start</h2>
+  <div class="table-container"><table><tbody id="startBody"></tbody></table></div>
+</div>
+
+<!-- ================= TASKS ================= -->
+
+<div id="tasks" class="section">
+  <h2>Tasks</h2>
+
+  <div class="form-row">
+    <input id="taskTitle" placeholder="Task">
+    <input id="taskDue" type="date">
+    <button onclick="addTask()">Add Task</button>
+  </div>
+
+  <div id="taskList"></div>
+</div>
+
+<!-- ================= MEETINGS ================= -->
+
+<div id="meetings" class="section">
+  <h2>Meetings</h2>
+
+  <div class="form-row">
+    <input id="meetingDate" type="date">
+    <input id="meetingTitle" placeholder="Title">
+    <input id="meetingNotes" placeholder="Notes">
+    <button onclick="addMeeting()">Add</button>
+  </div>
+
+  <div id="meetingList"></div>
+</div>
 
 </div>
 
-<!-- ✅ Correct Supabase UMD -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
-
-<!-- Your FULL MASTER SCRIPT -->
-<script src="script.js"></script>
+<script src="./script.js?v=100"></script>
 
 </body>
 </html>
