@@ -1,329 +1,273 @@
-/* =========================================================
-   NETVISION ATS – STABLE MASTER PRODUCTION SCRIPT
-========================================================= */
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>NetVision ATS – Enterprise</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-const SUPABASE_URL = "https://ftxrrgdmkpnghxilnpsk.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE";
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+<style>
+body { display:flex; margin:0; font-family:Segoe UI; }
+.sidebar { width:230px; background:#111827; color:white; min-height:100vh; padding:20px; }
+.sidebar h4 { color:white; margin-bottom:20px; }
+.sidebar a { display:block; padding:8px; color:white; text-decoration:none; cursor:pointer; }
+.sidebar a:hover { background:#1f2937; }
+.main { flex:1; padding:20px; overflow:auto; background:#f3f4f6; }
+.section { display:none; }
+.section.active { display:block; }
+.table input, .table select { width:100%; }
+.action-btn { margin-right:5px; }
+</style>
+</head>
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
-                "Jul","Aug","Sep","Oct","Nov","Dec"];
+<body>
 
-/* ================= BASIC UTIL ================= */
+<div class="sidebar">
+  <h4>NetVision ATS</h4>
+  <a onclick="switchTab('dashboard')">Dashboard</a>
+  <a onclick="switchTab('jd')">JD</a>
+  <a onclick="switchTab('daily')">Daily</a>
+  <a onclick="switchTab('submission')">Submission</a>
+  <a onclick="switchTab('proposal')">Proposal</a>
+  <a onclick="switchTab('interview')">Interview</a>
+  <a onclick="switchTab('placement')">Placement</a>
+  <a onclick="switchTab('start')">Start</a>
+  <a onclick="switchTab('tasks')">Tasks</a>
+  <a onclick="switchTab('meetings')">Meetings</a>
+  <a onclick="logout()">Logout</a>
+</div>
 
-function today(){
-  return new Date().toISOString().split("T")[0];
-}
+<div class="main">
 
-function switchTab(id){
-  document.querySelectorAll(".section").forEach(s=>{
-    s.classList.remove("active");
-  });
-  document.getElementById(id).classList.add("active");
-}
-
-async function logout(){
-  await supabase.auth.signOut();
-  window.location="index.html";
-}
-
-/* ================= DAILY ================= */
-
-async function addDaily(){
-  if(!dailyName.value) return;
-
-  await supabase.from("daily").insert([{
-    entry_date: today(),
-    name: dailyName.value,
-    email: dailyEmail.value,
-    phone: dailyPhone.value,
-    requirement: dailyRequirement.value,
-    client: dailyClient.value
-  }]);
-
-  dailyName.value="";
-  dailyEmail.value="";
-  dailyPhone.value="";
-  dailyRequirement.value="";
-  dailyClient.value="";
-
-  loadAll();
-}
-
-async function loadDaily(){
-  const { data } = await supabase.from("daily").select("*");
-  dailyBody.innerHTML="";
-
-  data?.forEach(r=>{
-    dailyBody.innerHTML+=`
+<!-- DASHBOARD KPI -->
+<div id="dashboard" class="section active">
+  <h3>KPI Overview</h3>
+  <div class="row mb-3">
+    <div class="col">Submissions: <strong id="kpiSub">0</strong></div>
+    <div class="col">Interviews: <strong id="kpiInt">0</strong></div>
+    <div class="col">Placements: <strong id="kpiPlace">0</strong></div>
+    <div class="col">Starts: <strong id="kpiStart">0</strong></div>
+  </div>
+  <table class="table table-bordered bg-white">
+    <thead>
       <tr>
-        <td>${r.name}</td>
-        <td>${r.email||""}</td>
-        <td>${r.phone||""}</td>
-        <td>${r.requirement||""}</td>
-        <td>${r.client||""}</td>
-        <td>
-          <button onclick="copyToSubmission('${r.id}')">Sub</button>
-          <button onclick="deleteRecord('daily','${r.id}')">Del</button>
-        </td>
-      </tr>`;
-  });
-}
+        <th>Month</th>
+        <th>Sub</th>
+        <th>Interview</th>
+        <th>Placement</th>
+        <th>Start</th>
+      </tr>
+    </thead>
+    <tbody id="monthlyBody"></tbody>
+  </table>
+</div>
 
-/* ================= SUBMISSION ================= */
+<!-- JD -->
+<div id="jd" class="section">
+  <h3>Job Description (JD)</h3>
+  <div class="row g-2 mb-3">
+    <div class="col"><input type="date" id="jdDate" class="form-control"></div>
+    <div class="col"><input id="jdNvr" class="form-control" placeholder="NVR"></div>
+    <div class="col"><input id="jdTitle" class="form-control" placeholder="Title"></div>
+    <div class="col"><input id="jdClient" class="form-control" placeholder="Client"></div>
+    <div class="col">
+      <select id="jdStatus" class="form-control">
+        <option value="Active">Active</option>
+        <option value="Closed">Closed</option>
+      </select>
+    </div>
+    <div class="col">
+      <button onclick="addJD()" class="btn btn-success w-100">Add JD</button>
+    </div>
+  </div>
 
-async function copyToSubmission(id){
-  const { data } = await supabase.from("daily").select("*").eq("id",id).single();
-
-  await supabase.from("submission").insert([{
-    submission_date: today(),
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    requirement: data.requirement,
-    client: data.client
-  }]);
-
-  loadAll();
-}
-
-async function loadSubmission(){
-  const { data } = await supabase.from("submission").select("*");
-  submissionBody.innerHTML="";
-
-  data?.forEach(r=>{
-    submissionBody.innerHTML+=`
+  <table class="table table-bordered bg-white">
+    <thead>
       <tr>
-        <td>${r.name}</td>
-        <td>${r.client||""}</td>
-        <td>
-          <button onclick="copyToInterview('${r.id}')">Interview</button>
-          <button onclick="deleteRecord('submission','${r.id}')">Del</button>
-        </td>
-      </tr>`;
-  });
-}
+        <th>Date</th>
+        <th>NVR</th>
+        <th>Title</th>
+        <th>Client</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="jdBody"></tbody>
+  </table>
+</div>
 
-/* ================= INTERVIEW ================= */
+<!-- DAILY -->
+<div id="daily" class="section">
+  <h3>Daily Entry</h3>
 
-async function copyToInterview(id){
-  const { data } = await supabase.from("submission").select("*").eq("id",id).single();
+  <div class="row g-2 mb-2">
+    <div class="col"><input id="dailyName" class="form-control" placeholder="Consultant Name"></div>
+    <div class="col"><input id="dailyEmail" class="form-control" placeholder="Email"></div>
+    <div class="col"><input id="dailyPhone" class="form-control" placeholder="Phone"></div>
+    <div class="col"><input id="dailyVisa" class="form-control" placeholder="Visa"></div>
+  </div>
 
-  await supabase.from("interview").insert([{
-    interview_scheduled_on: today(),
-    name: data.name,
-    client: data.client
-  }]);
+  <div class="row g-2 mb-2">
+    <div class="col">
+      <select id="dailyRequirement" class="form-control"></select>
+    </div>
+    <div class="col"><input id="dailyClient" class="form-control" placeholder="Client" readonly></div>
+    <div class="col"><input id="dailySource" class="form-control" placeholder="Source"></div>
+    <div class="col"><input id="dailyLocation" class="form-control" placeholder="Location"></div>
+    <div class="col"><input id="dailyNotes" class="form-control" placeholder="Notes"></div>
+    <div class="col">
+      <button onclick="addDaily()" class="btn btn-primary w-100">Add</button>
+    </div>
+  </div>
 
-  loadAll();
-}
-
-async function loadInterview(){
-  const { data } = await supabase.from("interview").select("*");
-  interviewBody.innerHTML="";
-
-  data?.forEach(r=>{
-    interviewBody.innerHTML+=`
+  <table class="table table-bordered bg-white">
+    <thead>
       <tr>
-        <td>${r.name}</td>
-        <td>${r.client||""}</td>
-        <td>
-          <button onclick="copyToPlacement('${r.id}')">Placement</button>
-          <button onclick="deleteRecord('interview','${r.id}')">Del</button>
-        </td>
-      </tr>`;
-  });
-}
+        <th>Name</th>
+        <th>Requirement</th>
+        <th>Client</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="dailyBody"></tbody>
+  </table>
+</div>
 
-/* ================= PLACEMENT ================= */
-
-async function copyToPlacement(id){
-  const { data } = await supabase.from("interview").select("*").eq("id",id).single();
-
-  await supabase.from("placement").insert([{
-    placement_date: today(),
-    name: data.name,
-    client: data.client
-  }]);
-
-  loadAll();
-}
-
-async function loadPlacement(){
-  const { data } = await supabase.from("placement").select("*");
-  placementBody.innerHTML="";
-
-  data?.forEach(r=>{
-    placementBody.innerHTML+=`
+<!-- Submission -->
+<div id="submission" class="section">
+  <h3>Submission</h3>
+  <table class="table table-bordered bg-white">
+    <thead>
       <tr>
-        <td>${r.name}</td>
-        <td>${r.client||""}</td>
-        <td>
-          <button onclick="copyToStart('${r.id}')">Start</button>
-          <button onclick="deleteRecord('placement','${r.id}')">Del</button>
-        </td>
-      </tr>`;
-  });
-}
+        <th>Date</th>
+        <th>Name</th>
+        <th>Client</th>
+        <th>Pay Rate</th>
+        <th>Notes</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="submissionBody"></tbody>
+  </table>
+</div>
 
-/* ================= START ================= */
-
-async function copyToStart(id){
-  const { data } = await supabase.from("placement").select("*").eq("id",id).single();
-
-  await supabase.from("start").insert([{
-    start_date: today(),
-    name: data.name,
-    client: data.client
-  }]);
-
-  loadAll();
-}
-
-async function loadStart(){
-  const { data } = await supabase.from("start").select("*");
-  startBody.innerHTML="";
-
-  data?.forEach(r=>{
-    startBody.innerHTML+=`
+<!-- Proposal -->
+<div id="proposal" class="section">
+  <h3>Proposal</h3>
+  <table class="table table-bordered bg-white">
+    <thead>
       <tr>
-        <td>${r.name}</td>
-        <td>${r.client||""}</td>
-        <td>
-          <button onclick="deleteRecord('start','${r.id}')">Del</button>
-        </td>
-      </tr>`;
-  });
-}
+        <th>Date</th>
+        <th>Name</th>
+        <th>Program</th>
+        <th>Writer</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="proposalBody"></tbody>
+  </table>
+</div>
 
-/* ================= TASKS ================= */
-
-async function addTask(){
-  if(!taskTitle.value) return;
-
-  await supabase.from("tasks").insert([{
-    title: taskTitle.value,
-    status:"pending"
-  }]);
-
-  taskTitle.value="";
-  loadAll();
-}
-
-async function completeTask(id){
-  await supabase.from("tasks").update({status:"completed"}).eq("id",id);
-  loadAll();
-}
-
-async function loadTasks(){
-  const { data } = await supabase.from("tasks").select("*");
-  taskBody.innerHTML="";
-
-  data?.forEach(t=>{
-    taskBody.innerHTML+=`
+<!-- Interview -->
+<div id="interview" class="section">
+  <h3>Interview</h3>
+  <table class="table table-bordered bg-white">
+    <thead>
       <tr>
-        <td>${t.title}</td>
-        <td>${t.status}</td>
-        <td>
-          ${t.status==="pending" ? `<button onclick="completeTask('${t.id}')">Complete</button>` : ""}
-          <button onclick="deleteRecord('tasks','${t.id}')">Del</button>
-        </td>
-      </tr>`;
-  });
-}
+        <th>Schedule Date</th>
+        <th>Name</th>
+        <th>Round</th>
+        <th>Result</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="interviewBody"></tbody>
+  </table>
+</div>
 
-/* Reminder every 1 hour */
-setInterval(async()=>{
-  const { data } = await supabase.from("tasks").select("*").eq("status","pending");
-  if(data && data.length>0){
-    alert("You have pending tasks.");
-  }
-},3600000);
-
-/* ================= MEETINGS ================= */
-
-async function addMeeting(){
-  if(!meetingTitle.value) return;
-
-  await supabase.from("meetings").insert([{
-    title: meetingTitle.value
-  }]);
-
-  meetingTitle.value="";
-  loadAll();
-}
-
-async function loadMeetings(){
-  const { data } = await supabase.from("meetings").select("*");
-  meetingBody.innerHTML="";
-
-  data?.forEach(m=>{
-    meetingBody.innerHTML+=`
+<!-- Placement -->
+<div id="placement" class="section">
+  <h3>Placement</h3>
+  <table class="table table-bordered bg-white">
+    <thead>
       <tr>
-        <td>${m.title}</td>
-        <td>
-          <button onclick="deleteRecord('meetings','${m.id}')">Del</button>
-        </td>
-      </tr>`;
-  });
-}
+        <th>Date</th>
+        <th>Name</th>
+        <th>Offer Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="placementBody"></tbody>
+  </table>
+</div>
 
-/* ================= KPI ================= */
-
-async function renderKPI(){
-  const { data:sub } = await supabase.from("submission").select("*");
-  const { data:int } = await supabase.from("interview").select("*");
-  const { data:place } = await supabase.from("placement").select("*");
-  const { data:start } = await supabase.from("start").select("*");
-
-  kpiSub.innerText=sub?.length||0;
-  kpiInt.innerText=int?.length||0;
-  kpiPlace.innerText=place?.length||0;
-  kpiStart.innerText=start?.length||0;
-
-  monthlyBody.innerHTML="";
-
-  for(let m=0;m<12;m++){
-    const subC=sub?.filter(r=>r.submission_date && new Date(r.submission_date).getMonth()===m).length||0;
-    const intC=int?.filter(r=>r.interview_scheduled_on && new Date(r.interview_scheduled_on).getMonth()===m).length||0;
-    const placeC=place?.filter(r=>r.placement_date && new Date(r.placement_date).getMonth()===m).length||0;
-    const startC=start?.filter(r=>r.start_date && new Date(r.start_date).getMonth()===m).length||0;
-
-    monthlyBody.innerHTML+=`
+<!-- Start -->
+<div id="start" class="section">
+  <h3>Start</h3>
+  <table class="table table-bordered bg-white">
+    <thead>
       <tr>
-        <td>${MONTHS[m]}</td>
-        <td>${subC}</td>
-        <td>${intC}</td>
-        <td>${placeC}</td>
-        <td>${startC}</td>
-      </tr>`;
-  }
-}
+        <th>Start Date</th>
+        <th>Name</th>
+        <th>Client</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="startBody"></tbody>
+  </table>
+</div>
 
-/* ================= GENERIC DELETE ================= */
+<!-- TASKS -->
+<div id="tasks" class="section">
+  <h3>Task Manager</h3>
+  <div class="row g-2 mb-3">
+    <div class="col"><input id="taskTitle" class="form-control" placeholder="Task"></div>
+    <div class="col"><input id="taskRemarks" class="form-control" placeholder="Remarks"></div>
+    <div class="col"><input type="date" id="taskDue" class="form-control"></div>
+    <div class="col"><button onclick="addTask()" class="btn btn-success w-100">Add</button></div>
+  </div>
 
-async function deleteRecord(table,id){
-  await supabase.from(table).delete().eq("id",id);
-  loadAll();
-}
+  <table class="table table-bordered bg-white">
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Due</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="taskBody"></tbody>
+  </table>
+</div>
 
-/* ================= MASTER LOAD ================= */
+<!-- Meetings -->
+<div id="meetings" class="section">
+  <h3>Meetings</h3>
+  <div class="row g-2 mb-3">
+    <div class="col"><input type="date" id="meetingDate" class="form-control"></div>
+    <div class="col"><input id="meetingTitle" class="form-control" placeholder="Title"></div>
+    <div class="col"><input id="meetingNotes" class="form-control" placeholder="Notes"></div>
+    <div class="col"><button onclick="addMeeting()" class="btn btn-success w-100">Add</button></div>
+  </div>
 
-async function loadAll(){
-  await loadDaily();
-  await loadSubmission();
-  await loadInterview();
-  await loadPlacement();
-  await loadStart();
-  await loadTasks();
-  await loadMeetings();
-  await renderKPI();
-}
+  <table class="table table-bordered bg-white">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Title</th>
+        <th>Notes</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="meetingBody"></tbody>
+  </table>
+</div>
 
-window.onload=async function(){
-  loadAll();
-};
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
