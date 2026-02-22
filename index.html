@@ -29,6 +29,11 @@ body{
   height:45px;
   color:white;
 }
+.link{
+  cursor:pointer;
+  color:#2563eb;
+  font-size:14px;
+}
 </style>
 </head>
 
@@ -39,12 +44,16 @@ body{
 
 <input type="email" id="email" class="form-control mb-3" placeholder="Email">
 <input type="password" id="password" class="form-control mb-3" placeholder="Password">
+
 <button class="btn btn-login w-100" onclick="login()">Login</button>
+
+<p class="text-center mt-3">
+  <span class="link" onclick="forgotPassword()">Forgot Password?</span>
+</p>
 
 <p id="error" class="text-danger text-center mt-3"></p>
 </div>
 
-<!-- ✅ CORRECT SUPABASE UMD BUILD -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
 <script>
@@ -53,12 +62,19 @@ const SUPABASE_ANON_KEY = "sb_publishable_8_jiydwm4YMDg3Nuf9T0xg_1S_jMGpc";
 
 const supabase = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  SUPABASE_ANON_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );
 
 async function login(){
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email: document.getElementById("email").value.trim(),
     password: document.getElementById("password").value.trim()
   });
@@ -69,6 +85,26 @@ async function login(){
   }
 
   window.location.href = "dashboard.html";
+}
+
+async function forgotPassword(){
+
+  const email = document.getElementById("email").value.trim();
+
+  if(!email){
+    alert("Please enter your email first.");
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://santu666-ai.github.io/dashboard/reset.html"
+  });
+
+  if(error){
+    alert(error.message);
+  } else {
+    alert("Password reset email sent. Check your inbox.");
+  }
 }
 </script>
 
