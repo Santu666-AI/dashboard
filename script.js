@@ -626,14 +626,43 @@ async function renderKPI(){
   }
 }
 
-/* Extend Master Load */
-const originalLoadAll = loadAll;
-loadAll = async function(){
-  await originalLoadAll();
-  await loadProposal();
-  await loadInterview();
-  await loadPlacement();
-  await loadStart();
-  await loadTasks();
-  await loadMeetings();
-};
+/* =========================================================
+   MASTER LOAD (FINAL CLEAN VERSION)
+========================================================= */
+
+async function masterLoad(){
+
+  try {
+
+    await loadJD();
+    await loadDaily();
+    await loadSubmission();
+    await loadProposal();
+    await loadInterview();
+    await loadPlacement();
+    await loadStart();
+    await loadTasks();
+    await loadMeetings();
+    await renderKPI();
+
+  } catch(error){
+    console.error("MASTER LOAD ERROR:", error);
+  }
+}
+
+/* DOM READY SAFE INITIALIZER */
+
+document.addEventListener("DOMContentLoaded", async function(){
+
+  const req = el("dailyRequirement");
+  if(req){
+    req.addEventListener("change", function(){
+      const selected = this.options[this.selectedIndex];
+      const client = selected.getAttribute("data-client");
+      el("dailyClient").value = client || "";
+    });
+  }
+
+  await masterLoad();
+
+});
