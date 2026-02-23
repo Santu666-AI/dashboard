@@ -1,12 +1,13 @@
 /* =========================================================
-   NETVISION ATS – FULL MASTER ENTERPRISE SCRIPT
-   COMPLETE WORKFLOW VERSION
+   NETVISION ATS – ENTERPRISE ARCHITECTURE VERSION
 ========================================================= */
 
-/* ================= SUPABASE CONFIG ================= */
+/* =========================
+   1. CONFIG LAYER
+========================= */
 
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://ftxrrgdmkpnghxilnpsk.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eHJyZ2Rta3BuZ2h4aWxucHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDY0MzYsImV4cCI6MjA4NzE4MjQzNn0.KcqIN2ynBQWmglQ_-6eaFi3TGPSclB0TgeJ83XU_OWI";
 
 const supabase = window.supabase.createClient(
   SUPABASE_URL,
@@ -17,431 +18,247 @@ const $ = (id) => document.getElementById(id);
 const today = () => new Date().toISOString().split("T")[0];
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-/* =========================================================
-   ROUTER
-========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+/* =========================
+   2. API SERVICE LAYER
+========================= */
 
-  document.querySelectorAll("[data-tab]").forEach(tab => {
-    tab.addEventListener("click", function () {
+const DB = {
 
-      document.querySelectorAll(".section")
-        .forEach(sec => sec.classList.remove("active"));
+  async getAll(table, orderField=null) {
+    let query = supabase.from(table).select("*");
+    if(orderField) query = query.order(orderField, {ascending:false});
+    const { data, error } = await query;
+    if(error) console.error(error);
+    return data || [];
+  },
 
-      document.querySelectorAll(".sidebar a")
-        .forEach(a => a.classList.remove("active"));
+  async insert(table, payload) {
+    const { error } = await supabase.from(table).insert([payload]);
+    if(error) console.error(error);
+  },
 
-      this.classList.add("active");
-      const id = this.dataset.tab;
-      if ($(id)) $(id).classList.add("active");
-    });
-  });
+  async delete(table, id) {
+    const { error } = await supabase.from(table).delete().eq("id", id);
+    if(error) console.error(error);
+  },
 
-  masterLoad();
-});
+  async copy(fromTable, toTable, id, extra={}) {
+    const { data } = await supabase.from(fromTable).select("*").eq("id",id).single();
+    if(!data) return;
+    delete data.id;
+    await this.insert(toTable, { ...data, ...extra });
+  }
 
-/* =========================================================
-   GENERIC FUNCTIONS
-========================================================= */
+};
 
-async function del(table, id) {
-  await supabase.from(table).delete().eq("id", id);
-  await masterLoad();
-}
 
-async function copyRecord(fromTable, toTable, id, extraFields = {}) {
+/* =========================
+   3. UI RENDER LAYER
+========================= */
 
-  const { data } = await supabase
-    .from(fromTable)
-    .select("*")
-    .eq("id", id)
-    .single();
+const UI = {
 
-  if (!data) return;
+  async renderJD() {
+    const data = await DB.getAll("jd","date");
+    $("jdBody").innerHTML="";
+    $("dailyRequirement").innerHTML="<option value=''>Select</option>";
 
-  const newObj = { ...data, ...extraFields };
-  delete newObj.id;
+    data.forEach(r=>{
+      $("jdBody").innerHTML += `
+        <tr>
+          <td>${r.date||""}</td>
+          <td>${r.nvr||""}</td>
+          <td>${r.title||""}</td>
+          <td>${r.client||""}</td>
+          <td>${r.status||""}</td>
+          <td><button data-del="jd" data-id="${r.id}">Del</button></td>
+        </tr>`;
 
-  await supabase.from(toTable).insert([newObj]);
-  await masterLoad();
-}
-
-/* =========================================================
-   JD MODULE
-========================================================= */
-
-async function addJD() {
-  await supabase.from("jd").insert([{
-    date: $("jdDate").value,
-    nvr: $("jdNvr").value,
-    title: $("jdTitle").value,
-    client: $("jdClient").value,
-    status: $("jdStatus").value
-  }]);
-
-  await masterLoad();
-}
-
-async function loadJD() {
-
-  const { data } = await supabase
-    .from("jd")
-    .select("*")
-    .order("date", { ascending: false });
-
-  $("jdBody").innerHTML = "";
-  $("dailyRequirement").innerHTML = `<option value="">Select Requirement</option>`;
-
-  data?.forEach(r => {
-
-    $("jdBody").innerHTML += `
-      <tr>
-        <td>${r.date || ""}</td>
-        <td>${r.nvr || ""}</td>
-        <td>${r.title || ""}</td>
-        <td>${r.client || ""}</td>
-        <td>${r.status || ""}</td>
-        <td>
-          <button onclick="del('jd','${r.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-
-    if (r.status === "Active") {
-      $("dailyRequirement").innerHTML += `
-        <option value="${r.nvr}" data-client="${r.client}">
+      if(r.status==="Active"){
+        $("dailyRequirement").innerHTML +=
+        `<option value="${r.nvr}" data-client="${r.client}">
           ${r.nvr} - ${r.title}
         </option>`;
+      }
+    });
+  },
+
+  async renderDaily() {
+    const data = await DB.getAll("daily","entry_date");
+    $("dailyBody").innerHTML="";
+
+    data.forEach(r=>{
+      $("dailyBody").innerHTML += `
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.requirement||""}</td>
+        <td>${r.client||""}</td>
+        <td>
+          <button data-copy="daily|submission|${r.id}">Sub</button>
+          <button data-copy="daily|proposal|${r.id}">Proposal</button>
+          <button data-del="daily" data-id="${r.id}">Del</button>
+        </td>
+      </tr>`;
+    });
+  },
+
+  async renderGeneric(table, bodyId, dateField=null) {
+    const data = await DB.getAll(table, dateField);
+    $(bodyId).innerHTML="";
+
+    data.forEach(r=>{
+      $(bodyId).innerHTML += `
+        <tr>
+          <td>${r.name||""}</td>
+          <td>${r.client||""}</td>
+          <td>${r.status||r.result||""}</td>
+          <td>
+            <button data-del="${table}" data-id="${r.id}">Del</button>
+          </td>
+        </tr>`;
+    });
+  },
+
+  async renderKPI() {
+
+    const sub = await DB.getAll("submission");
+    const int = await DB.getAll("interview");
+    const place = await DB.getAll("placement");
+    const start = await DB.getAll("start");
+
+    $("kpiSub").innerText = sub.length;
+    $("kpiInt").innerText = int.length;
+    $("kpiPlace").innerText = place.length;
+    $("kpiStart").innerText = start.length;
+
+    const monthly = $("monthlyBody");
+    monthly.innerHTML="";
+
+    for(let m=0;m<12;m++){
+      const subC = sub.filter(r=>r.submission_date && new Date(r.submission_date).getMonth()===m).length;
+      const intC = int.filter(r=>r.interview_scheduled_on && new Date(r.interview_scheduled_on).getMonth()===m).length;
+      const placeC = place.filter(r=>r.placement_date && new Date(r.placement_date).getMonth()===m).length;
+      const startC = start.filter(r=>r.start_date && new Date(r.start_date).getMonth()===m).length;
+
+      monthly.innerHTML += `
+        <tr>
+          <td>${MONTHS[m]}</td>
+          <td>${subC}</td>
+          <td>${intC}</td>
+          <td>${placeC}</td>
+          <td>${startC}</td>
+        </tr>`;
     }
-  });
-}
-
-$("dailyRequirement")?.addEventListener("change", function () {
-  const selected = this.options[this.selectedIndex];
-  const client = selected.getAttribute("data-client");
-  $("dailyClient").value = client || "";
-});
-
-/* =========================================================
-   DAILY MODULE
-========================================================= */
-
-async function addDaily() {
-
-  await supabase.from("daily").insert([{
-    entry_date: today(),
-    name: $("dailyName").value,
-    email: $("dailyEmail").value,
-    phone: $("dailyPhone").value,
-    visa: $("dailyVisa").value,
-    requirement: $("dailyRequirement").value,
-    client: $("dailyClient").value,
-    source: $("dailySource").value,
-    location: $("dailyLocation").value,
-    notes: $("dailyNotes").value
-  }]);
-
-  await masterLoad();
-}
-
-async function loadDaily() {
-
-  const { data } = await supabase
-    .from("daily")
-    .select("*")
-    .order("entry_date", { ascending: false });
-
-  $("dailyBody").innerHTML = "";
-
-  data?.forEach(r => {
-
-    $("dailyBody").innerHTML += `
-      <tr>
-        <td>${r.name}</td>
-        <td>${r.requirement || ""}</td>
-        <td>${r.client || ""}</td>
-        <td>
-          <button onclick="copyRecord('daily','submission','${r.id}',{submission_date:'${today()}'})">Sub</button>
-          <button onclick="copyRecord('daily','proposal','${r.id}',{proposal_date:'${today()}'})">Proposal</button>
-          <button onclick="del('daily','${r.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   SUBMISSION MODULE
-========================================================= */
-
-async function loadSubmission() {
-
-  const { data } = await supabase
-    .from("submission")
-    .select("*")
-    .order("submission_date", { ascending: false });
-
-  $("submissionBody").innerHTML = "";
-
-  data?.forEach(r => {
-
-    $("submissionBody").innerHTML += `
-      <tr>
-        <td>${r.submission_date || ""}</td>
-        <td>${r.name}</td>
-        <td>${r.client || ""}</td>
-        <td>${r.pay_rate || ""}</td>
-        <td>${r.notes || ""}</td>
-        <td>
-          <button onclick="copyRecord('submission','interview','${r.id}',{interview_scheduled_on:'${today()}',round:'1st'})">Interview</button>
-          <button onclick="del('submission','${r.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   PROPOSAL MODULE
-========================================================= */
-
-async function loadProposal() {
-
-  const { data } = await supabase
-    .from("proposal")
-    .select("*")
-    .order("proposal_date", { ascending: false });
-
-  $("proposalBody").innerHTML = "";
-
-  data?.forEach(r => {
-    $("proposalBody").innerHTML += `
-      <tr>
-        <td>${r.proposal_date || ""}</td>
-        <td>${r.name}</td>
-        <td>${r.program_name || ""}</td>
-        <td>${r.proposal_writer || ""}</td>
-        <td>
-          <button onclick="del('proposal','${r.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   INTERVIEW MODULE
-========================================================= */
-
-async function loadInterview() {
-
-  const { data } = await supabase
-    .from("interview")
-    .select("*")
-    .order("interview_scheduled_on", { ascending: false });
-
-  $("interviewBody").innerHTML = "";
-
-  data?.forEach(r => {
-
-    $("interviewBody").innerHTML += `
-      <tr>
-        <td>${r.interview_scheduled_on || ""}</td>
-        <td>${r.name}</td>
-        <td>${r.round || ""}</td>
-        <td>${r.result || ""}</td>
-        <td>
-          <button onclick="copyRecord('interview','placement','${r.id}',{placement_date:'${today()}'})">Placement</button>
-          <button onclick="del('interview','${r.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   PLACEMENT MODULE
-========================================================= */
-
-async function loadPlacement() {
-
-  const { data } = await supabase
-    .from("placement")
-    .select("*")
-    .order("placement_date", { ascending: false });
-
-  $("placementBody").innerHTML = "";
-
-  data?.forEach(r => {
-
-    $("placementBody").innerHTML += `
-      <tr>
-        <td>${r.placement_date || ""}</td>
-        <td>${r.name}</td>
-        <td>${r.offer_status || ""}</td>
-        <td>
-          <button onclick="copyRecord('placement','start','${r.id}',{start_date:'${today()}'})">Start</button>
-          <button onclick="del('placement','${r.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   START MODULE
-========================================================= */
-
-async function loadStart() {
-
-  const { data } = await supabase
-    .from("start")
-    .select("*")
-    .order("start_date", { ascending: false });
-
-  $("startBody").innerHTML = "";
-
-  data?.forEach(r => {
-
-    $("startBody").innerHTML += `
-      <tr>
-        <td>${r.start_date || ""}</td>
-        <td>${r.name}</td>
-        <td>${r.client || ""}</td>
-        <td>
-          <button onclick="del('start','${r.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   TASKS MODULE
-========================================================= */
-
-async function addTask() {
-  await supabase.from("tasks").insert([{
-    title: $("taskTitle").value,
-    due_date: $("taskDue").value,
-    status: "Pending"
-  }]);
-  await masterLoad();
-}
-
-async function loadTasks() {
-
-  const { data } = await supabase
-    .from("tasks")
-    .select("*")
-    .order("due_date", { ascending: true });
-
-  $("taskBody").innerHTML = "";
-
-  data?.forEach(t => {
-    $("taskBody").innerHTML += `
-      <tr>
-        <td>${t.title}</td>
-        <td>${t.due_date || ""}</td>
-        <td>${t.status}</td>
-        <td>
-          ${t.status === "Pending"
-            ? `<button onclick="supabase.from('tasks').update({status:'Completed'}).eq('id','${t.id}').then(masterLoad)">Complete</button>`
-            : ""}
-          <button onclick="del('tasks','${t.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   MEETINGS MODULE
-========================================================= */
-
-async function addMeeting() {
-  await supabase.from("meetings").insert([{
-    meeting_date: $("meetingDate").value,
-    title: $("meetingTitle").value
-  }]);
-  await masterLoad();
-}
-
-async function loadMeetings() {
-
-  const { data } = await supabase
-    .from("meetings")
-    .select("*")
-    .order("meeting_date", { ascending: false });
-
-  $("meetingBody").innerHTML = "";
-
-  data?.forEach(m => {
-    $("meetingBody").innerHTML += `
-      <tr>
-        <td>${m.meeting_date || ""}</td>
-        <td>${m.title}</td>
-        <td>
-          <button onclick="del('meetings','${m.id}')">Del</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-/* =========================================================
-   KPI ENGINE
-========================================================= */
-
-async function renderKPI() {
-
-  const { data: sub } = await supabase.from("submission").select("submission_date");
-  const { data: int } = await supabase.from("interview").select("interview_scheduled_on");
-  const { data: place } = await supabase.from("placement").select("placement_date");
-  const { data: start } = await supabase.from("start").select("start_date");
-
-  $("kpiSub").innerText = sub?.length || 0;
-  $("kpiInt").innerText = int?.length || 0;
-  $("kpiPlace").innerText = place?.length || 0;
-  $("kpiStart").innerText = start?.length || 0;
-
-  const monthly = $("monthlyBody");
-  monthly.innerHTML = "";
-
-  for (let m = 0; m < 12; m++) {
-
-    const subC = sub?.filter(r => r.submission_date && new Date(r.submission_date).getMonth() === m).length || 0;
-    const intC = int?.filter(r => r.interview_scheduled_on && new Date(r.interview_scheduled_on).getMonth() === m).length || 0;
-    const placeC = place?.filter(r => r.placement_date && new Date(r.placement_date).getMonth() === m).length || 0;
-    const startC = start?.filter(r => r.start_date && new Date(r.start_date).getMonth() === m).length || 0;
-
-    monthly.innerHTML += `
-      <tr>
-        <td>${MONTHS[m]}</td>
-        <td>${subC}</td>
-        <td>${intC}</td>
-        <td>${placeC}</td>
-        <td>${startC}</td>
-      </tr>
-    `;
   }
+
+};
+
+
+/* =========================
+   4. CONTROLLER
+========================= */
+
+const Controller = {
+
+  async addJD(){
+    await DB.insert("jd",{
+      date:$("jdDate").value,
+      nvr:$("jdNvr").value,
+      title:$("jdTitle").value,
+      client:$("jdClient").value,
+      status:$("jdStatus").value
+    });
+    App.reload();
+  },
+
+  async addDaily(){
+    await DB.insert("daily",{
+      entry_date:today(),
+      name:$("dailyName").value,
+      email:$("dailyEmail").value,
+      phone:$("dailyPhone").value,
+      visa:$("dailyVisa").value,
+      requirement:$("dailyRequirement").value,
+      client:$("dailyClient").value,
+      source:$("dailySource").value,
+      location:$("dailyLocation").value,
+      notes:$("dailyNotes").value
+    });
+    App.reload();
+  }
+
+};
+
+
+/* =========================
+   5. EVENTS + ROUTER
+========================= */
+
+function initRouter(){
+  document.querySelectorAll("[data-tab]").forEach(tab=>{
+    tab.addEventListener("click",function(){
+      document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+      document.querySelectorAll(".sidebar a").forEach(a=>a.classList.remove("active"));
+      this.classList.add("active");
+      $(this.dataset.tab).classList.add("active");
+    });
+  });
 }
 
-/* =========================================================
-   MASTER LOAD
-========================================================= */
+function initEvents(){
 
-async function masterLoad() {
+  $("addJD")?.addEventListener("click",Controller.addJD);
+  $("addDaily")?.addEventListener("click",Controller.addDaily);
 
-  await loadJD();
-  await loadDaily();
-  await loadSubmission();
-  await loadProposal();
-  await loadInterview();
-  await loadPlacement();
-  await loadStart();
-  await loadTasks();
-  await loadMeetings();
-  await renderKPI();
+  document.addEventListener("click",async (e)=>{
+
+    if(e.target.dataset.del){
+      await DB.delete(e.target.dataset.del, e.target.dataset.id);
+      App.reload();
+    }
+
+    if(e.target.dataset.copy){
+      const [from,to,id] = e.target.dataset.copy.split("|");
+      await DB.copy(from,to,id,{});
+      App.reload();
+    }
+
+  });
+
+  $("dailyRequirement")?.addEventListener("change",function(){
+    const selected=this.options[this.selectedIndex];
+    $("dailyClient").value = selected.getAttribute("data-client")||"";
+  });
+
 }
+
+
+/* =========================
+   6. APP
+========================= */
+
+const App = {
+
+  async reload(){
+    await UI.renderJD();
+    await UI.renderDaily();
+    await UI.renderGeneric("submission","submissionBody","submission_date");
+    await UI.renderGeneric("proposal","proposalBody","proposal_date");
+    await UI.renderGeneric("interview","interviewBody","interview_scheduled_on");
+    await UI.renderGeneric("placement","placementBody","placement_date");
+    await UI.renderGeneric("start","startBody","start_date");
+    await UI.renderGeneric("tasks","taskBody","due_date");
+    await UI.renderGeneric("meetings","meetingBody","meeting_date");
+    await UI.renderKPI();
+  },
+
+  init(){
+    initRouter();
+    initEvents();
+    this.reload();
+  }
+
+};
+
+document.addEventListener("DOMContentLoaded", ()=>App.init());
