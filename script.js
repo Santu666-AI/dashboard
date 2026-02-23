@@ -551,37 +551,11 @@ function renderAll(){
   renderMeetings();
 }
 
+/* ================= AUTH SYSTEM ================= */
+
 document.addEventListener("DOMContentLoaded", function(){
-
-  checkUser();   // for login check
-
-  renderJD();
-  renderDaily();
-  renderStage("submission","submissionBody");
-  renderStage("proposal","proposalBody");
-  renderStage("interview","interviewBody");
-  renderStage("placement","placementBody");
-  renderStage("start","startBody");
-  renderKPI();
-  renderTasks();
-  renderMeetings();
+  checkUser();
 });
-
-function formatDisplayDate(dateStr){
-  if(!dateStr) return "";
-
-  const parts = dateStr.split("-");
-  if(parts.length !== 3) return dateStr;
-
-  const year = parseInt(parts[0]);
-  const month = parseInt(parts[1]) - 1;
-  const day = parseInt(parts[2]);
-
-  const localDate = new Date(year, month, day);
-  return localDate.toDateString();
-}
-
-/* ================= LOGIN ================= */
 
 async function login(){
 
@@ -600,4 +574,49 @@ async function login(){
 
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
+
+  loadDashboard();
+}
+
+async function checkUser(){
+
+  const { data: { session } } = await sb.auth.getSession();
+
+  if(session){
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadDashboard();
+  } else {
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+  }
+}
+
+function loadDashboard(){
+  renderJD();
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
+  renderKPI();
+  renderTasks();
+  renderMeetings();
+}
+
+/* ================= DATE FORMAT HELPER ================= */
+
+function formatDisplayDate(dateStr){
+  if(!dateStr) return "";
+
+  const parts = dateStr.split("-");
+  if(parts.length !== 3) return dateStr;
+
+  const year = parseInt(parts[0]);
+  const month = parseInt(parts[1]) - 1;
+  const day = parseInt(parts[2]);
+
+  const localDate = new Date(year, month, day);
+  return localDate.toDateString();
 }
