@@ -1,38 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>NetVision ATS – Master Build</title>
-<link rel="stylesheet" href="style.css">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>NetVision ATS – Master Build</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
 
-<div class="sidebar">
-
-  <div class="brand">
-    <img src="logo.png" class="brand-logo">
-    <div>
-      <div class="brand-title">NetVision ATS</div>
-      <div class="brand-sub">Recruiting Platform</div>
-    </div>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:flex;align-items:center;justify-content:center;height:100vh;">
+  <div>
+    <h3>Login</h3>
+    <input id="loginEmail" type="email" placeholder="Email">
+    <input id="loginPassword" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
   </div>
-
-  <a onclick="switchTab('dashboard')">Dashboard</a>
-  <a onclick="switchTab('productivity')">Productivity</a>
-  <a onclick="switchTab('jd')">JD</a>
-  <a onclick="switchTab('resume')">Resume</a>
-  <a onclick="switchTab('daily')">Daily</a>
-  <a onclick="switchTab('submission')">Submission</a>
-  <a onclick="switchTab('proposal')">Proposal</a>
-  <a onclick="switchTab('interview')">Interview</a>
-  <a onclick="switchTab('placement')">Placement</a>
-  <a onclick="switchTab('start')">Start</a>
-
 </div>
 
-<div class="main">
+<!-- DASHBOARD WRAPPER -->
+<div id="app" style="display:none;">
 
 <!-- ================= DASHBOARD ================= -->
 
@@ -335,6 +323,8 @@
 </div>
 
 </div>
+
+</div>  <!-- closes app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
