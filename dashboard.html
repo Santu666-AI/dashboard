@@ -2,128 +2,341 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>NetVision ATS – Enterprise</title>
+<title>NetVision ATS – Master Build</title>
+<link rel="stylesheet" href="style.css">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<style>
-body { display:flex; margin:0; font-family:Segoe UI; }
-.sidebar { width:240px; background:#111827; color:white; min-height:100vh; padding:20px; }
-.sidebar h4 { margin-bottom:25px; }
-.sidebar a { display:block; padding:10px; color:white; text-decoration:none; cursor:pointer; border-radius:6px; }
-.sidebar a:hover, .sidebar a.active { background:#2563eb; }
-.main { flex:1; padding:25px; background:#f3f4f6; overflow:auto; }
-.section { display:none; }
-.section.active { display:block; }
-.table input, .table select { width:100%; }
-button { padding:4px 8px; }
-</style>
 </head>
 
 <body>
 
 <div class="sidebar">
-<h4>NetVision ATS</h4>
-<a data-tab="dashboard" class="active">Dashboard</a>
-<a data-tab="jd">JD</a>
-<a data-tab="daily">Daily</a>
-<a data-tab="submission">Submission</a>
-<a data-tab="proposal">Proposal</a>
-<a data-tab="interview">Interview</a>
-<a data-tab="placement">Placement</a>
-<a data-tab="start">Start</a>
-<a data-tab="tasks">Tasks</a>
-<a data-tab="meetings">Meetings</a>
+
+  <div class="brand">
+    <img src="logo.png" class="brand-logo">
+    <div>
+      <div class="brand-title">NetVision ATS</div>
+      <div class="brand-sub">Recruiting Platform</div>
+    </div>
+  </div>
+
+  <a onclick="switchTab('dashboard')">Dashboard</a>
+  <a onclick="switchTab('productivity')">Productivity</a>
+  <a onclick="switchTab('jd')">JD</a>
+  <a onclick="switchTab('resume')">Resume</a>
+  <a onclick="switchTab('daily')">Daily</a>
+  <a onclick="switchTab('submission')">Submission</a>
+  <a onclick="switchTab('proposal')">Proposal</a>
+  <a onclick="switchTab('interview')">Interview</a>
+  <a onclick="switchTab('placement')">Placement</a>
+  <a onclick="switchTab('start')">Start</a>
+
 </div>
 
 <div class="main">
 
-<!-- DASHBOARD -->
+<!-- ================= DASHBOARD ================= -->
+
 <div id="dashboard" class="section active">
-<h3>KPI Overview</h3>
-<div class="row mb-3">
-<div class="col">Submissions: <strong id="kpiSub">0</strong></div>
-<div class="col">Interviews: <strong id="kpiInt">0</strong></div>
-<div class="col">Placements: <strong id="kpiPlace">0</strong></div>
-<div class="col">Starts: <strong id="kpiStart">0</strong></div>
-</div>
-<table class="table table-bordered bg-white">
-<thead>
-<tr><th>Month</th><th>Sub</th><th>Interview</th><th>Placement</th><th>Start</th></tr>
-</thead>
-<tbody id="monthlyBody"></tbody>
-</table>
+  <h2>Dashboard Overview</h2>
+
+  <div class="kpi-cards">
+    <div class="card">Submissions <span id="kpiSub">0</span></div>
+    <div class="card">Interviews <span id="kpiInt">0</span></div>
+    <div class="card">Placements <span id="kpiPlace">0</span></div>
+    <div class="card">Starts <span id="kpiStart">0</span></div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Sub</th>
+          <th>Int</th>
+          <th>Place</th>
+          <th>Start</th>
+        </tr>
+      </thead>
+      <tbody id="monthlyBody"></tbody>
+    </table>
+  </div>
 </div>
 
-<!-- JD -->
+<!-- ================= PRODUCTIVITY ================= -->
+
+<div id="productivity" class="section">
+  <h2>Productivity Center</h2>
+
+  <div class="panel">
+    <h3>🔔 Task Manager</h3>
+    <div class="form-row">
+      <input id="taskTitle" placeholder="Task title">
+      <input type="date" id="taskDue">
+      <button onclick="addTask()">Add Task</button>
+    </div>
+    <div id="taskList"></div>
+  </div>
+
+  <div class="panel">
+    <h3>📅 Meeting Notes</h3>
+    <div class="form-row">
+      <input type="date" id="meetingDate">
+      <input id="meetingTitle" placeholder="Meeting title">
+    </div>
+    <textarea id="meetingNotes" placeholder="Write detailed meeting notes here..."></textarea>
+    <button onclick="addMeeting()">Add Meeting</button>
+    <div id="meetingList"></div>
+  </div>
+</div>
+
+<!-- ================= JD ================= -->
+
 <div id="jd" class="section">
-<h3>Job Description</h3>
-<div class="row g-2 mb-3">
-<div class="col"><input type="date" id="jdDate" class="form-control"></div>
-<div class="col"><input id="jdNvr" class="form-control" placeholder="NVR"></div>
-<div class="col"><input id="jdTitle" class="form-control" placeholder="Title"></div>
-<div class="col"><input id="jdClient" class="form-control" placeholder="Client"></div>
-<div class="col">
-<select id="jdStatus" class="form-control">
-<option>Active</option>
-<option>Closed</option>
-</select>
+  <h2>Job Requirements</h2>
+
+  <div class="form-row">
+    <input type="date" id="jdDate">
+    <input id="jdNvr" placeholder="NVR">
+    <input id="jdTitle" placeholder="Job Title">
+    <input id="jdClient" placeholder="Client">
+    <select id="jdStatus">
+      <option>Active</option>
+      <option>Hold</option>
+      <option>Closed</option>
+    </select>
+    <button onclick="addJD()">Add JD</button>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Sl</th>
+          <th>Date</th>
+          <th>NVR</th>
+          <th>Job</th>
+          <th>Client</th>
+          <th>Status</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="jdBody"></tbody>
+    </table>
+  </div>
 </div>
-<div class="col">
-<button id="addJD" class="btn btn-success w-100">Add JD</button>
-</div>
-</div>
-<table class="table table-bordered bg-white">
-<thead>
-<tr>
-<th>Date</th><th>NVR</th><th>Title</th><th>Client</th><th>Status</th><th>Action</th>
-</tr>
-</thead>
-<tbody id="jdBody"></tbody>
-</table>
+<!-- ================= RESUME ================= -->
+
+<div id="resume" class="section">
+  <h2>Resume Parser</h2>
+
+  <textarea id="resumeText" placeholder="Paste resume content here..."></textarea>
+  <button onclick="parseResume()">Parse Resume</button>
+
+  <div class="form-row">
+    <input id="resumeName" placeholder="Name">
+    <input id="resumeEmail" placeholder="Email">
+    <input id="resumePhone" placeholder="Phone">
+    <input id="resumeLocation" placeholder="Location">
+    <select id="resumeVisa">
+      <option>US Citizen</option>
+      <option>GC</option>
+      <option>H1B</option>
+    </select>
+  </div>
 </div>
 
-<!-- DAILY -->
+<!-- ================= DAILY ================= -->
+
 <div id="daily" class="section">
-<h3>Daily Entry</h3>
-<div class="row g-2 mb-2">
-<div class="col"><input id="dailyName" class="form-control" placeholder="Name"></div>
-<div class="col"><input id="dailyEmail" class="form-control" placeholder="Email"></div>
-<div class="col"><input id="dailyPhone" class="form-control" placeholder="Phone"></div>
-<div class="col"><input id="dailyVisa" class="form-control" placeholder="Visa"></div>
-</div>
-<div class="row g-2 mb-2">
-<div class="col"><select id="dailyRequirement" class="form-control"></select></div>
-<div class="col"><input id="dailyClient" class="form-control" placeholder="Client" readonly></div>
-<div class="col"><input id="dailySource" class="form-control" placeholder="Source"></div>
-<div class="col"><input id="dailyLocation" class="form-control" placeholder="Location"></div>
-<div class="col"><input id="dailyNotes" class="form-control" placeholder="Notes"></div>
-<div class="col">
-<button id="addDaily" class="btn btn-primary w-100">Add</button>
-</div>
-</div>
-<table class="table table-bordered bg-white">
-<thead>
-<tr><th>Name</th><th>Requirement</th><th>Client</th><th>Action</th></tr>
-</thead>
-<tbody id="dailyBody"></tbody>
-</table>
+  <h2>Daily Tracker</h2>
+
+  <div class="form-row">
+    <input type="date" id="dailyDate">
+    <input id="dailyName" placeholder="Name">
+    <input id="dailyEmail" placeholder="Email">
+    <input id="dailyPhone" placeholder="Phone">
+    <select id="dailyRequirement" onchange="autoFillClient()"></select>
+    <input id="dailyClient" placeholder="Client" readonly>
+    <input id="dailyLocation" placeholder="Location">
+    <select id="dailyVisa">
+      <option>US Citizen</option>
+      <option>GC</option>
+      <option>H1B</option>
+    </select>
+  </div>
+
+  <select id="dailySource">
+    <option value="">Source</option>
+    <option>Dice</option>
+    <option>Monster</option>
+    <option>CB</option>
+    <option>Linkedin</option>
+    <option>Indeed</option>
+    <option>Referal</option>
+  </select>
+
+  <textarea id="dailyNotes" placeholder="Notes"></textarea>
+  <button onclick="saveDaily()">Save Candidate</button>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Sl</th>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Req</th>
+          <th>Client</th>
+          <th>Location</th>
+          <th>Visa</th>
+          <th>Source</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="dailyBody"></tbody>
+    </table>
+  </div>
+
 </div>
 
-<!-- Other sections same structure -->
-<div id="submission" class="section"><h3>Submission</h3><table class="table table-bordered bg-white"><tbody id="submissionBody"></tbody></table></div>
-<div id="proposal" class="section"><h3>Proposal</h3><table class="table table-bordered bg-white"><tbody id="proposalBody"></tbody></table></div>
-<div id="interview" class="section"><h3>Interview</h3><table class="table table-bordered bg-white"><tbody id="interviewBody"></tbody></table></div>
-<div id="placement" class="section"><h3>Placement</h3><table class="table table-bordered bg-white"><tbody id="placementBody"></tbody></table></div>
-<div id="start" class="section"><h3>Start</h3><table class="table table-bordered bg-white"><tbody id="startBody"></tbody></table></div>
-<div id="tasks" class="section"><h3>Tasks</h3><table class="table table-bordered bg-white"><tbody id="taskBody"></tbody></table></div>
-<div id="meetings" class="section"><h3>Meetings</h3><table class="table table-bordered bg-white"><tbody id="meetingBody"></tbody></table></div>
+<!-- ================= SUBMISSION ================= -->
+
+<div id="submission" class="section">
+  <h2>Submissions</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Sl</th>
+          <th>Submission Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Req</th>
+          <th>Client</th>
+          <th>Location</th>
+          <th>Visa</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="submissionBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= PROPOSAL ================= -->
+
+<div id="proposal" class="section">
+  <h2>Proposals</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Sl</th>
+          <th>Proposal Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Req</th>
+          <th>Client</th>
+          <th>Location</th>
+          <th>Visa</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="proposalBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= INTERVIEW ================= -->
+
+<div id="interview" class="section">
+  <h2>Interviews</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Sl</th>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Req</th>
+          <th>Client</th>
+          <th>Location</th>
+          <th>Visa</th>
+          <th>Interview Scheduled On</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="interviewBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= PLACEMENT ================= -->
+
+<div id="placement" class="section">
+  <h2>Placements</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Sl</th>
+          <th>Placement Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Req</th>
+          <th>Client</th>
+          <th>Location</th>
+          <th>Visa</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="placementBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= START ================= -->
+
+<div id="start" class="section">
+  <h2>Starts</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Sl</th>
+          <th>Entry Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Req</th>
+          <th>Client</th>
+          <th>Location</th>
+          <th>Visa</th>
+          <th>Start Date</th>
+          <th>Notes</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="startBody"></tbody>
+    </table>
+  </div>
+</div>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
-
 </body>
 </html>
