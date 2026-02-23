@@ -551,8 +551,21 @@ function renderAll(){
   renderMeetings();
 }
 
-renderAll();
-startHourlyReminder();
+document.addEventListener("DOMContentLoaded", function(){
+
+  checkUser();   // for login check
+
+  renderJD();
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
+  renderKPI();
+  renderTasks();
+  renderMeetings();
+});
 
 function formatDisplayDate(dateStr){
   if(!dateStr) return "";
@@ -566,4 +579,25 @@ function formatDisplayDate(dateStr){
 
   const localDate = new Date(year, month, day);
   return localDate.toDateString();
+}
+
+/* ================= LOGIN ================= */
+
+async function login(){
+
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
 }
