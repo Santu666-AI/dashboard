@@ -551,19 +551,16 @@ function loadDashboard(){
 async function login(){
 
   const emailInput = document.getElementById("loginEmail");
-  const passwordInput = document.getElementById("loginPassword");
+  const passwordInput = document.getElementById("password");
 
   if(!emailInput || !passwordInput){
     alert("Login inputs not found");
     return;
   }
 
-  const email = emailInput.value;
-  const password = passwordInput.value;
-
   const { error } = await sb.auth.signInWithPassword({
-    email: email,
-    password: password
+    email: emailInput.value,
+    password: passwordInput.value
   });
 
   if(error){
@@ -571,8 +568,13 @@ async function login(){
     return;
   }
 
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("app").style.display = "block";
+  const loginDiv = document.getElementById("loginScreen");
+  const appDiv = document.getElementById("app");
+
+  if(loginDiv && appDiv){
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+  }
 
   loadDashboard();
 }
