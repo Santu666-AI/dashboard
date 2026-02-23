@@ -531,14 +531,9 @@ function startHourlyReminder(){
   },60*60*1000);
 }
 
-/* ================= MASTER RENDER ================= */
+/* ================= AUTH + DASHBOARD LOAD ================= */
 
-function saveAndRender(){
-  saveDB();
-  renderAll();
-}
-
-function renderAll(){
+function loadDashboard(){
   renderJD();
   renderDaily();
   renderStage("submission","submissionBody");
@@ -551,18 +546,22 @@ function renderAll(){
   renderMeetings();
 }
 
-/* ================= AUTH SYSTEM ================= */
-
-document.addEventListener("DOMContentLoaded", function(){
-  checkUser();
-});
+/* ================= LOGIN ================= */
 
 async function login(){
 
-  const email = document.getElementById("loginEmail").value;
-  const password = document.getElementById("loginPassword").value;
+  const emailInput = document.getElementById("loginEmail");
+  const passwordInput = document.getElementById("loginPassword");
 
-  const { data, error } = await sb.auth.signInWithPassword({
+  if(!emailInput || !passwordInput){
+    alert("Login inputs not found");
+    return;
+  }
+
+  const email = emailInput.value;
+  const password = passwordInput.value;
+
+  const { error } = await sb.auth.signInWithPassword({
     email: email,
     password: password
   });
@@ -578,6 +577,8 @@ async function login(){
   loadDashboard();
 }
 
+/* ================= CHECK SESSION ================= */
+
 async function checkUser(){
 
   const { data: { session } } = await sb.auth.getSession();
@@ -592,31 +593,8 @@ async function checkUser(){
   }
 }
 
-function loadDashboard(){
-  renderJD();
-  renderDaily();
-  renderStage("submission","submissionBody");
-  renderStage("proposal","proposalBody");
-  renderStage("interview","interviewBody");
-  renderStage("placement","placementBody");
-  renderStage("start","startBody");
-  renderKPI();
-  renderTasks();
-  renderMeetings();
-}
+/* ================= PAGE LOAD ================= */
 
-/* ================= DATE FORMAT HELPER ================= */
-
-function formatDisplayDate(dateStr){
-  if(!dateStr) return "";
-
-  const parts = dateStr.split("-");
-  if(parts.length !== 3) return dateStr;
-
-  const year = parseInt(parts[0]);
-  const month = parseInt(parts[1]) - 1;
-  const day = parseInt(parts[2]);
-
-  const localDate = new Date(year, month, day);
-  return localDate.toDateString();
-}
+document.addEventListener("DOMContentLoaded", function(){
+  checkUser();
+});
