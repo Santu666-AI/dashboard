@@ -43,6 +43,11 @@ function saveDB(){
   localStorage.setItem("ATS_DB", JSON.stringify(DB));
 }
 
+function saveAndRender(){
+  saveDB();
+  loadDashboard();
+}
+
 function today(){
   const d = new Date();
   return d.getFullYear() + "-" +
@@ -655,8 +660,7 @@ function initTabs(){
       if(target){
         target.classList.add("active");
       }
-
-      // sidebar highlight
+    // sidebar highlight
       links.forEach(l =>
         l.classList.remove("active-link")
       );
@@ -669,32 +673,45 @@ function initTabs(){
 
 }
 
+function switchSection(tab){
+
+  document.querySelectorAll(".section")
+    .forEach(sec => sec.classList.remove("active"));
+
+  const target = document.getElementById(tab);
+  if(target) target.classList.add("active");
+
+  document.querySelectorAll(".sidebar a")
+    .forEach(a => a.classList.remove("active-link"));
+
+  const link =
+    document.querySelector(`.sidebar a[data-tab="${tab}"]`);
+
+  if(link) link.classList.add("active-link");
+}
+    
 /* ================= RESUME → DAILY ================= */
 
 function addResumeToDaily(){
 
-  const name =
-    document.getElementById("resumeName")?.value || "";
+  const record = {
+    entry_date: today(),
+    name: resumeName.value || "",
+    email: resumeEmail.value || "",
+    phone: resumePhone.value || "",
+    requirement: "",
+    client: "",
+    location: resumeLocation.value || "",
+    visa: resumeVisa.value || "",
+    source: "",
+    notes: "Parsed Resume"
+  };
 
-  const email =
-    document.getElementById("resumeEmail")?.value || "";
+  DB.daily.unshift(record);
 
-  const phone =
-    document.getElementById("resumePhone")?.value || "";
+  saveAndRender();
 
-  const location =
-    document.getElementById("resumeLocation")?.value || "";
-
-  const visa =
-    document.getElementById("resumeVisa")?.value || "";
-
-  // move values to DAILY form
-  document.getElementById("dailyName").value = name;
-  document.getElementById("dailyEmail").value = email;
-  document.getElementById("dailyPhone").value = phone;
-  document.getElementById("dailyLocation").value = location;
-  document.getElementById("dailyVisa").value = visa;
-
-  // switch tab automatically
   switchSection("daily");
+
+  alert("✅ Candidate added to Daily Tracker");
 }
