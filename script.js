@@ -53,17 +53,6 @@ function uid(){
 
 /* ================= TAB SWITCH ================= */
 
-function switchTab(id){
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-
-  document.querySelectorAll(".sidebar a").forEach(a=>a.classList.remove("active-link"));
-  document.querySelectorAll(".sidebar a").forEach(link=>{
-    if(link.getAttribute("onclick")?.includes(id)){
-      link.classList.add("active-link");
-    }
-  });
-}
 
 /* ================= JD ================= */
 
@@ -605,5 +594,47 @@ async function checkUser(){
 /* ================= PAGE LOAD ================= */
 
 document.addEventListener("DOMContentLoaded", function(){
-  checkUser();
+
+  checkUser();   // login/session check
+  initTabs();    // ⭐ enable sidebar switching
+
 });
+
+/* ===============================
+   TAB ROUTER FIX
+================================*/
+
+function initTabs(){
+
+  const links = document.querySelectorAll(".sidebar a[data-tab]");
+  const sections = document.querySelectorAll(".section");
+
+  links.forEach(link => {
+
+    link.addEventListener("click", function(){
+
+      const tab = this.getAttribute("data-tab");
+
+      // remove active section
+      sections.forEach(sec =>
+        sec.classList.remove("active")
+      );
+
+      // activate selected section
+      const target = document.getElementById(tab);
+      if(target){
+        target.classList.add("active");
+      }
+
+      // sidebar highlight
+      links.forEach(l =>
+        l.classList.remove("active-link")
+      );
+
+      this.classList.add("active-link");
+
+    });
+
+  });
+
+}
