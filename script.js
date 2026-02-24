@@ -55,6 +55,16 @@ function today(){
          String(d.getDate()).padStart(2,"0");
 }
 
+function formatDisplayDate(dateStr){
+
+  const d = new Date(dateStr);
+
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
 function uid(){
   return Date.now() + Math.floor(Math.random()*1000);
 }
