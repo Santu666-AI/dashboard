@@ -279,3 +279,66 @@ button[onclick*="delete"] {
   color: white;
   font-size: 15px;
 }
+
+/* ===============================
+   ATS MASTER LAYOUT FIX
+================================*/
+
+body{
+  margin:0;
+  font-family:Segoe UI;
+}
+
+/* MAIN FLEX LAYOUT */
+.layout{
+  display:flex;
+  height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+  width:240px;
+  background:#0f172a;
+  color:white;
+  padding:20px;
+  position:fixed;
+  left:0;
+  top:0;
+  bottom:0;
+}
+
+.sidebar h3{
+  margin-bottom:20px;
+}
+
+.sidebar a{
+  display:block;
+  padding:12px;
+  margin-bottom:6px;
+  color:white;
+  text-decoration:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.sidebar a:hover,
+.sidebar .active-link{
+  background:#2563eb;
+}
+
+/* MAIN CONTENT AREA */
+.main{
+  margin-left:240px;
+  padding:25px;
+  width:100%;
+  overflow:auto;
+}
+
+/* SECTION CONTROL */
+.section{
+  display:none;
+}
+
+.section.active{
+  display:block;
+}
