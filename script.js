@@ -241,22 +241,20 @@ switchSection("daily");
 
 /* ================= DAILY ================= */
 
+/* =====================================
+   DAILY SAVE FUNCTION - FINAL VERSION
+===================================== */
+
 function saveDaily(){
 
-  /* ===============================
-     ✅ REQUIRED FIELD VALIDATION
-  =============================== */
-
+  /* ✅ REQUIRED FIELD VALIDATION */
   if(!dailyName.value || !dailyEmail.value){
     alert("Name & Email required");
     return;
   }
 
-  /* ===============================
-     ✅ SAVE RECORD
-  =============================== */
-
-  DB.daily.unshift({
+  /* ✅ CREATE DAILY RECORD */
+  const record = {
     entry_date: today(),
     name: dailyName.value.trim(),
     email: dailyEmail.value.trim(),
@@ -267,20 +265,25 @@ function saveDaily(){
     visa: dailyVisa.value,
     source: dailySource.value,
     notes: dailyNotes.value
-  });
+  };
 
-  /* ===============================
-     ✅ CLEAR FORM
-  =============================== */
+  /* ✅ INSERT INTO DATABASE */
+  DB.daily.unshift(record);
 
+  /* ✅ CLEAR FORM */
   clearDaily();
 
-  /* ===============================
-     ✅ SAVE + RENDER
-  =============================== */
+  /* ✅ SAVE DATABASE */
+  saveDB();
 
-  saveAndRender();
+  /* ✅ REFRESH DAILY TABLE */
+  renderDaily();
+
+  /* ✅ ENSURE DAILY TAB VISIBLE */
+  switchSection("daily");
 }
+
+  
 
 function clearDaily(){
   dailyName.value="";
