@@ -137,47 +137,55 @@ function autoFillClient(){
 
 function parseResume(){
 
-  // find textarea
-  const textarea =
-      document.getElementById("resumeText");
+  const text =
+    document.getElementById("resumeText").value;
 
-  if(!textarea){
-    alert("Resume textbox not found");
-    return;
-  }
-
-  const text = textarea.value;
-
-  if(text.trim() === ""){
+  if(!text.trim()){
     alert("Paste resume first");
     return;
   }
 
-  // find email
-  const email =
-      text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  /* ================= EMAIL ================= */
+  const emailMatch =
+    text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
 
-  // find phone
-  const phone =
-      text.match(/(\+?\d[\d\s\-]{8,})/);
+  document.getElementById("resumeEmail").value =
+    emailMatch ? emailMatch[0] : "";
 
-  // fill email
-  const emailInput =
-      document.getElementById("resumeEmail");
 
-  if(emailInput && email){
-      emailInput.value = email[0];
+  /* ================= PHONE ================= */
+  const phoneMatch =
+    text.match(/(\+?\d[\d\s\-]{9,15})/);
+
+  document.getElementById("resumePhone").value =
+    phoneMatch ? phoneMatch[0] : "";
+
+
+  /* ================= NAME (SMART LOGIC) ================= */
+
+  const lines = text.split("\n")
+                    .map(l=>l.trim())
+                    .filter(l=>l.length>2);
+
+  let probableName = "";
+
+  for(let line of lines){
+
+    if(
+      !line.includes("@") &&
+      !line.match(/\d/) &&
+      line.split(" ").length <= 4
+    ){
+      probableName = line;
+      break;
+    }
   }
 
-  // fill phone
-  const phoneInput =
-      document.getElementById("resumePhone");
+  document.getElementById("resumeName").value =
+    probableName;
 
-  if(phoneInput && phone){
-      phoneInput.value = phone[0];
-  }
 
-  alert("Resume Parsed Successfully ✅");
+  alert("✅ Resume Parsed Successfully");
 }
 
 /* ================= DAILY ================= */
