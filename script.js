@@ -16,6 +16,9 @@ const sb = window.supabase.createClient(
   SUPABASE_KEY
 );
 
+/* ================= DOM HELPER ================= */
+const $ = id => document.getElementById(id);
+
 console.log("Supabase Connected Successfully");
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
