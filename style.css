@@ -26,7 +26,6 @@ body {
   font-family: "Inter", -apple-system, BlinkMacSystemFont,
                "Segoe UI", Roboto, sans-serif;
   background: linear-gradient(to right, #eef2f7, #f8fafc);
-  display: flex;
   min-height: 100vh;
   color: var(--text-main);
 }
