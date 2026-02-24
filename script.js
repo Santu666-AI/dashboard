@@ -56,29 +56,47 @@ const DB = JSON.parse(localStorage.getItem("ATS_DB")) || {
 /* ✅ SAFE PRODUCTION LOCK */
 Object.seal(DB);
 
+/* ================= CLOUD BACKUP ================= */
 
-function saveDB(){
-  localStorage.setItem("ATS_DB", JSON.stringify(DB));
+async function backupToCloud(){
+
+  try{
+    const { error } =
+      await sb.from("ats_backup")
+        .insert([{ data: DB }]);
+
+    if(error){
+      console.log("Backup Failed", error.message);
+    }else{
+      console.log("✅ Cloud Backup Success");
+    }
+
+  }catch(e){
+    console.log("Backup Error", e);
+  }
 }
 
-function saveAndRender(){
-  saveDB();
-  loadDashboard();
+
+async function saveDB(){
+
+
+  /* ✅ SAVE LOCALLY */
+  localStorage.setItem(
+    "ATS_DB",
+    JSON.stringify(DB)
+  );
+
+  /* ✅ SAVE TO CLOUD */
+  if(Date.now() % 2 === 0) backupToCloud();
 }
 
 function today(){
 
   const now = new Date();
 
-  const est = new Date(
-    now.toLocaleString("en-US",{
-      timeZone:"America/New_York"
-    })
-  );
-
-  const y = est.getFullYear();
-  const m = String(est.getMonth()+1).padStart(2,"0");
-  const d = String(est.getDate()).padStart(2,"0");
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,"0");
+  const d = String(now.getDate()).padStart(2,"0");
 
   return `${y}-${m}-${d}`;
 }
@@ -199,19 +217,50 @@ function parseResume(){
 
   alert("✅ Resume Parsed Successfully");
 
-  setTimeout(()=>{
-   addResumeToDaily();
-  },200);
+/* move parsed data to Daily form */
+
+dailyName.value =
+  document.getElementById("resumeName").value;
+
+dailyEmail.value =
+  document.getElementById("resumeEmail").value;
+
+dailyPhone.value =
+  document.getElementById("resumePhone").value;
+
+dailyLocation.value =
+  document.getElementById("resumeLocation").value;
+
+dailyVisa.value =
+  document.getElementById("resumeVisa").value;
+
+/* open Daily tab for verification */
+switchSection("daily");
+  
   }
 
 /* ================= DAILY ================= */
 
 function saveDaily(){
+
+  /* ===============================
+     ✅ REQUIRED FIELD VALIDATION
+  =============================== */
+
+  if(!dailyName.value || !dailyEmail.value){
+    alert("Name & Email required");
+    return;
+  }
+
+  /* ===============================
+     ✅ SAVE RECORD
+  =============================== */
+
   DB.daily.unshift({
     entry_date: today(),
-    name: dailyName.value,
-    email: dailyEmail.value,
-    phone: dailyPhone.value,
+    name: dailyName.value.trim(),
+    email: dailyEmail.value.trim(),
+    phone: dailyPhone.value.trim(),
     requirement: dailyRequirement.value,
     client: dailyClient.value,
     location: dailyLocation.value,
@@ -220,7 +269,16 @@ function saveDaily(){
     notes: dailyNotes.value
   });
 
+  /* ===============================
+     ✅ CLEAR FORM
+  =============================== */
+
   clearDaily();
+
+  /* ===============================
+     ✅ SAVE + RENDER
+  =============================== */
+
   saveAndRender();
 }
 
@@ -667,6 +725,10 @@ document.addEventListener("DOMContentLoaded", function(){
   checkUser();   // login/session check
   initTabs();    // ⭐ enable sidebar switching
 
+  setInterval(()=>{
+   backupToCloud();
+  },300000);
+
 });
 
 /* ===============================
@@ -724,29 +786,3 @@ function switchSection(tab){
   if(link) link.classList.add("active-link");
 }
     
-/* ================= RESUME → DAILY ================= */
-
-function addResumeToDaily(){
-
-  // Copy parsed values into Daily form
-  dailyName.value =
-    document.getElementById("resumeName").value;
-
-  dailyEmail.value =
-    document.getElementById("resumeEmail").value;
-
-  dailyPhone.value =
-    document.getElementById("resumePhone").value;
-
-  dailyLocation.value =
-    document.getElementById("resumeLocation").value;
-
-  dailyVisa.value =
-    document.getElementById("resumeVisa").value;
-
-  // Use SAME save logic as manual entry
-  saveDaily();
-
-  // Open Daily tab automatically
-  switchSection("daily");
-}
