@@ -20,6 +20,9 @@ const $ = id => document.getElementById(id);
 
 console.log("Supabase Connected Successfully");
 
+const ATS_VERSION = "NVR ATS v1.0 LOCKED";
+console.log(ATS_VERSION);
+
 /* ===== DATE FORMAT HELPER ===== */
 function formatDisplayDate(dateStr){
 
@@ -37,7 +40,7 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
 
 /* ================= DATABASE ================= */
 
-let DB = JSON.parse(localStorage.getItem("ATS_DB")) || {
+const DB = JSON.parse(localStorage.getItem("ATS_DB")) || {
   jd: [],
   daily: [],
   submission: [],
@@ -50,6 +53,10 @@ let DB = JSON.parse(localStorage.getItem("ATS_DB")) || {
   junk: []
 };
 
+/* ✅ SAFE PRODUCTION LOCK */
+Object.seal(DB);
+
+
 function saveDB(){
   localStorage.setItem("ATS_DB", JSON.stringify(DB));
 }
@@ -61,21 +68,19 @@ function saveAndRender(){
 
 function today(){
 
-  // current UTC time
   const now = new Date();
 
-  // convert to EST/EDT automatically
-  const estDate = new Date(
-    now.toLocaleString("en-US", {
-      timeZone: "America/New_York"
+  const est = new Date(
+    now.toLocaleString("en-US",{
+      timeZone:"America/New_York"
     })
   );
 
-  const year = estDate.getFullYear();
-  const month = String(estDate.getMonth()+1).padStart(2,"0");
-  const day = String(estDate.getDate()).padStart(2,"0");
+  const y = est.getFullYear();
+  const m = String(est.getMonth()+1).padStart(2,"0");
+  const d = String(est.getDate()).padStart(2,"0");
 
-  return `${year}-${month}-${day}`;
+  return `${y}-${m}-${d}`;
 }
 
 /* ================= TAB SWITCH ================= */
@@ -193,7 +198,11 @@ function parseResume(){
   document.getElementById("resumeName").value=name;
 
   alert("✅ Resume Parsed Successfully");
-}
+
+  setTimeout(()=>{
+   addResumeToDaily();
+  },200);
+  }
 
 /* ================= DAILY ================= */
 
