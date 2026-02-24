@@ -550,33 +550,40 @@ function loadDashboard(){
 
 async function login(){
 
-  const emailInput = document.getElementById("loginEmail");
-  const passwordInput = document.getElementById("password");
+  const emailInput =
+      document.getElementById("loginEmail") ||
+      document.getElementById("username");
+
+  const passwordInput =
+      document.getElementById("password");
 
   if(!emailInput || !passwordInput){
-    alert("Login inputs not found");
-    return;
+      alert("Login form not detected");
+      return;
   }
 
-  const { error } = await sb.auth.signInWithPassword({
-    email: emailInput.value,
-    password: passwordInput.value
-  });
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if(!email || !password){
+      alert("Enter email & password");
+      return;
+  }
+
+  const { data, error } =
+      await sb.auth.signInWithPassword({
+          email,
+          password
+      });
 
   if(error){
-    alert(error.message);
-    return;
+      alert(error.message);
+      return;
   }
 
-  const loginDiv = document.getElementById("loginScreen");
-  const appDiv = document.getElementById("app");
+  console.log("✅ Login Success");
 
-  if(loginDiv && appDiv){
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-  }
-
-  loadDashboard();
+  window.location.href = "dashboard.html";
 }
 
 /* ================= CHECK SESSION ================= */
