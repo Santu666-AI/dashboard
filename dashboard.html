@@ -31,6 +31,7 @@
 
 <a data-tab="dashboard" class="active">Dashboard</a>
 <a data-tab="jd">JD</a>
+<a data-tab="resume">Resume</a>
 <a data-tab="daily">Daily</a>
 <a data-tab="submission">Submission</a>
 <a data-tab="proposal">Proposal</a>
@@ -138,23 +139,45 @@
 </div>
 <!-- ================= RESUME ================= -->
 
+<!-- ================= RESUME ================= -->
+
 <div id="resume" class="section">
-  <h2>Resume Parser</h2>
 
-  <textarea id="resumeText" placeholder="Paste resume content here..."></textarea>
-  <button onclick="parseResume()">Parse Resume</button>
+<h2>Resume Parser</h2>
 
-  <div class="form-row">
-    <input id="resumeName" placeholder="Name">
-    <input id="resumeEmail" placeholder="Email">
-    <input id="resumePhone" placeholder="Phone">
-    <input id="resumeLocation" placeholder="Location">
-    <select id="resumeVisa">
-      <option>US Citizen</option>
-      <option>GC</option>
-      <option>H1B</option>
-    </select>
-  </div>
+<div class="panel">
+
+<textarea id="resumeText"
+placeholder="Paste full resume here..."
+style="width:100%;height:120px;margin-bottom:10px;">
+</textarea>
+
+<button onclick="parseResume()">Parse Resume</button>
+
+<div class="form-row">
+
+<input id="resumeName" placeholder="Candidate Name">
+<input id="resumeEmail" placeholder="Email">
+<input id="resumePhone" placeholder="Phone">
+<input id="resumeLocation" placeholder="Location">
+
+<select id="resumeVisa">
+<option value="">Visa Status</option>
+<option>US Citizen</option>
+<option>GC</option>
+<option>H1B</option>
+</select>
+
+</div>
+
+<br>
+
+<button onclick="addResumeToDaily()">
+Add Candidate To Daily
+</button>
+
+</div>
+
 </div>
 
 <!-- ================= DAILY ================= -->

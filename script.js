@@ -116,23 +116,56 @@ function autoFillClient(){
 /* ================= RESUME ================= */
 
 function parseResume(){
-  const txt = resumeText.value.trim();
-  const email = txt.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  const phone = txt.match(/\+?\d[\d\-\s]{8,}/);
-  const lines = txt.split("\n").map(x=>x.trim()).filter(Boolean);
 
-  const name = lines[0] || "";
-  const location = lines.find(l=>l.includes(",")) || "";
+  const text = $("#resumeText").value;
 
-  resumeName.value = name;
-  resumeEmail.value = email?email[0]:"";
-  resumePhone.value = phone?phone[0]:"";
-  resumeLocation.value = location;
+  if(!text){
+    alert("Paste resume first");
+    return;
+  }
 
-  dailyName.value = name;
-  dailyEmail.value = email?email[0]:"";
-  dailyPhone.value = phone?phone[0]:"";
-  dailyLocation.value = location;
+  const email =
+    text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+
+  const phone =
+    text.match(/(\+?\d[\d\s\-]{8,})/)?.[0] || "";
+
+  $("#resumeEmail").value = email;
+  $("#resumePhone").value = phone;
+
+  alert("Resume Parsed ✅");
+}
+
+
+function addResumeToDaily(){
+
+  const candidate={
+    name:$("#resumeName").value,
+    email:$("#resumeEmail").value,
+    phone:$("#resumePhone").value,
+    location:$("#resumeLocation").value,
+    visa:$("#resumeVisa").value,
+    date:new Date()
+  };
+
+  if(!candidate.name){
+    alert("Enter candidate name");
+    return;
+  }
+
+  DB.daily.push(candidate);
+
+  saveDB();
+  renderDaily();
+
+  alert("Candidate moved to Daily ✅");
+
+  // clear form
+  $("#resumeText").value="";
+  $("#resumeName").value="";
+  $("#resumeEmail").value="";
+  $("#resumePhone").value="";
+  $("#resumeLocation").value="";
 }
 
 /* ================= DAILY ================= */
