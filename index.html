@@ -1,96 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
-<title>NVR ATS Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>NetVision Resources | ATS Login</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
+
+/* ===== BACKGROUND ===== */
+
 body{
   margin:0;
   height:100vh;
-  background: linear-gradient(135deg,#0f172a,#1e293b);
+  font-family:'Segoe UI',sans-serif;
+  background:linear-gradient(135deg,#0f172a,#1e3a8a);
   display:flex;
   align-items:center;
   justify-content:center;
-  font-family:'Segoe UI',sans-serif;
 }
 
+/* ===== LOGIN CARD ===== */
+
 .login-card{
+  width:420px;
   background:#ffffff;
   padding:40px;
   border-radius:18px;
-  width:380px;
-  box-shadow:0 30px 60px rgba(0,0,0,0.4);
+  box-shadow:0 30px 60px rgba(0,0,0,.35);
 }
 
-.login-title{
-  font-weight:600;
+.logo{
   text-align:center;
-  margin-bottom:30px;
-  font-size:22px;
+  margin-bottom:15px;
 }
 
-.form-label{
-  font-size:14px;
-  font-weight:500;
+.logo img{
+  width:220px;
 }
 
-.form-control{
-  height:45px;
-  border-radius:8px;
-}
+/* ===== TEXT ===== */
 
-.btn-login{
-  height:45px;
-  border:none;
-  background:#2563eb;
-  border-radius:8px;
-  font-weight:500;
-}
-
-.btn-login:hover{
-  background:#1d4ed8;
-}
-
-.footer-text{
+.title{
   text-align:center;
-  font-size:13px;
-  margin-top:25px;
+  margin-bottom:25px;
+}
+
+.title h4{
+  margin:0;
+  color:#1d4ed8;
+  font-weight:700;
+}
+
+.title span{
   color:#6b7280;
 }
+
+/* ===== INPUT ===== */
+
+.form-control{
+  height:48px;
+  border-radius:10px;
+}
+
+/* ===== BUTTON ===== */
+
+.login-btn{
+  height:48px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(90deg,#2563eb,#1d4ed8);
+  color:white;
+  font-weight:600;
+}
+
+.login-btn:hover{
+  background:#1e40af;
+}
+
+.footer{
+  text-align:center;
+  margin-top:20px;
+  font-size:13px;
+  color:#6b7280;
+}
+
 </style>
+
 </head>
 
 <body>
 
 <div class="login-card">
-  <div class="login-title">🔐 NVR ATS Login</div>
 
-  <div class="mb-3">
-    <label class="form-label">Username</label>
-    <input type="text" id="username" class="form-control" placeholder="Enter username">
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Password</label>
-    <input type="password" id="password" class="form-control" placeholder="Enter password">
-  </div>
-
-  <button class="btn btn-login w-100" onclick="login()">Login</button>
-
-  <div class="footer-text">
-    © 2026 NetVision Resources
-  </div>
+<div class="logo">
+<img src="logo.png">
 </div>
 
-<!-- Load Supabase FIRST -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<div class="title">
+<h4>NetVision Resources Inc</h4>
+<span>Recruiting Dashboard Login</span>
+</div>
 
-<!-- Then your full script -->
-<script src="script.js"></script>
+<form onsubmit="loginUser(event)">
+
+<div class="mb-3">
+<input
+type="email"
+id="email"
+class="form-control"
+placeholder="Email"
+required>
+</div>
+
+<div class="mb-3">
+<input
+type="password"
+id="password"
+class="form-control"
+placeholder="Password"
+required>
+</div>
+
+<button class="login-btn w-100">
+Login
+</button>
+
+</form>
+
+<div class="footer">
+© 2026 NetVision Resources
+</div>
+
+</div>
+
+<!-- ================= SUPABASE ================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+/* ✅ SAME SUPABASE YOU USE IN DASHBOARD */
+
+const SUPABASE_URL = "https://ftxrrgdmkpnghxilnpsk.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eHJyZ2Rta3BuZ2h4aWxucHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDY0MzYsImV4cCI6MjA4NzE4MjQzNn0.KcqIN2ynBQWmglQ_-6eaFi3TGPSclB0TgeJ83XU_OWI";
+
+const sb =
+supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+/* ================= LOGIN ================= */
+
+async function loginUser(e){
+
+  e.preventDefault();
+
+  const email =
+    document.getElementById("email").value;
+
+  const password =
+    document.getElementById("password").value;
+
+  const { error } =
+    await sb.auth.signInWithPassword({
+      email,
+      password
+    });
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  /* ✅ SUCCESS */
+  window.location="dashboard.html";
+}
+
+</script>
 
 </body>
 </html>
