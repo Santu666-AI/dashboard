@@ -66,7 +66,16 @@ function today(){
 
   return `${year}-${month}-${day}`;
 }
+function formatDisplayDate(dateStr){
 
+  const d = new Date(dateStr);
+
+  return d.toLocaleDateString("en-US",{
+    year:"numeric",
+    month:"short",
+    day:"numeric"
+  });
+}
 /* ================= TAB SWITCH ================= */
 
 
