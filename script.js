@@ -668,3 +668,33 @@ function initTabs(){
   });
 
 }
+
+/* ================= RESUME → DAILY ================= */
+
+function addResumeToDaily(){
+
+  const name =
+    document.getElementById("resumeName")?.value || "";
+
+  const email =
+    document.getElementById("resumeEmail")?.value || "";
+
+  const phone =
+    document.getElementById("resumePhone")?.value || "";
+
+  const location =
+    document.getElementById("resumeLocation")?.value || "";
+
+  const visa =
+    document.getElementById("resumeVisa")?.value || "";
+
+  // move values to DAILY form
+  document.getElementById("dailyName").value = name;
+  document.getElementById("dailyEmail").value = email;
+  document.getElementById("dailyPhone").value = phone;
+  document.getElementById("dailyLocation").value = location;
+  document.getElementById("dailyVisa").value = visa;
+
+  // switch tab automatically
+  switchSection("daily");
+}
