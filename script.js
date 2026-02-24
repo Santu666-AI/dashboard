@@ -234,7 +234,7 @@ dailyLocation.value =
 dailyVisa.value =
   document.getElementById("resumeVisa").value;
 
-/* open Daily tab for verification */
+/* open Daily tab only */
 switchSection("daily");
   
   }
@@ -637,10 +637,7 @@ function startHourlyReminder(){
     audio.loop=true;
     audio.play();
 
-    setTimeout(()=>{
-      audio.pause();
-      audio.currentTime=0;
-    },30000);
+ 
 
     alert("You have pending tasks. Please submit if completed.");
 
