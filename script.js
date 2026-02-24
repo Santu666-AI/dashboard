@@ -2,7 +2,6 @@
    NETVISION ATS – TRUE MASTER BUILD
 ========================================================= */
 
-/* ================= SUPABASE INIT ================= */
 
 /* ================= SUPABASE INIT ================= */
 
@@ -20,6 +19,18 @@ const sb = window.supabase.createClient(
 const $ = id => document.getElementById(id);
 
 console.log("Supabase Connected Successfully");
+
+/* ===== DATE FORMAT HELPER ===== */
+function formatDisplayDate(dateStr){
+
+  const d = new Date(dateStr);
+
+  return d.toLocaleDateString("en-US",{
+    year:"numeric",
+    month:"short",
+    day:"numeric"
+  });
+}
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
                 "Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -66,16 +77,7 @@ function today(){
 
   return `${year}-${month}-${day}`;
 }
-function formatDisplayDate(dateStr){
 
-  const d = new Date(dateStr);
-
-  return d.toLocaleDateString("en-US",{
-    year:"numeric",
-    month:"short",
-    day:"numeric"
-  });
-}
 /* ================= TAB SWITCH ================= */
 
 
@@ -717,24 +719,25 @@ function switchSection(tab){
 
 function addResumeToDaily(){
 
-  const record = {
-    entry_date: today(),
-    name: resumeName.value || "",
-    email: resumeEmail.value || "",
-    phone: resumePhone.value || "",
-    requirement: "",
-    client: "",
-    location: resumeLocation.value || "",
-    visa: resumeVisa.value || "",
-    source: "",
-    notes: "Parsed Resume"
-  };
+  // Copy parsed values into Daily form
+  dailyName.value =
+    document.getElementById("resumeName").value;
 
-  DB.daily.unshift(record);
+  dailyEmail.value =
+    document.getElementById("resumeEmail").value;
 
-  saveAndRender();
+  dailyPhone.value =
+    document.getElementById("resumePhone").value;
 
+  dailyLocation.value =
+    document.getElementById("resumeLocation").value;
+
+  dailyVisa.value =
+    document.getElementById("resumeVisa").value;
+
+  // Use SAME save logic as manual entry
+  saveDaily();
+
+  // Open Daily tab automatically
   switchSection("daily");
-
-  alert("✅ Candidate added to Daily Tracker");
 }
