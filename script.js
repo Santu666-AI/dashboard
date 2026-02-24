@@ -118,57 +118,51 @@ function autoFillClient(){
 
 /* ================= RESUME ================= */
 
+/* ================= RESUME PARSER ================= */
+
 function parseResume(){
 
-  const text = $("#resumeText").value;
+  // find textarea
+  const textarea =
+      document.getElementById("resumeText");
 
-  if(!text){
+  if(!textarea){
+    alert("Resume textbox not found");
+    return;
+  }
+
+  const text = textarea.value;
+
+  if(text.trim() === ""){
     alert("Paste resume first");
     return;
   }
 
+  // find email
   const email =
-    text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+      text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
 
+  // find phone
   const phone =
-    text.match(/(\+?\d[\d\s\-]{8,})/)?.[0] || "";
+      text.match(/(\+?\d[\d\s\-]{8,})/);
 
-  $("#resumeEmail").value = email;
-  $("#resumePhone").value = phone;
+  // fill email
+  const emailInput =
+      document.getElementById("resumeEmail");
 
-  alert("Resume Parsed ✅");
-}
-
-
-function addResumeToDaily(){
-
-  const candidate={
-    name:$("#resumeName").value,
-    email:$("#resumeEmail").value,
-    phone:$("#resumePhone").value,
-    location:$("#resumeLocation").value,
-    visa:$("#resumeVisa").value,
-    date:new Date()
-  };
-
-  if(!candidate.name){
-    alert("Enter candidate name");
-    return;
+  if(emailInput && email){
+      emailInput.value = email[0];
   }
 
-  DB.daily.push(candidate);
+  // fill phone
+  const phoneInput =
+      document.getElementById("resumePhone");
 
-  saveDB();
-  renderDaily();
+  if(phoneInput && phone){
+      phoneInput.value = phone[0];
+  }
 
-  alert("Candidate moved to Daily ✅");
-
-  // clear form
-  $("#resumeText").value="";
-  $("#resumeName").value="";
-  $("#resumeEmail").value="";
-  $("#resumePhone").value="";
-  $("#resumeLocation").value="";
+  alert("Resume Parsed Successfully ✅");
 }
 
 /* ================= DAILY ================= */
