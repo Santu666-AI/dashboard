@@ -92,13 +92,17 @@ async function saveDB(){
 
 function today(){
 
-  const now = new Date();
+  const estTime = new Date(
+    new Date().toLocaleString("en-US", {
+      timeZone: "America/New_York"
+    })
+  );
 
-  const year = now.getFullYear();
-  const month = String(now.getMonth()+1).padStart(2,"0");
-  const day = String(now.getDate()).padStart(2,"0");
+  const y = estTime.getFullYear();
+  const m = String(estTime.getMonth()+1).padStart(2,"0");
+  const d = String(estTime.getDate()).padStart(2,"0");
 
-  return `${year}-${month}-${day}`;
+  return `${y}-${m}-${d}`;
 }
 
 /* ================= TAB SWITCH ================= */
