@@ -49,24 +49,22 @@ function saveAndRender(){
 }
 
 function today(){
-  const d = new Date();
-  return d.getFullYear() + "-" +
-         String(d.getMonth()+1).padStart(2,"0") + "-" +
-         String(d.getDate()).padStart(2,"0");
-}
 
-function formatDisplayDate(dateStr){
+  // current UTC time
+  const now = new Date();
 
-  const d = new Date(dateStr);
+  // convert to EST/EDT automatically
+  const estDate = new Date(
+    now.toLocaleString("en-US", {
+      timeZone: "America/New_York"
+    })
+  );
 
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric"
-  });
-}
-function uid(){
-  return Date.now() + Math.floor(Math.random()*1000);
+  const year = estDate.getFullYear();
+  const month = String(estDate.getMonth()+1).padStart(2,"0");
+  const day = String(estDate.getDate()).padStart(2,"0");
+
+  return `${year}-${month}-${day}`;
 }
 
 /* ================= TAB SWITCH ================= */
@@ -133,11 +131,9 @@ function autoFillClient(){
 
 /* ================= RESUME ================= */
 
-/* ================= RESUME PARSER ================= */
-
 function parseResume(){
 
-  const text =
+  let text =
     document.getElementById("resumeText").value;
 
   if(!text.trim()){
@@ -145,45 +141,45 @@ function parseResume(){
     return;
   }
 
-  /* ================= EMAIL ================= */
-  const emailMatch =
+  /* ===== CLEAN BROKEN LINES ===== */
+  text = text.replace(/\n/g," ");
+
+  /* ===== EMAIL ===== */
+  const email =
     text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
 
   document.getElementById("resumeEmail").value =
-    emailMatch ? emailMatch[0] : "";
+    email ? email[0] : "";
 
-
-  /* ================= PHONE ================= */
-  const phoneMatch =
-    text.match(/(\+?\d[\d\s\-]{9,15})/);
+  /* ===== PHONE ===== */
+  const phone =
+    text.match(/(\+?\d[\d\-\s()]{9,})/);
 
   document.getElementById("resumePhone").value =
-    phoneMatch ? phoneMatch[0] : "";
+    phone ? phone[0].replace(/\s+/g," ") : "";
 
+  /* ===== NAME ===== */
+  const lines =
+    document.getElementById("resumeText")
+      .value.split("\n")
+      .map(l=>l.trim())
+      .filter(Boolean);
 
-  /* ================= NAME (SMART LOGIC) ================= */
+  let name="";
 
-  const lines = text.split("\n")
-                    .map(l=>l.trim())
-                    .filter(l=>l.length>2);
-
-  let probableName = "";
-
-  for(let line of lines){
+  for(const line of lines){
 
     if(
       !line.includes("@") &&
-      !line.match(/\d/) &&
-      line.split(" ").length <= 4
+      !/\d{4}/.test(line) &&
+      line.split(" ").length<=5
     ){
-      probableName = line;
+      name=line;
       break;
     }
   }
 
-  document.getElementById("resumeName").value =
-    probableName;
-
+  document.getElementById("resumeName").value=name;
 
   alert("✅ Resume Parsed Successfully");
 }
