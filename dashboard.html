@@ -1,31 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-
-const SUPABASE_URL="https://ftxrrgdmkpnghxilnpsk.supabase.co";
-const SUPABASE_KEY= "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eHJyZ2Rta3BuZ2h4aWxucHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDY0MzYsImV4cCI6MjA4NzE4MjQzNn0.KcqIN2ynBQWmglQ_-6eaFi3TGPSclB0TgeJ83XU_OWI";
-
-const sb =
-supabase.createClient(
-SUPABASE_URL,
-SUPABASE_KEY
-);
-
-(async ()=>{
-
-const { data:{session} } =
-await sb.auth.getSession();
-
-if(!session){
-window.location="index.html";
-}
-
-})();
-
-</script>
   <meta charset="UTF-8">
   <title>NetVision ATS – Master Build</title>
   <link rel="stylesheet" href="style.css">
