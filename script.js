@@ -712,13 +712,21 @@ async function checkUser(){
 
   const { data: { session } } = await sb.auth.getSession();
 
+  const loginScreen = document.getElementById("loginScreen");
+  const app = document.getElementById("app");
+
   if(session){
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "block";
+
+    if(loginScreen) loginScreen.style.display = "none";
+    if(app) app.style.display = "block";
+
     loadDashboard();
+
   } else {
-    document.getElementById("loginScreen").style.display = "flex";
-    document.getElementById("app").style.display = "none";
+
+    if(loginScreen) loginScreen.style.display = "flex";
+    if(app) app.style.display = "none";
+
   }
 }
 
