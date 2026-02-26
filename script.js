@@ -783,6 +783,7 @@ function initTabs(){
 
 function switchSection(tab){
 
+
   document.querySelectorAll(".section")
     .forEach(sec => sec.classList.remove("active"));
 
@@ -798,3 +799,19 @@ function switchSection(tab){
   if(link) link.classList.add("active-link");
 }
     
+/* ================= MASTER SAVE + REFRESH ================= */
+
+function saveAndRender(){
+  saveDB();
+
+  renderJD();
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
+  renderKPI();
+  renderTasks();
+  renderMeetings();
+}
