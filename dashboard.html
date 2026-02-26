@@ -15,13 +15,6 @@
 <!-- DASHBOARD WRAPPER -->
 <div id="app" style="display:none;">
 
-<body>
-
-<div id="loginScreen"> ... </div>
-
-<div id="app" style="display:none;">
-
-  <!-- ADD SIDEBAR HERE -->
   <div class="sidebar">
     <a data-tab="dashboard" class="active-link">Dashboard</a>
     <a data-tab="productivity">Productivity</a>
@@ -37,11 +30,7 @@
 
   <div class="main">
      <!-- all your sections are here -->
-  </div>
-
-</div>
-
-</body>
+  
 
 <!-- ================= DASHBOARD ================= -->
 
@@ -345,39 +334,11 @@
 
 </div>
 
-</div>  <!-- closes app -->
+</div>   <!-- closes main -->
+</div>   <!-- closes app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 </body>
 </html>
 
-/* ===============================
-   DAILY SAVE FUNCTION
-================================ */
-
-function saveDaily(){
-
-  if(!dailyName.value || !dailyEmail.value){
-    alert("Name & Email required");
-    return;
-  }
-
-  DB.daily.unshift({
-    entry_date: today(),
-    name: dailyName.value.trim(),
-    email: dailyEmail.value.trim(),
-    phone: dailyPhone.value.trim(),
-    requirement: dailyRequirement.value,
-    client: dailyClient.value,
-    location: dailyLocation.value,
-    visa: dailyVisa.value,
-    source: dailySource.value,
-    notes: dailyNotes.value
-  });
-
-  clearDaily();
-
-  saveDB();
-  renderDaily();
-}
