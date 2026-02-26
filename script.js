@@ -411,6 +411,11 @@ function updateNote(tab,i,val){
   saveDB();
 }
 
+function updateField(stage,index,field,value){
+  DB[stage][index][field] = value;
+  saveDB();
+}
+
 /* ================= STAGE RENDER ================= */
 
 function renderStage(stage, bodyId){
@@ -421,74 +426,65 @@ function renderStage(stage, bodyId){
 
   DB[stage].forEach((r,i)=>{
 
-    let dateField="";
     let actionButtons="";
 
     if(stage==="submission"){
-      dateField = `
-        <input type="date"
-          value="${r.submission_date || ""}"
-          onchange="updateStageDate('submission',${i},this.value)">
-      `;
       actionButtons = `<button onclick="moveToInterview(${i})">Interview</button>`;
     }
 
-    if(stage==="proposal"){
-      dateField = `
-        <input type="date"
-          value="${r.proposal_date || ""}"
-          onchange="updateStageDate('proposal',${i},this.value)">
-      `;
-    }
+   if(stage==="proposal"){
+  actionButtons = `<button onclick="moveToInterview(${i})">Interview</button>`;
+   }
 
     if(stage==="interview"){
-      dateField = `
-        <input type="date"
-          value="${r.interview_scheduled_on || ""}"
-          onchange="updateStageDate('interview',${i},this.value)">
-      `;
-      actionButtons = `<button onclick="moveToPlacement(${i})">Placement</button>`;
-    }
+  actionButtons = `<button onclick="moveToPlacement(${i})">Placement</button>`;
+   }
 
     if(stage==="placement"){
-      dateField = `
-        <input type="date"
-          value="${r.placement_date || ""}"
-          onchange="updateStageDate('placement',${i},this.value)">
-      `;
-      actionButtons = `<button onclick="moveToStart(${i})">Start</button>`;
-    }
+  actionButtons = `<button onclick="moveToStart(${i})">Start</button>`;
+   }
 
     if(stage==="start"){
-      dateField = `
-        <input type="date"
-          value="${r.start_date || ""}"
-          onchange="updateStageDate('start',${i},this.value)">
-      `;
-    }
+  actionButtons = "";
+   }
 
     body.innerHTML+=`
-      <tr>
-        <td>${i+1}</td>
-        <td>${r.entry_date || r.submission_date || ""}</td>
-        <td>${r.name || ""}</td>
-        <td>${r.email || ""}</td>
-        <td>${r.phone || ""}</td>
-        <td>${r.requirement || ""}</td>
-        <td>${r.client || ""}</td>
-        <td>${r.location || ""}</td>
-        <td>${r.visa || ""}</td>
-        <td>${dateField}</td>
-        <td>
-          <input value="${r.notes||""}"
-            onchange="updateNote('${stage}',${i},this.value)">
-        </td>
-        <td>
-          ${actionButtons}
-          <button onclick="deleteRow('${stage}',${i})">Del</button>
-        </td>
-      </tr>
-    `;
+  <tr>
+    <td>${i+1}</td>
+    <td>${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ""}</td>
+
+    <td><input value="${r.name||""}"
+      onchange="updateField('${stage}',${i},'name',this.value)"></td>
+
+    <td><input value="${r.email||""}"
+      onchange="updateField('${stage}',${i},'email',this.value)"></td>
+
+    <td><input value="${r.phone||""}"
+      onchange="updateField('${stage}',${i},'phone',this.value)"></td>
+
+    <td><input value="${r.requirement||""}"
+      onchange="updateField('${stage}',${i},'requirement',this.value)"></td>
+
+    <td><input value="${r.client||""}"
+      onchange="updateField('${stage}',${i},'client',this.value)"></td>
+
+    <td><input value="${r.location||""}"
+      onchange="updateField('${stage}',${i},'location',this.value)"></td>
+
+    <td><input value="${r.visa||""}"
+      onchange="updateField('${stage}',${i},'visa',this.value)"></td>
+
+    <td>
+      <input value="${r.notes||""}"
+        onchange="updateField('${stage}',${i},'notes',this.value)">
+    </td>
+
+    <td>
+      ${actionButtons}
+      <button onclick="deleteRow('${stage}',${i})">Del</button>
+    </td>
+  </tr>
+`;
   });
 }
 
