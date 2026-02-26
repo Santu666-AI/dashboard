@@ -451,8 +451,31 @@ function renderStage(stage, bodyId){
     body.innerHTML+=`
   <tr>
     <td>${i+1}</td>
-    <td>${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ""}</td>
-
+<td>
+  ${
+    stage === "submission"
+      ? `<input type="date"
+          value="${r.submission_date || ''}"
+          onchange="updateStageDate('submission',${i},this.value)">`
+      : stage === "proposal"
+      ? `<input type="date"
+          value="${r.proposal_date || ''}"
+          onchange="updateStageDate('proposal',${i},this.value)">`
+      : stage === "interview"
+      ? `<input type="date"
+          value="${r.interview_scheduled_on || ''}"
+          onchange="updateStageDate('interview',${i},this.value)">`
+      : stage === "placement"
+      ? `<input type="date"
+          value="${r.placement_date || ''}"
+          onchange="updateStageDate('placement',${i},this.value)">`
+      : stage === "start"
+      ? `<input type="date"
+          value="${r.start_date || ''}"
+          onchange="updateStageDate('start',${i},this.value)">`
+      : ""
+  }
+</td>
     <td><input value="${r.name||""}"
       onchange="updateField('${stage}',${i},'name',this.value)"></td>
 
@@ -490,6 +513,7 @@ function renderStage(stage, bodyId){
 
 function updateStageDate(stage,i,val){
   if(stage==="submission") DB.submission[i].submission_date=val;
+  if(stage==="proposal") DB.proposal[i].proposal_date=val;
   if(stage==="interview") DB.interview[i].interview_scheduled_on=val;
   if(stage==="placement") DB.placement[i].placement_date=val;
   if(stage==="start") DB.start[i].start_date=val;
