@@ -430,43 +430,60 @@ function renderDaily(){
 /* ================= STAGE MOVEMENT ================= */
 
 function moveToSubmission(i){
-  const base = {...DB.daily[i]};
-  base.submission_date = today();
-  base.stage_created_at = Date.now();  // ⭐ important
+  const base = {
+    ...DB.daily[i],
+    id: Date.now() + Math.random(),  // ✅ UNIQUE ID
+    submission_date: today()
+  };
+
   DB.submission.unshift(base);
   saveAndRender();
 }
 function moveToProposal(i){
-  const base = {...DB.daily[i]};
-  base.proposal_date = today();
-  base.stage_created_at = Date.now();
+
+  const base = {
+    ...DB.daily[i],
+    id: Date.now() + Math.random(),   // ✅ UNIQUE ID
+    proposal_date: today()
+  };
+
   DB.proposal.unshift(base);
   saveAndRender();
 }
-
 function moveToInterview(i){
-  const base = {...DB.submission[i]};
-  base.interview_scheduled_on = today();
-  base.stage_created_at = Date.now();
+
+  const base = {
+    ...DB.submission[i],
+    id: Date.now() + Math.random(),
+    interview_scheduled_on: today()
+  };
+
   DB.interview.unshift(base);
   saveAndRender();
 }
 
 function moveToPlacement(i){
-  const base = {...DB.interview[i]};
-  base.placement_date = today();
-  base.stage_created_at = Date.now();
+
+  const base = {
+    ...DB.interview[i],
+    id: Date.now() + Math.random(),
+    placement_date: today()
+  };
+
   DB.placement.unshift(base);
   saveAndRender();
 }
 function moveToStart(i){
-  const base = {...DB.placement[i]};
-  base.start_date = today();
-  base.stage_created_at = Date.now();
+
+  const base = {
+    ...DB.placement[i],
+    id: Date.now() + Math.random(),
+    start_date: today()
+  };
+
   DB.start.unshift(base);
   saveAndRender();
 }
-
 function deleteRow(tab,i){
   DB[tab].splice(i,1);
   saveAndRender();
@@ -505,7 +522,7 @@ function renderStage(stage, bodyId){
 
   sorted.forEach((r, displayIndex)=>{
 
-    const realIndex = DB[stage].indexOf(r);
+    const realIndex = DB[stage].findIndex(x => x.id === r.id);
 
     let actionButtons = "";
 
