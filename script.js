@@ -532,12 +532,27 @@ function renderStage(stage, bodyId){
         <td>
           <input type="date"
             value="${
-              stage === "submission" ? r.submission_date || "" :
-              stage === "proposal" ? r.proposal_date || "" :
-              stage === "interview" ? r.interview_scheduled_on || "" :
-              stage === "placement" ? r.placement_date || "" :
-              stage === "start" ? r.start_date || "" : ""
-            }"
+  (() => {
+    const raw =
+      stage === "submission" ? r.submission_date :
+      stage === "proposal" ? r.proposal_date :
+      stage === "interview" ? r.interview_scheduled_on :
+      stage === "placement" ? r.placement_date :
+      stage === "start" ? r.start_date : "";
+
+    if(!raw) return "";
+
+    if(raw.includes("-")) return raw;   // already YYYY-MM-DD
+
+    // convert MM/DD/YYYY → YYYY-MM-DD
+    const parts = raw.split("/");
+    if(parts.length === 3){
+      return `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+    }
+
+    return raw;
+  })()
+}"
             onchange="updateStageDate('${stage}',${realIndex},this.value)">
         </td>
 
