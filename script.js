@@ -69,6 +69,18 @@ function ensureIds(){
   });
 }
 
+/* ================= PAGINATION ================= */
+
+const PAGE_SIZE = 25;
+
+const paginationState = {
+  daily: 1,
+  submission: 1,
+  proposal: 1,
+  interview: 1,
+  placement: 1,
+  start: 1
+};
 /* ================= CLOUD BACKUP ================= */
 
 async function backupToCloud(){
@@ -555,7 +567,30 @@ function renderStage(stage, bodyId){
     return new Date(b[dateField]) - new Date(a[dateField]);
   });
 
-  sorted.forEach((r, displayIndex)=>{
+const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+
+if(totalPages > 1){
+
+  body.innerHTML += `
+    <tr>
+      <td colspan="12" style="text-align:center;">
+        ${Array.from({length: totalPages}, (_,i)=>`
+          <button onclick="changePage('${stage}',${i+1})"
+            ${paginationState[stage]===i+1?'style="font-weight:bold;"':''}>
+            ${i+1}
+          </button>
+        `).join("")}
+      </td>
+    </tr>
+  `;
+}
+
+const currentPage = paginationState[stage] || 1;
+const startIndex = (currentPage - 1) * PAGE_SIZE;
+const endIndex = startIndex + PAGE_SIZE;
+
+const paginated = sorted.slice(startIndex, endIndex);
+  paginated.forEach((r, displayIndex)=>{
 
     const realIndex = DB[stage].findIndex(x => x.id === r.id);
 
@@ -944,6 +979,11 @@ function switchSection(tab){
 }
     
 /* ================= MASTER SAVE + REFRESH ================= */
+
+function changePage(stage,page){
+  paginationState[stage] = page;
+  renderStage(stage, stage + "Body");
+}
 
 function saveAndRender(){
   saveDB();
