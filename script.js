@@ -58,6 +58,16 @@ const DB = JSON.parse(localStorage.getItem("ATS_DB")) || {
 
 /* ✅ SAFE PRODUCTION LOCK */
 Object.seal(DB);
+function ensureIds(){
+  ["daily","submission","proposal","interview","placement","start"]
+  .forEach(stage=>{
+    DB[stage].forEach(item=>{
+      if(!item.id){
+        item.id = Date.now() + Math.random();
+      }
+    });
+  });
+}
 
 /* ================= CLOUD BACKUP ================= */
 
@@ -760,6 +770,9 @@ function startHourlyReminder(){
 /* ================= AUTH + DASHBOARD LOAD ================= */
 
 function loadDashboard(){
+
+  ensureIds();   // ✅ ADD THIS LINE
+
   renderJD();
   renderDaily();
   renderStage("submission","submissionBody");
