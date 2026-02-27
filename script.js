@@ -429,13 +429,14 @@ function renderDaily(){
 function moveToSubmission(i){
   const base = {...DB.daily[i]};
   base.submission_date = today();
+  base.stage_created_at = Date.now();  // ⭐ important
   DB.submission.unshift(base);
   saveAndRender();
 }
-
 function moveToProposal(i){
   const base = {...DB.daily[i]};
   base.proposal_date = today();
+  base.stage_created_at = Date.now();
   DB.proposal.unshift(base);
   saveAndRender();
 }
@@ -443,6 +444,7 @@ function moveToProposal(i){
 function moveToInterview(i){
   const base = {...DB.submission[i]};
   base.interview_scheduled_on = today();
+  base.stage_created_at = Date.now();
   DB.interview.unshift(base);
   saveAndRender();
 }
@@ -450,13 +452,14 @@ function moveToInterview(i){
 function moveToPlacement(i){
   const base = {...DB.interview[i]};
   base.placement_date = today();
+  base.stage_created_at = Date.now();
   DB.placement.unshift(base);
   saveAndRender();
 }
-
 function moveToStart(i){
   const base = {...DB.placement[i]};
   base.start_date = today();
+  base.stage_created_at = Date.now();
   DB.start.unshift(base);
   saveAndRender();
 }
