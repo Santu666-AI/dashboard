@@ -502,7 +502,9 @@ function renderStage(stage, bodyId){
   return new Date(b[dateField]) - new Date(a[dateField]);
 });
 
-sorted.forEach((r,i)=>{
+sorted.forEach((r)=>{
+
+  const realIndex = DB[stage].indexOf(r);
 
     let actionButtons="";
 
