@@ -26,13 +26,16 @@ console.log(ATS_VERSION);
 /* ===== DATE FORMAT HELPER ===== */
 function formatDisplayDate(dateStr){
 
-  const d = new Date(dateStr);
+  if(!dateStr) return "";
 
-  return d.toLocaleDateString("en-US",{
-    year:"numeric",
-    month:"short",
-    day:"numeric"
-  });
+  const [year, month, day] = dateStr.split("-");
+
+  const monthNames = [
+    "Jan","Feb","Mar","Apr","May","Jun",
+    "Jul","Aug","Sep","Oct","Nov","Dec"
+  ];
+
+  return `${monthNames[parseInt(month)-1]} ${parseInt(day)}, ${year}`;
 }
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
