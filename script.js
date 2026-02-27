@@ -153,41 +153,81 @@ function renderJD(){
   jdBody.innerHTML="";
 
   DB.jd.forEach((r,i)=>{
-    jdBody.innerHTML+=`
+
+  if(r.isEditing){
+
+    body.innerHTML += `
       <tr>
         <td>${i+1}</td>
+
         <td>${r.date}</td>
-        <td>${r.nvr}</td>
-        <td>${r.title}</td>
-        <td>${r.client}</td>
+
         <td>
-          <select onchange="updateJDStatus(${i},this.value)">
+          <input value="${r.nvr || ""}" 
+            onchange="updateJDField(${i},'nvr',this.value)">
+        </td>
+
+        <td>
+          <input value="${r.title || ""}" 
+            onchange="updateJDField(${i},'title',this.value)">
+        </td>
+
+        <td>
+          <input value="${r.client || ""}" 
+            onchange="updateJDField(${i},'client',this.value)">
+        </td>
+
+        <td>
+          <select onchange="updateJDField(${i},'status',this.value)">
             <option ${r.status==="Active"?"selected":""}>Active</option>
             <option ${r.status==="Hold"?"selected":""}>Hold</option>
             <option ${r.status==="Closed"?"selected":""}>Closed</option>
           </select>
         </td>
-        <td><button onclick="deleteRow('jd',${i})">Delete</button></td>
-      </tr>`;
-  });
 
-  loadActiveRequirements();
+        <td>
+          <button onclick="saveJDRow(${i})">Save</button>
+          <button onclick="deleteJD(${i})">Delete</button>
+        </td>
+      </tr>
+    `;
+
+  } else {
+
+    body.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.date}</td>
+        <td>${r.nvr || ""}</td>
+        <td>${r.title || ""}</td>
+        <td>${r.client || ""}</td>
+        <td>${r.status || ""}</td>
+        <td>
+          <button onclick="editJD(${i})">Edit</button>
+          <button onclick="deleteJD(${i})">Delete</button>
+        </td>
+      </tr>
+    `;
+  }
+
+/* ================= JD EDIT FUNCTIONS ================= */
+
+function editJD(index){
+  DB.jd[index].isEditing = true;
+  renderJD();
 }
 
-function loadActiveRequirements(){
-  if(!dailyRequirement) return;
-  dailyRequirement.innerHTML='<option value="">Select Requirement</option>';
-  DB.jd.filter(j=>j.status==="Active").forEach(j=>{
-    dailyRequirement.innerHTML+=
-      `<option value="${j.nvr}">${j.nvr} - ${j.title}</option>`;
-  });
+function updateJDField(index,field,value){
+  DB.jd[index][field] = value;
 }
 
-function autoFillClient(){
-  const req = dailyRequirement.value;
-  const jd = DB.jd.find(j=>j.nvr===req);
-  dailyClient.value = jd ? jd.client : "";
+function saveJDRow(index){
+  DB.jd[index].isEditing = false;
+  saveDB();
+  renderJD();
 }
+
+});
 
 /* ================= RESUME ================= */
 
