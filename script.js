@@ -490,7 +490,19 @@ function renderStage(stage, bodyId){
 
   body.innerHTML="";
 
-  DB[stage].forEach((r,i)=>{
+  const sorted = [...DB[stage]].sort((a,b)=>{
+
+  const dateField =
+    stage === "submission" ? "submission_date" :
+    stage === "proposal" ? "proposal_date" :
+    stage === "interview" ? "interview_scheduled_on" :
+    stage === "placement" ? "placement_date" :
+    stage === "start" ? "start_date" : "";
+
+  return new Date(b[dateField]) - new Date(a[dateField]);
+});
+
+sorted.forEach((r,i)=>{
 
     let actionButtons="";
 
