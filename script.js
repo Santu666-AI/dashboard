@@ -92,17 +92,14 @@ async function saveDB(){
 
 function today(){
 
-  const estTime = new Date(
-    new Date().toLocaleString("en-US", {
-      timeZone: "America/New_York"
-    })
-  );
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
 
-  const y = estTime.getFullYear();
-  const m = String(estTime.getMonth()+1).padStart(2,"0");
-  const d = String(estTime.getDate()).padStart(2,"0");
-
-  return `${y}-${m}-${d}`;
+  return formatter.format(new Date());
 }
 
 /* ================= TAB SWITCH ================= */
@@ -171,77 +168,140 @@ function autoFillClient(){
 
 function parseResume(){
 
-  let text =
-    document.getElementById("resumeText").value;
+  const rawText = document.getElementById("resumeText").value;
 
-  if(!text.trim()){
+  if(!rawText.trim()){
     alert("Paste resume first");
     return;
   }
 
-  /* ===== CLEAN BROKEN LINES ===== */
-  text = text.replace(/\n/g," ");
+  const text = rawText.replace(/\r/g,"");
+  const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
 
-  /* ===== EMAIL ===== */
-  const email =
+  /* ================= EMAIL ================= */
+  const emailMatch =
     text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
 
-  document.getElementById("resumeEmail").value =
-    email ? email[0] : "";
+  const email = emailMatch ? emailMatch[0] : "";
+  document.getElementById("resumeEmail").value = email;
 
-  /* ===== PHONE ===== */
-  const phone =
-    text.match(/(\+?\d[\d\-\s()]{9,})/);
 
-  document.getElementById("resumePhone").value =
-    phone ? phone[0].replace(/\s+/g," ") : "";
+  /* ================= PHONE (STRICT US) ================= */
+  const phoneMatch =
+    text.match(/\b(\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/);
 
-  /* ===== NAME ===== */
-  const lines =
-    document.getElementById("resumeText")
-      .value.split("\n")
-      .map(l=>l.trim())
-      .filter(Boolean);
+  const phone = phoneMatch ? phoneMatch[0] : "";
+  document.getElementById("resumePhone").value = phone;
 
-  let name="";
+
+  /* ================= NAME DETECTION (ENTERPRISE) ================= */
+
+  const invalidWords = [
+    "resume","profile","summary","engineer","developer",
+    "consultant","architect","manager","analyst",
+    "bachelor","master","university","college",
+    "curriculum","vitae","email","phone","address",
+    "experience","skills","objective"
+  ];
+
+  let detectedName = "";
 
   for(const line of lines){
 
+    const wordCount = line.split(" ").length;
+
     if(
-      !line.includes("@") &&
-      !/\d{4}/.test(line) &&
-      line.split(" ").length<=5
+      wordCount >= 2 &&
+      wordCount <= 4 &&
+      /^[A-Za-z.\-\s]+$/.test(line) &&
+      !invalidWords.some(w =>
+        line.toLowerCase().includes(w)
+      )
     ){
-      name=line;
+      detectedName = line;
       break;
     }
   }
 
-  document.getElementById("resumeName").value=name;
+  document.getElementById("resumeName").value = detectedName;
 
-  alert("✅ Resume Parsed Successfully");
 
-/* move parsed data to Daily form */
+  /* ================= LOCATION DETECTION (ADVANCED US) ================= */
 
-dailyName.value =
-  document.getElementById("resumeName").value;
+  const stateCodes = [
+    "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+    "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+    "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+    "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+    "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"
+  ];
 
-dailyEmail.value =
-  document.getElementById("resumeEmail").value;
+  const stateNames = [
+    "Alabama","Alaska","Arizona","Arkansas","California",
+    "Colorado","Connecticut","Delaware","Florida","Georgia",
+    "Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas",
+    "Kentucky","Louisiana","Maine","Maryland","Massachusetts",
+    "Michigan","Minnesota","Mississippi","Missouri","Montana",
+    "Nebraska","Nevada","New Hampshire","New Jersey",
+    "New Mexico","New York","North Carolina","North Dakota",
+    "Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island",
+    "South Carolina","South Dakota","Tennessee","Texas","Utah",
+    "Vermont","Virginia","Washington","West Virginia",
+    "Wisconsin","Wyoming"
+  ];
 
-dailyPhone.value =
-  document.getElementById("resumePhone").value;
+  let locationFound = "";
 
-dailyLocation.value =
-  document.getElementById("resumeLocation").value;
+  for(const line of lines){
 
-dailyVisa.value =
-  document.getElementById("resumeVisa").value;
+    // City, ST
+    const stateCodeMatch =
+      line.match(new RegExp(`([A-Za-z\\s]+),?\\s?(${stateCodes.join("|")})\\b`));
 
-/* open Daily tab only */
-switchSection("daily");
-  
+    if(stateCodeMatch){
+      locationFound = stateCodeMatch[0];
+      break;
+    }
+
+    // City, Full State Name
+    const stateNameMatch =
+      line.match(new RegExp(`([A-Za-z\\s]+),?\\s?(${stateNames.join("|")})\\b`,"i"));
+
+    if(stateNameMatch){
+      locationFound = stateNameMatch[0];
+      break;
+    }
   }
+
+  document.getElementById("resumeLocation").value = locationFound;
+
+
+  /* ================= VISA DETECTION ================= */
+
+  let visaStatus = "";
+
+  if(/US Citizen/i.test(text)) visaStatus = "US Citizen";
+  else if(/Green Card|GC Holder/i.test(text)) visaStatus = "GC";
+  else if(/H1B/i.test(text)) visaStatus = "H1B";
+  else if(/OPT/i.test(text)) visaStatus = "OPT";
+
+  if(document.getElementById("resumeVisa")){
+    document.getElementById("resumeVisa").value = visaStatus;
+  }
+
+
+  /* ================= MOVE TO DAILY ================= */
+
+  dailyName.value = detectedName;
+  dailyEmail.value = email;
+  dailyPhone.value = phone;
+  dailyLocation.value = locationFound;
+  if(dailyVisa) dailyVisa.value = visaStatus;
+
+  alert("✅ Enterprise Resume Parsed Successfully");
+
+  switchSection("daily");
+}
 
 /* ================= DAILY ================= */
 
