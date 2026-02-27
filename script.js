@@ -509,6 +509,31 @@ function updateField(stage,index,field,value){
   saveDB();
 }
 
+function updateStageDate(stage,index,value){
+
+  if(stage==="submission"){
+    DB.submission[index].submission_date = value;
+  }
+
+  if(stage==="proposal"){
+    DB.proposal[index].proposal_date = value;
+  }
+
+  if(stage==="interview"){
+    DB.interview[index].interview_scheduled_on = value;
+  }
+
+  if(stage==="placement"){
+    DB.placement[index].placement_date = value;
+  }
+
+  if(stage==="start"){
+    DB.start[index].start_date = value;
+  }
+
+  saveAndRender();   // 🔥 this is critical
+}
+
 /* ================= STAGE RENDER ================= */
 
 function renderStage(stage, bodyId){
