@@ -485,119 +485,93 @@ function updateField(stage,index,field,value){
 /* ================= STAGE RENDER ================= */
 
 function renderStage(stage, bodyId){
+
   const body = document.getElementById(bodyId);
   if(!body) return;
 
-  body.innerHTML="";
+  body.innerHTML = "";
 
   const sorted = [...DB[stage]].sort((a,b)=>{
 
-  const dateField =
-    stage === "submission" ? "submission_date" :
-    stage === "proposal" ? "proposal_date" :
-    stage === "interview" ? "interview_scheduled_on" :
-    stage === "placement" ? "placement_date" :
-    stage === "start" ? "start_date" : "";
+    const dateField =
+      stage === "submission" ? "submission_date" :
+      stage === "proposal" ? "proposal_date" :
+      stage === "interview" ? "interview_scheduled_on" :
+      stage === "placement" ? "placement_date" :
+      stage === "start" ? "start_date" : "";
 
-  return new Date(b[dateField]) - new Date(a[dateField]);
-});
+    return new Date(b[dateField]) - new Date(a[dateField]);
+  });
 
-sorted.forEach((r)=>{
+  sorted.forEach((r, displayIndex)=>{
 
-  const realIndex = DB[stage].indexOf(r);
+    const realIndex = DB[stage].indexOf(r);
 
-    let actionButtons="";
+    let actionButtons = "";
 
     if(stage==="submission"){
-      actionButtons = `<button onclick="moveToInterview(${i})">Interview</button>`;
+      actionButtons = `<button onclick="moveToInterview(${realIndex})">Interview</button>`;
     }
 
-   if(stage==="proposal"){
-  actionButtons = `<button onclick="moveToInterview(${i})">Interview</button>`;
-   }
+    if(stage==="proposal"){
+      actionButtons = `<button onclick="moveToInterview(${realIndex})">Interview</button>`;
+    }
 
     if(stage==="interview"){
-  actionButtons = `<button onclick="moveToPlacement(${i})">Placement</button>`;
-   }
+      actionButtons = `<button onclick="moveToPlacement(${realIndex})">Placement</button>`;
+    }
 
     if(stage==="placement"){
-  actionButtons = `<button onclick="moveToStart(${i})">Start</button>`;
-   }
+      actionButtons = `<button onclick="moveToStart(${realIndex})">Start</button>`;
+    }
 
-    if(stage==="start"){
-  actionButtons = "";
-   }
+    body.innerHTML += `
+      <tr>
+        <td>${displayIndex+1}</td>
 
-    body.innerHTML+=`
-  <tr>
-    <td>${i+1}</td>
-<td>
-  ${
-    stage === "submission"
-      ? `<input type="date"
-          value="${r.submission_date || ''}"
-          onchange="updateStageDate('submission',${i},this.value)">`
-      : stage === "proposal"
-      ? `<input type="date"
-          value="${r.proposal_date || ''}"
-          onchange="updateStageDate('proposal',${i},this.value)">`
-      : stage === "interview"
-      ? `<input type="date"
-          value="${r.interview_scheduled_on || ''}"
-          onchange="updateStageDate('interview',${i},this.value)">`
-      : stage === "placement"
-      ? `<input type="date"
-          value="${r.placement_date || ''}"
-          onchange="updateStageDate('placement',${i},this.value)">`
-      : stage === "start"
-      ? `<input type="date"
-          value="${r.start_date || ''}"
-          onchange="updateStageDate('start',${i},this.value)">`
-      : ""
-  }
-</td>
-    <td><input value="${r.name||""}"
-      onchange="updateField('${stage}',${i},'name',this.value)"></td>
+        <td>
+          <input type="date"
+            value="${
+              stage === "submission" ? r.submission_date || "" :
+              stage === "proposal" ? r.proposal_date || "" :
+              stage === "interview" ? r.interview_scheduled_on || "" :
+              stage === "placement" ? r.placement_date || "" :
+              stage === "start" ? r.start_date || "" : ""
+            }"
+            onchange="updateStageDate('${stage}',${realIndex},this.value)">
+        </td>
 
-    <td><input value="${r.email||""}"
-      onchange="updateField('${stage}',${i},'email',this.value)"></td>
+        <td><input value="${r.name||""}"
+          onchange="updateField('${stage}',${realIndex},'name',this.value)"></td>
 
-    <td><input value="${r.phone||""}"
-      onchange="updateField('${stage}',${i},'phone',this.value)"></td>
+        <td><input value="${r.email||""}"
+          onchange="updateField('${stage}',${realIndex},'email',this.value)"></td>
 
-    <td><input value="${r.requirement||""}"
-      onchange="updateField('${stage}',${i},'requirement',this.value)"></td>
+        <td><input value="${r.phone||""}"
+          onchange="updateField('${stage}',${realIndex},'phone',this.value)"></td>
 
-    <td><input value="${r.client||""}"
-      onchange="updateField('${stage}',${i},'client',this.value)"></td>
+        <td><input value="${r.requirement||""}"
+          onchange="updateField('${stage}',${realIndex},'requirement',this.value)"></td>
 
-    <td><input value="${r.location||""}"
-      onchange="updateField('${stage}',${i},'location',this.value)"></td>
+        <td><input value="${r.client||""}"
+          onchange="updateField('${stage}',${realIndex},'client',this.value)"></td>
 
-    <td><input value="${r.visa||""}"
-      onchange="updateField('${stage}',${i},'visa',this.value)"></td>
+        <td><input value="${r.location||""}"
+          onchange="updateField('${stage}',${realIndex},'location',this.value)"></td>
 
-    <td>
-      <input value="${r.notes||""}"
-        onchange="updateField('${stage}',${i},'notes',this.value)">
-    </td>
+        <td><input value="${r.visa||""}"
+          onchange="updateField('${stage}',${realIndex},'visa',this.value)"></td>
 
-    <td>
-      ${actionButtons}
-      <button onclick="deleteRow('${stage}',${i})">Del</button>
-    </td>
-  </tr>
-`;
+        <td><input value="${r.notes||""}"
+          onchange="updateField('${stage}',${realIndex},'notes',this.value)"></td>
+
+        <td>
+          ${actionButtons}
+          <button onclick="deleteRow('${stage}',${realIndex})">Del</button>
+        </td>
+      </tr>
+    `;
   });
-}
-
-function updateStageDate(stage,i,val){
-  if(stage==="submission") DB.submission[i].submission_date=val;
-  if(stage==="proposal") DB.proposal[i].proposal_date=val;
-  if(stage==="interview") DB.interview[i].interview_scheduled_on=val;
-  if(stage==="placement") DB.placement[i].placement_date=val;
-  if(stage==="start") DB.start[i].start_date=val;
-  saveAndRender();
 }
 
 /* ================= KPI ================= */
