@@ -911,15 +911,50 @@ function startHourlyReminder(){
 
 async function fetchAllData(){
 
-  DB.jd = (await sb.from("jd").select("*")).data || [];
-  DB.daily = (await sb.from("daily").select("*")).data || [];
-  DB.submission = (await sb.from("submission").select("*")).data || [];
-  DB.proposal = (await sb.from("proposal").select("*")).data || [];
-  DB.interview = (await sb.from("interview").select("*")).data || [];
-  DB.placement = (await sb.from("placement").select("*")).data || [];
-  DB.start = (await sb.from("start").select("*")).data || [];
-  DB.tasks = (await sb.from("tasks").select("*")).data || [];
-  DB.meetings = (await sb.from("meetings").select("*")).data || [];
+  DB.jd = (await sb.from("jd")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
+
+  DB.daily = (await sb.from("daily")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
+
+  DB.submission = (await sb.from("submission")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
+
+  DB.proposal = (await sb.from("proposal")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
+
+  DB.interview = (await sb.from("interview")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
+
+  DB.placement = (await sb.from("placement")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
+
+  DB.start = (await sb.from("start")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
+
+  DB.tasks = (await sb.from("tasks")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
+
+  DB.meetings = (await sb.from("meetings")
+    .select("*")
+    .order("created_at", { ascending: false })
+  ).data || [];
 }
 
 
