@@ -43,7 +43,8 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
 
 /* ================= DATABASE ================= */
 
-const DB = JSON.parse(localStorage.getItem("ATS_DB")) || {
+
+let DB = {
   jd: [],
   daily: [],
   submission: [],
@@ -55,6 +56,7 @@ const DB = JSON.parse(localStorage.getItem("ATS_DB")) || {
   meetings: [],
   junk: []
 };
+
 
 /* ✅ SAFE PRODUCTION LOCK */
 Object.seal(DB);
@@ -103,16 +105,7 @@ async function backupToCloud(){
 
 
 async function saveDB(){
-
-
-  /* ✅ SAVE LOCALLY */
-  localStorage.setItem(
-    "ATS_DB",
-    JSON.stringify(DB)
-  );
-
-  /* ✅ SAVE TO CLOUD */
-  if(Date.now() % 2 === 0) backupToCloud();
+  console.log("saveDB disabled – Supabase mode active");
 }
 
 function today(){
@@ -132,15 +125,22 @@ function today(){
 
 /* ================= JD ================= */
 
-function addJD(){
-  DB.jd.unshift({
+async function addJD(){
+
+  const record = {
     date: jdDate.value || today(),
     nvr: jdNvr.value.trim(),
     title: jdTitle.value.trim(),
     client: jdClient.value.trim(),
     status: jdStatus.value
-  });
-  saveAndRender();
+  };
+
+  await sb.from("jd").insert([record]);
+
+  await fetchAllData();
+
+  renderJD();
+  populateRequirementDropdown();
 }
 
 function updateJDStatus(i,val){
@@ -399,7 +399,7 @@ function populateRequirementDropdown(){
    DAILY SAVE FUNCTION - FINAL VERSION
 ===================================== */
 
-function saveDaily(){
+async function saveDaily(){
 
   /* ✅ REQUIRED FIELD VALIDATION */
   if(!dailyName.value || !dailyEmail.value){
@@ -422,7 +422,8 @@ function saveDaily(){
   };
 
   /* ✅ INSERT INTO DATABASE */
-  DB.daily.unshift(record);
+ await sb.from("daily").insert([record]);
+ await fetchAllData();
 
   /* ✅ CLEAR FORM */
   clearDaily();
@@ -894,13 +895,28 @@ function startHourlyReminder(){
 
 /* ================= AUTH + DASHBOARD LOAD ================= */
 
-function loadDashboard(){
+async function fetchAllData(){
+
+  DB.jd = (await sb.from("jd").select("*")).data || [];
+  DB.daily = (await sb.from("daily").select("*")).data || [];
+  DB.submission = (await sb.from("submission").select("*")).data || [];
+  DB.proposal = (await sb.from("proposal").select("*")).data || [];
+  DB.interview = (await sb.from("interview").select("*")).data || [];
+  DB.placement = (await sb.from("placement").select("*")).data || [];
+  DB.start = (await sb.from("start").select("*")).data || [];
+  DB.tasks = (await sb.from("tasks").select("*")).data || [];
+  DB.meetings = (await sb.from("meetings").select("*")).data || [];
+}
+
+
+async function loadDashboard(){
+
+  await fetchAllData();
 
   ensureIds();   
 
   renderJD();
-
-populateRequirementDropdown(); 
+  populateRequirementDropdown(); 
 
   renderDaily();
   renderStage("submission","submissionBody");
@@ -911,6 +927,30 @@ populateRequirementDropdown();
   renderKPI();
   renderTasks();
   renderMeetings();
+}
+
+async function migrateLocalToSupabase(){
+
+  const localData = JSON.parse(localStorage.getItem("ATS_DB"));
+
+  if(!localData){
+    alert("No local data found.");
+    return;
+  }
+
+  console.log("Starting migration...");
+
+  await sb.from("jd").insert(localData.jd || []);
+  await sb.from("daily").insert(localData.daily || []);
+  await sb.from("submission").insert(localData.submission || []);
+  await sb.from("proposal").insert(localData.proposal || []);
+  await sb.from("interview").insert(localData.interview || []);
+  await sb.from("placement").insert(localData.placement || []);
+  await sb.from("start").insert(localData.start || []);
+  await sb.from("tasks").insert(localData.tasks || []);
+  await sb.from("meetings").insert(localData.meetings || []);
+
+  alert("Migration completed!");
 }
 
 /* ================= LOGIN ================= */
@@ -978,9 +1018,9 @@ document.addEventListener("DOMContentLoaded", function(){
   checkUser();   // login/session check
   initTabs();    // ⭐ enable sidebar switching
 
-  setInterval(()=>{
-   backupToCloud();
-  },300000);
+  // setInterval(()=>{
+//    backupToCloud();
+// },300000);
 
 });
 
