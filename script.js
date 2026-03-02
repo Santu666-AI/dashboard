@@ -146,69 +146,70 @@ function addJD(){
 function updateJDStatus(i,val){
   DB.jd[i].status = val;
   saveAndRender();
+
+  populateRequirementDropdown();
+
 }
 
 function renderJD(){
   if(!jdBody) return;
-  jdBody.innerHTML="";
+
+  jdBody.innerHTML = "";
 
   DB.jd.forEach((r,i)=>{
 
-  if(r.isEditing){
+    if(r.isEditing){
 
-    body.innerHTML += `
-      <tr>
-        <td>${i+1}</td>
+      jdBody.innerHTML += `
+        <tr>
+          <td>${i+1}</td>
+          <td>${r.date}</td>
+          <td>
+            <input value="${r.nvr || ""}"
+              onchange="updateJDField(${i},'nvr',this.value)">
+          </td>
+          <td>
+            <input value="${r.title || ""}"
+              onchange="updateJDField(${i},'title',this.value)">
+          </td>
+          <td>
+            <input value="${r.client || ""}"
+              onchange="updateJDField(${i},'client',this.value)">
+          </td>
+          <td>
+            <select onchange="updateJDField(${i},'status',this.value)">
+              <option ${r.status==="Active"?"selected":""}>Active</option>
+              <option ${r.status==="Hold"?"selected":""}>Hold</option>
+              <option ${r.status==="Closed"?"selected":""}>Closed</option>
+            </select>
+          </td>
+          <td>
+            <button onclick="saveJDRow(${i})">Save</button>
+            <button onclick="deleteJD(${i})">Delete</button>
+          </td>
+        </tr>
+      `;
 
-        <td>${r.date}</td>
+    } else {
 
-        <td>
-          <input value="${r.nvr || ""}" 
-            onchange="updateJDField(${i},'nvr',this.value)">
-        </td>
+      jdBody.innerHTML += `
+        <tr>
+          <td>${i+1}</td>
+          <td>${r.date}</td>
+          <td>${r.nvr || ""}</td>
+          <td>${r.title || ""}</td>
+          <td>${r.client || ""}</td>
+          <td>${r.status || ""}</td>
+          <td>
+            <button onclick="editJD(${i})">Edit</button>
+            <button onclick="deleteJD(${i})">Delete</button>
+          </td>
+        </tr>
+      `;
+    }
 
-        <td>
-          <input value="${r.title || ""}" 
-            onchange="updateJDField(${i},'title',this.value)">
-        </td>
-
-        <td>
-          <input value="${r.client || ""}" 
-            onchange="updateJDField(${i},'client',this.value)">
-        </td>
-
-        <td>
-          <select onchange="updateJDField(${i},'status',this.value)">
-            <option ${r.status==="Active"?"selected":""}>Active</option>
-            <option ${r.status==="Hold"?"selected":""}>Hold</option>
-            <option ${r.status==="Closed"?"selected":""}>Closed</option>
-          </select>
-        </td>
-
-        <td>
-          <button onclick="saveJDRow(${i})">Save</button>
-          <button onclick="deleteJD(${i})">Delete</button>
-        </td>
-      </tr>
-    `;
-
-  } else {
-
-    body.innerHTML += `
-      <tr>
-        <td>${i+1}</td>
-        <td>${r.date}</td>
-        <td>${r.nvr || ""}</td>
-        <td>${r.title || ""}</td>
-        <td>${r.client || ""}</td>
-        <td>${r.status || ""}</td>
-        <td>
-          <button onclick="editJD(${i})">Edit</button>
-          <button onclick="deleteJD(${i})">Delete</button>
-        </td>
-      </tr>
-    `;
-  }
+  });
+}
 
 /* ================= JD EDIT FUNCTIONS ================= */
 
@@ -227,7 +228,10 @@ function saveJDRow(index){
   renderJD();
 }
 
-});
+function deleteJD(index){
+  DB.jd.splice(index,1);
+  saveAndRender();
+}
 
 /* ================= RESUME ================= */
 
@@ -369,6 +373,27 @@ function parseResume(){
 }
 
 /* ================= DAILY ================= */
+
+function autoFillClient(){
+  const selected = dailyRequirement.value;
+  const jd = DB.jd.find(j => j.title === selected);
+  if(jd){
+    dailyClient.value = jd.client;
+  }
+}
+
+function populateRequirementDropdown(){
+  if(!dailyRequirement) return;
+
+  dailyRequirement.innerHTML = '<option value="">Select Requirement</option>';
+
+  DB.jd.forEach(j=>{
+    dailyRequirement.innerHTML += `
+      <option value="${j.title}">
+        ${j.title}
+      </option>`;
+  });
+}
 
 /* =====================================
    DAILY SAVE FUNCTION - FINAL VERSION
@@ -871,9 +896,12 @@ function startHourlyReminder(){
 
 function loadDashboard(){
 
-  ensureIds();   // ✅ ADD THIS LINE
+  ensureIds();   
 
   renderJD();
+
+populateRequirementDropdown(); 
+
   renderDaily();
   renderStage("submission","submissionBody");
   renderStage("proposal","proposalBody");
@@ -935,19 +963,13 @@ async function checkUser(){
   const app = document.getElementById("app");
 
   if(session){
-
-    if(loginScreen) loginScreen.style.display = "none";
-    if(app) app.style.display = "block";
-
-    loadDashboard();
-
-  } else {
-
-    if(loginScreen) loginScreen.style.display = "flex";
-    if(app) app.style.display = "none";
-
-  }
+  if(app) app.style.display = "block";
+  loadDashboard();
+} else {
+  window.location.href = "index.html";
 }
+
+}  
 
 /* ================= PAGE LOAD ================= */
 
