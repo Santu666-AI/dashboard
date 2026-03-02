@@ -228,9 +228,23 @@ function saveJDRow(index){
   renderJD();
 }
 
-function deleteJD(index){
-  DB.jd.splice(index,1);
-  saveAndRender();
+async function deleteJD(i){
+
+  const record = DB.jd[i];
+
+  if(!record?.id){
+    alert("Record ID missing");
+    return;
+  }
+
+  await sb.from("jd")
+    .delete()
+    .eq("id", record.id);
+
+  await fetchAllData();
+
+  renderJD();
+  populateRequirementDropdown();
 }
 
 /* ================= RESUME ================= */
