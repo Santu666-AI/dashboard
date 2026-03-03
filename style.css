@@ -276,3 +276,19 @@ button[onclick*="delete"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== TOP HORIZONTAL SCROLL ===== */
+
+.table-scroll-wrapper {
+  width: 100%;
+}
+
+.table-scroll-top {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+}
+
+.table-scroll-top div {
+  height: 1px;
+}

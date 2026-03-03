@@ -73,7 +73,7 @@ function ensureIds(){
 
 /* ================= PAGINATION ================= */
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 30;
 
 const paginationState = {
   daily: 1,
@@ -1149,4 +1149,37 @@ function saveAndRender(){
   renderKPI();
   renderTasks();
   renderMeetings();
+}
+
+function enableTopScrollSync() {
+
+  document.querySelectorAll(".table-scroll-wrapper")
+    .forEach(wrapper => {
+
+      const topScroll =
+        wrapper.querySelector(".table-scroll-top");
+
+      const tableContainer =
+        wrapper.querySelector(".table-container");
+
+      const table =
+        wrapper.querySelector("table");
+
+      if(!topScroll || !tableContainer || !table)
+        return;
+
+      topScroll.firstElementChild.style.width =
+        table.scrollWidth + "px";
+
+      topScroll.addEventListener("scroll", () => {
+        tableContainer.scrollLeft =
+          topScroll.scrollLeft;
+      });
+
+      tableContainer.addEventListener("scroll", () => {
+        topScroll.scrollLeft =
+          tableContainer.scrollLeft;
+      });
+
+  });
 }
