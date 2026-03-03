@@ -531,60 +531,76 @@ function renderDaily(){
 
 /* ================= STAGE MOVEMENT ================= */
 
-function moveToSubmission(i){
+async function moveToSubmission(i){
+
   const base = {
     ...DB.daily[i],
-    id: Date.now() + Math.random(),  // ✅ UNIQUE ID
     submission_date: today()
   };
 
-  DB.submission.unshift(base);
-  saveAndRender();
+  await sb.from("submission").insert([base]);
+
+  await fetchAllData();
+
+  renderStage("submission","submissionBody");
+  renderKPI();
 }
-function moveToProposal(i){
+async function moveToProposal(i){
 
   const base = {
     ...DB.daily[i],
-    id: Date.now() + Math.random(),   // ✅ UNIQUE ID
     proposal_date: today()
   };
 
-  DB.proposal.unshift(base);
-  saveAndRender();
+  await sb.from("proposal").insert([base]);
+
+  await fetchAllData();
+
+  renderStage("proposal","proposalBody");
+  renderKPI();
 }
-function moveToInterview(i){
+async function moveToInterview(i){
 
   const base = {
     ...DB.submission[i],
-    id: Date.now() + Math.random(),
     interview_scheduled_on: today()
   };
 
-  DB.interview.unshift(base);
-  saveAndRender();
+  await sb.from("interview").insert([base]);
+
+  await fetchAllData();
+
+  renderStage("interview","interviewBody");
+  renderKPI();
 }
 
-function moveToPlacement(i){
+async function moveToPlacement(i){
 
   const base = {
     ...DB.interview[i],
-    id: Date.now() + Math.random(),
     placement_date: today()
   };
 
-  DB.placement.unshift(base);
-  saveAndRender();
+  await sb.from("placement").insert([base]);
+
+  await fetchAllData();
+
+  renderStage("placement","placementBody");
+  renderKPI();
 }
-function moveToStart(i){
+async function moveToStart(i){
 
   const base = {
     ...DB.placement[i],
-    id: Date.now() + Math.random(),
     start_date: today()
   };
 
-  DB.start.unshift(base);
-  saveAndRender();
+  await sb.from("start").insert([base]);
+
+  await fetchAllData();
+
+  renderStage("start","startBody");
+  renderKPI();
 }
 function deleteRow(tab,i){
   DB[tab].splice(i,1);
@@ -1182,4 +1198,69 @@ function enableTopScrollSync() {
       });
 
   });
+}
+
+function renderSubmission(){
+
+  const body = document.getElementById("submissionBody");
+  if(!body) return;
+
+  body.innerHTML = "";
+
+  DB.submission.forEach((r,index)=>{
+
+    body.innerHTML += `
+      <tr>
+        <td>${index+1}</td>
+
+        <td>
+          <input type="date"
+            value="${r.submission_date || ""}"
+            onchange="updateStageDate('submission',${index},this.value)">
+        </td>
+
+        <td>${r.name||""}</td>
+        <td>${r.email||""}</td>
+        <td>${r.phone||""}</td>
+        <td>${r.requirement||""}</td>
+        <td>${r.client||""}</td>
+        <td>${r.location||""}</td>
+        <td>${r.visa||""}</td>
+
+        <td>
+          <input value="${r.notes||""}"
+            onchange="updateField('submission',${index},'notes',this.value)">
+        </td>
+
+        <td>
+          <button onclick="copyToStage('submission','interview',${index})">
+            Copy → Interview
+          </button>
+
+          <button onclick="copyToStage('submission','proposal',${index})">
+            Copy → Proposal
+          </button>
+
+          <button onclick="deleteRow('submission',${index})">
+            Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function copyToStage(fromStage, toStage, index){
+
+  const record = DB[fromStage][index];
+  if(!record) return;
+
+  const newRecord = {
+    ...record,
+    id: Date.now()
+  };
+
+  DB[toStage].unshift(newRecord);
+
+  saveAndRender();
 }
