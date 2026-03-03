@@ -71,6 +71,8 @@ body {
   margin-left: 260px;
   padding: 40px;
   width: calc(100% - 260px);
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .section {
@@ -204,9 +206,12 @@ button[onclick*="delete"] {
   }
 
   .main {
-    margin-left: 0;
-    width: 100%;
-  }
+  flex: 1;
+  padding: 25px;
+  overflow-y: auto;
+  height: 100vh;
+  background: #0f172a;
+}
 
   .kpi-cards {
     grid-template-columns: 1fr;
