@@ -534,79 +534,78 @@ function renderDaily(){
 async function moveToSubmission(i){
 
   const base = {
-  ...DB.daily[i],
-  id: Date.now() + Math.random(),
-  submission_date: today()
-};
+    ...DB.daily[i],
+    id: Date.now() + Math.random(),
+    submission_date: today()
+  };
 
+  // 1️⃣ update UI immediately
+  DB.submission.unshift(base);
+
+  // 2️⃣ save to Supabase
   await sb.from("submission").insert([base]);
 
-  await fetchAllData();
-
-  renderStage("submission","submissionBody");
-  renderKPI();
+  // 3️⃣ re-render
+  saveAndRender();
 }
 async function moveToProposal(i){
 
   const base = {
-  ...DB.daily[i],
-  id: Date.now() + Math.random(),
-  proposal_date: today()
-};
+    ...DB.daily[i],
+    id: Date.now() + Math.random(),
+    proposal_date: today()
+  };
+
+  DB.proposal.unshift(base);
 
   await sb.from("proposal").insert([base]);
 
-  await fetchAllData();
-
-  renderStage("proposal","proposalBody");
-  renderKPI();
+  saveAndRender();
 }
 async function moveToInterview(i){
 
   const base = {
-  ...DB.submission[i],
-  id: Date.now() + Math.random(),
-  interview_scheduled_on: today()
-};
+    ...DB.submission[i],
+    id: Date.now() + Math.random(),
+    interview_scheduled_on: today()
+  };
+
+  DB.interview.unshift(base);
 
   await sb.from("interview").insert([base]);
 
-  await fetchAllData();
-
-  renderStage("interview","interviewBody");
-  renderKPI();
+  saveAndRender();
 }
 
 async function moveToPlacement(i){
 
- const base = {
-  ...DB.interview[i],
-  id: Date.now() + Math.random(),
-  placement_date: today()
-};
+  const base = {
+    ...DB.interview[i],
+    id: Date.now() + Math.random(),
+    placement_date: today()
+  };
+
+  DB.placement.unshift(base);
 
   await sb.from("placement").insert([base]);
 
-  await fetchAllData();
-
-  renderStage("placement","placementBody");
-  renderKPI();
+  saveAndRender();
 }
 async function moveToStart(i){
 
- const base = {
-  ...DB.placement[i],
-  id: Date.now() + Math.random(),
-  start_date: today()
-};
+  const base = {
+    ...DB.placement[i],
+    id: Date.now() + Math.random(),
+    start_date: today()
+  };
+
+  DB.start.unshift(base);
 
   await sb.from("start").insert([base]);
 
-  await fetchAllData();
-
-  renderStage("start","startBody");
-  renderKPI();
+  saveAndRender();
 }
+
 function deleteRow(tab,i){
   DB[tab].splice(i,1);
   saveAndRender();
