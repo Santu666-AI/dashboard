@@ -692,7 +692,7 @@ const endIndex = startIndex + PAGE_SIZE;
 const paginated = sorted.slice(startIndex, endIndex);
   paginated.forEach((r, displayIndex)=>{
 
-    const realIndex = DB[stage].findIndex(x => x.id === r.id);
+    const realIndex = DB[stage].indexOf(r);
 
     let actionButtons = "";
 
