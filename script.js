@@ -1251,15 +1251,4 @@ async function deleteRow(stage,index){
   renderKPI();
 }
 
-  const record = DB[fromStage][index];
-  if(!record) return;
-
-  const newRecord = {
-    ...record,
-    id: Date.now()
-  };
-
-  DB[toStage].unshift(newRecord);
-
-  saveAndRender();
-}
+ 
