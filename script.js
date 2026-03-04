@@ -534,7 +534,6 @@ function renderDaily(){
 async function moveToSubmission(i){
 
   const record = DB.daily[i];
-
   if(!record) return;
 
   const base = {
@@ -544,16 +543,19 @@ async function moveToSubmission(i){
 
   await sb.from("submission").insert([base]);
 
+  await sb.from("daily")
+    .delete()
+    .eq("id", record.id);
+
   await fetchAllData();
 
+  renderDaily();
   renderStage("submission","submissionBody");
   renderKPI();
 }
-
 async function moveToProposal(i){
 
   const record = DB.daily[i];
-
   if(!record) return;
 
   const base = {
@@ -563,11 +565,17 @@ async function moveToProposal(i){
 
   await sb.from("proposal").insert([base]);
 
+  await sb.from("daily")
+    .delete()
+    .eq("id", record.id);
+
   await fetchAllData();
 
+  renderDaily();
   renderStage("proposal","proposalBody");
   renderKPI();
 }
+
 async function moveToInterview(i){
 
   const record = DB.submission[i];
@@ -1221,57 +1229,27 @@ function enableTopScrollSync() {
   });
 }
 
-function renderSubmission(){
+async function deleteRow(stage,index){
 
-  const body = document.getElementById("submissionBody");
-  if(!body) return;
+  const record = DB[stage][index];
+  if(!record || !record.id) return;
 
-  body.innerHTML = "";
+  await sb
+    .from(stage)
+    .delete()
+    .eq("id", record.id);
 
-  DB.submission.forEach((r,index)=>{
+  await fetchAllData();
 
-    body.innerHTML += `
-      <tr>
-        <td>${index+1}</td>
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
 
-        <td>
-          <input type="date"
-            value="${r.submission_date || ""}"
-            onchange="updateStageDate('submission',${index},this.value)">
-        </td>
-
-        <td>${r.name||""}</td>
-        <td>${r.email||""}</td>
-        <td>${r.phone||""}</td>
-        <td>${r.requirement||""}</td>
-        <td>${r.client||""}</td>
-        <td>${r.location||""}</td>
-        <td>${r.visa||""}</td>
-
-        <td>
-          <input value="${r.notes||""}"
-            onchange="updateField('submission',${index},'notes',this.value)">
-        </td>
-
-        <td>
-          <button onclick="copyToStage('submission','interview',${index})">
-            Copy → Interview
-          </button>
-
-          <button onclick="copyToStage('submission','proposal',${index})">
-            Copy → Proposal
-          </button>
-
-          <button onclick="deleteRow('submission',${index})">
-            Delete
-          </button>
-        </td>
-      </tr>
-    `;
-  });
+  renderKPI();
 }
-
-function copyToStage(fromStage, toStage, index){
 
   const record = DB[fromStage][index];
   if(!record) return;
