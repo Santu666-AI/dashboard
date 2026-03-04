@@ -534,9 +534,10 @@ function renderDaily(){
 async function moveToSubmission(i){
 
   const base = {
-    ...DB.daily[i],
-    submission_date: today()
-  };
+  ...DB.daily[i],
+  id: Date.now() + Math.random(),
+  submission_date: today()
+};
 
   await sb.from("submission").insert([base]);
 
@@ -548,9 +549,10 @@ async function moveToSubmission(i){
 async function moveToProposal(i){
 
   const base = {
-    ...DB.daily[i],
-    proposal_date: today()
-  };
+  ...DB.daily[i],
+  id: Date.now() + Math.random(),
+  proposal_date: today()
+};
 
   await sb.from("proposal").insert([base]);
 
@@ -562,9 +564,10 @@ async function moveToProposal(i){
 async function moveToInterview(i){
 
   const base = {
-    ...DB.submission[i],
-    interview_scheduled_on: today()
-  };
+  ...DB.submission[i],
+  id: Date.now() + Math.random(),
+  interview_scheduled_on: today()
+};
 
   await sb.from("interview").insert([base]);
 
@@ -576,10 +579,11 @@ async function moveToInterview(i){
 
 async function moveToPlacement(i){
 
-  const base = {
-    ...DB.interview[i],
-    placement_date: today()
-  };
+ const base = {
+  ...DB.interview[i],
+  id: Date.now() + Math.random(),
+  placement_date: today()
+};
 
   await sb.from("placement").insert([base]);
 
@@ -590,10 +594,11 @@ async function moveToPlacement(i){
 }
 async function moveToStart(i){
 
-  const base = {
-    ...DB.placement[i],
-    start_date: today()
-  };
+ const base = {
+  ...DB.placement[i],
+  id: Date.now() + Math.random(),
+  start_date: today()
+};
 
   await sb.from("start").insert([base]);
 
