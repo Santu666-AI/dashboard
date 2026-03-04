@@ -533,77 +533,94 @@ function renderDaily(){
 
 async function moveToSubmission(i){
 
+  const record = DB.daily[i];
+
+  if(!record) return;
+
   const base = {
-    ...DB.daily[i],
-    id: Date.now() + Math.random(),
+    ...record,
     submission_date: today()
   };
 
-  // 1️⃣ update UI immediately
-  DB.submission.unshift(base);
-
-  // 2️⃣ save to Supabase
   await sb.from("submission").insert([base]);
 
-  // 3️⃣ re-render
-  saveAndRender();
+  await fetchAllData();
+
+  renderStage("submission","submissionBody");
+  renderKPI();
 }
+
 async function moveToProposal(i){
 
+  const record = DB.daily[i];
+
+  if(!record) return;
+
   const base = {
-    ...DB.daily[i],
-    id: Date.now() + Math.random(),
+    ...record,
     proposal_date: today()
   };
 
-  DB.proposal.unshift(base);
-
   await sb.from("proposal").insert([base]);
 
-  saveAndRender();
+  await fetchAllData();
+
+  renderStage("proposal","proposalBody");
+  renderKPI();
 }
 async function moveToInterview(i){
 
+  const record = DB.submission[i];
+
+  if(!record) return;
+
   const base = {
-    ...DB.submission[i],
-    id: Date.now() + Math.random(),
+    ...record,
     interview_scheduled_on: today()
   };
 
-  DB.interview.unshift(base);
-
   await sb.from("interview").insert([base]);
 
-  saveAndRender();
-}
+  await fetchAllData();
 
+  renderStage("interview","interviewBody");
+  renderKPI();
+}
 async function moveToPlacement(i){
 
+  const record = DB.interview[i];
+
+  if(!record) return;
+
   const base = {
-    ...DB.interview[i],
-    id: Date.now() + Math.random(),
+    ...record,
     placement_date: today()
   };
 
-  DB.placement.unshift(base);
-
   await sb.from("placement").insert([base]);
 
-  saveAndRender();
+  await fetchAllData();
+
+  renderStage("placement","placementBody");
+  renderKPI();
 }
 async function moveToStart(i){
 
+  const record = DB.placement[i];
+
+  if(!record) return;
+
   const base = {
-    ...DB.placement[i],
-    id: Date.now() + Math.random(),
+    ...record,
     start_date: today()
   };
 
-  DB.start.unshift(base);
-
   await sb.from("start").insert([base]);
 
-  saveAndRender();
+  await fetchAllData();
+
+  renderStage("start","startBody");
+  renderKPI();
 }
 
 function deleteRow(tab,i){
