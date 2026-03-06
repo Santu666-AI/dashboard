@@ -393,35 +393,28 @@
 
 <script>
 
+
 window.addEventListener("load", () => {
 
-const data = localStorage.getItem("ceipalCandidate");
+const params = new URLSearchParams(window.location.search);
 
-if(!data) return;
+const name = params.get("name");
+const email = params.get("email");
+const phone = params.get("phone");
+const location = params.get("location");
 
-const candidate = JSON.parse(data);
+if(!name) return;
 
-const interval = setInterval(()=>{
+setTimeout(()=>{
 
-const nameField = document.getElementById("dailyName");
-const emailField = document.getElementById("dailyEmail");
-const phoneField = document.getElementById("dailyPhone");
-const locationField = document.getElementById("dailyLocation");
-
-if(nameField){
-
-nameField.value = candidate.name || "";
-emailField.value = candidate.email || "";
-phoneField.value = candidate.phone || "";
-locationField.value = candidate.location || "";
+document.getElementById("dailyName").value = name || "";
+document.getElementById("dailyEmail").value = email || "";
+document.getElementById("dailyPhone").value = phone || "";
+document.getElementById("dailyLocation").value = location || "";
 
 document.querySelector('[data-tab="daily"]').click();
 
-clearInterval(interval);
-
-}
-
-},500);
+},800);
 
 });
 
