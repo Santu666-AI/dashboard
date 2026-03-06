@@ -393,7 +393,7 @@
 
 <script>
 
-function loadCandidateFromURL(){
+function fillDailyFromURL(){
 
 const params = new URLSearchParams(window.location.search);
 
@@ -403,21 +403,23 @@ const phone = params.get("phone");
 
 if(!name) return;
 
-/* change these IDs to match your daily form */
+setTimeout(()=>{
 
-const nameField = document.querySelector("#candidateName");
-const emailField = document.querySelector("#candidateEmail");
-const phoneField = document.querySelector("#candidatePhone");
+const nameField = document.getElementById("dailyName");
+const emailField = document.getElementById("dailyEmail");
+const phoneField = document.getElementById("dailyPhone");
 
-if(nameField) nameField.value = name;
-if(emailField) emailField.value = email;
-if(phoneField) phoneField.value = phone;
+if(nameField) nameField.value = name.trim();
+if(emailField) emailField.value = email.trim();
+if(phoneField) phoneField.value = phone.trim();
+
+document.querySelector('[data-tab="daily"]').click();
+
+},1200);
 
 }
 
-/* run after page loads */
-
-window.addEventListener("load", loadCandidateFromURL);
+window.addEventListener("load", fillDailyFromURL);
 
 </script>
 </body>
