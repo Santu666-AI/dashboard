@@ -393,36 +393,37 @@
 
 <script>
 
-function fillDailyFromURL(){
+window.addEventListener("load", () => {
 
-const params = new URLSearchParams(window.location.search);
+const data = localStorage.getItem("ceipalCandidate");
 
-const name = params.get("name");
-const email = params.get("email");
-const phone = params.get("phone");
-const location = params.get("location");
+if(!data) return;
 
-if(!name) return;
+const candidate = JSON.parse(data);
 
-setTimeout(()=>{
+const interval = setInterval(()=>{
 
 const nameField = document.getElementById("dailyName");
 const emailField = document.getElementById("dailyEmail");
 const phoneField = document.getElementById("dailyPhone");
 const locationField = document.getElementById("dailyLocation");
 
-if(nameField) nameField.value = name.trim();
-if(emailField) emailField.value = email.trim();
-if(phoneField) phoneField.value = phone.trim();
-if(locationField) locationField.value = location ? location.trim() : "";
+if(nameField){
+
+nameField.value = candidate.name || "";
+emailField.value = candidate.email || "";
+phoneField.value = candidate.phone || "";
+locationField.value = candidate.location || "";
 
 document.querySelector('[data-tab="daily"]').click();
 
-},1200);
+clearInterval(interval);
 
 }
 
-window.addEventListener("load", fillDailyFromURL);
+},500);
+
+});
 
 </script>
 </body>
