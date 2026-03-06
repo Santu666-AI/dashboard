@@ -320,7 +320,7 @@
           <th>Client</th>
           <th>Location</th>
           <th>Visa</th>
-          <th>Interview Scheduled On</th>
+          <th>Interview Date</th>
           <th>Notes</th>
           <th>Actions</th>
         </tr>
@@ -390,6 +390,36 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
+
+<script>
+
+function loadCandidateFromURL(){
+
+const params = new URLSearchParams(window.location.search);
+
+const name = params.get("name");
+const email = params.get("email");
+const phone = params.get("phone");
+
+if(!name) return;
+
+/* change these IDs to match your daily form */
+
+const nameField = document.querySelector("#candidateName");
+const emailField = document.querySelector("#candidateEmail");
+const phoneField = document.querySelector("#candidatePhone");
+
+if(nameField) nameField.value = name;
+if(emailField) emailField.value = email;
+if(phoneField) phoneField.value = phone;
+
+}
+
+/* run after page loads */
+
+window.addEventListener("load", loadCandidateFromURL);
+
+</script>
 </body>
 </html>
 
