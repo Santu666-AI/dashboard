@@ -553,7 +553,8 @@ function renderDaily(){
     });
 }
 
-/* ================= STAGE MOVEMENT ================= */
+
+    /* ================= STAGE MOVEMENT ================= */
 
 async function moveToSubmission(i){
 
@@ -561,42 +562,52 @@ async function moveToSubmission(i){
   if(!record) return;
 
   const base = {
-    ...record,
-    submission_date: today()
+    submission_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes,
+    ai_score: record.ai_score,
+    ai_notes: record.ai_notes
   };
 
-  const { error } = await sb
-    .from("submission")
-    .insert([base]);
+  const { error } = await sb.from("submission").insert([base]);
 
   if(error){
     alert("Submission failed: " + error.message);
     return;
   }
 
-  /* keep candidate in daily */
-
   await fetchAllData();
-
-  renderDaily();
   renderStage("submission","submissionBody");
   renderKPI();
 }
 
+
 async function moveToProposal(i){
 
   const record = DB.daily[i];
-
   if(!record) return;
 
   const base = {
-    ...record,
-    proposal_date: today()
+    proposal_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes,
+    program_name: "",
+    pw_name: ""
   };
 
-  const { error } = await sb
-    .from("proposal")
-    .insert([base]);
+  const { error } = await sb.from("proposal").insert([base]);
 
   if(error){
     alert("Proposal insert failed: " + error.message);
@@ -604,25 +615,29 @@ async function moveToProposal(i){
   }
 
   await fetchAllData();
-
   renderStage("proposal","proposalBody");
   renderKPI();
 }
 
+
 async function moveToInterview(i){
 
   const record = DB.submission[i];
-
   if(!record) return;
 
   const base = {
-    ...record,
-    interview_scheduled_on: today()
+    interview_scheduled_on: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
   };
 
-  const { error } = await sb
-    .from("interview")
-    .insert([base]);
+  const { error } = await sb.from("interview").insert([base]);
 
   if(error){
     alert("Interview insert failed: " + error.message);
@@ -630,7 +645,6 @@ async function moveToInterview(i){
   }
 
   await fetchAllData();
-
   renderStage("interview","interviewBody");
   renderKPI();
 }
@@ -639,17 +653,21 @@ async function moveToInterview(i){
 async function moveToPlacement(i){
 
   const record = DB.interview[i];
-
   if(!record) return;
 
   const base = {
-    ...record,
-    placement_date: today()
+    placement_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
   };
 
-  const { error } = await sb
-    .from("placement")
-    .insert([base]);
+  const { error } = await sb.from("placement").insert([base]);
 
   if(error){
     alert("Placement insert failed: " + error.message);
@@ -657,7 +675,6 @@ async function moveToPlacement(i){
   }
 
   await fetchAllData();
-
   renderStage("placement","placementBody");
   renderKPI();
 }
@@ -666,17 +683,21 @@ async function moveToPlacement(i){
 async function moveToStart(i){
 
   const record = DB.placement[i];
-
   if(!record) return;
 
   const base = {
-    ...record,
-    start_date: today()
+    start_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
   };
 
-  const { error } = await sb
-    .from("start")
-    .insert([base]);
+  const { error } = await sb.from("start").insert([base]);
 
   if(error){
     alert("Start insert failed: " + error.message);
@@ -684,44 +705,8 @@ async function moveToStart(i){
   }
 
   await fetchAllData();
-
   renderStage("start","startBody");
   renderKPI();
-}
-
-function updateNote(tab,i,val){
-  DB[tab][i].notes = val;
-  saveDB();
-}
-
-function updateField(stage,index,field,value){
-  DB[stage][index][field] = value;
-  saveDB();
-}
-
-function updateStageDate(stage,index,value){
-
-  if(stage==="submission"){
-    DB.submission[index].submission_date = value;
-  }
-
-  if(stage==="proposal"){
-    DB.proposal[index].proposal_date = value;
-  }
-
-  if(stage==="interview"){
-    DB.interview[index].interview_scheduled_on = value;
-  }
-
-  if(stage==="placement"){
-    DB.placement[index].placement_date = value;
-  }
-
-  if(stage==="start"){
-    DB.start[index].start_date = value;
-  }
-
-  saveAndRender();   // 🔥 this is critical
 }
 
 /* ================= STAGE RENDER ================= */
@@ -1372,7 +1357,7 @@ async function deleteRow(stage,index){
 
   renderKPI();
 }
-function viewResume(index){
+async function viewResume(index){
 
   const record = DB.daily[index];
 
@@ -1393,6 +1378,24 @@ function viewResume(index){
   record.ai_notes =
 `Missing Skills: ${result.missing}
  Questions: ${result.questions}`;
+
+const result = analyzeMatch(record.resume_text, jdText);
+
+record.ai_score = result.score;
+
+record.ai_notes =
+`Missing Skills: ${result.missing}
+Questions: ${result.questions}`;
+
+/* SAVE AI RESULT TO SUPABASE */
+
+await sb
+.from("daily")
+.update({
+  ai_score: record.ai_score,
+  ai_notes: record.ai_notes
+})
+.eq("id", record.id);
 
   const win = window.open("", "Resume Viewer", "width=900,height=750");
 
@@ -1570,7 +1573,7 @@ if(diffDays < 0) return;
 
 let reminderText = "";
 
-if(diffDays == t.reminder){
+if(diffDays == parseInt(t.reminder)){
   reminderText = "⚠ Reminder coming soon";
 }
 
