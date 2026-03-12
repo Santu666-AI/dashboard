@@ -689,11 +689,6 @@ async function moveToStart(i){
   renderKPI();
 }
 
-function deleteRow(tab,i){
-  DB[tab].splice(i,1);
-  saveAndRender();
-}
-
 function updateNote(tab,i,val){
   DB[tab][i].notes = val;
   saveDB();
