@@ -775,7 +775,7 @@ const endIndex = startIndex + PAGE_SIZE;
 const paginated = sorted.slice(startIndex, endIndex);
   paginated.forEach((r, displayIndex)=>{
 
-    const realIndex = DB[stage].indexOf(r);
+    const realIndex = DB[stage].findIndex(x => x.id === r.id);
 
     let actionButtons = "";
 
@@ -841,11 +841,13 @@ const paginated = sorted.slice(startIndex, endIndex);
         <td><input value="${r.client||""}"
           onchange="updateField('${stage}',${realIndex},'client',this.value)"></td>
 
-        <td><input value="${r.program_name||""}"
-          onchange="updateField('${stage}',${realIndex},'program_name',this.value)"></td>
+         ${stage==="proposal" ? `
+         <td><input value="${r.program_name||""}"
+         onchange="updateField('${stage}',${realIndex},'program_name',this.value)"></td>
 
          <td><input value="${r.pw_name||""}"
-          onchange="updateField('${stage}',${realIndex},'pw_name',this.value)"></td>
+         onchange="updateField('${stage}',${realIndex},'pw_name',this.value)"></td>
+         ` : ""}
 
          <td><input value="${r.location||""}"
           onchange="updateField('${stage}',${realIndex},'location',this.value)"></td>
@@ -1293,28 +1295,6 @@ function enableTopScrollSync() {
   });
 }
 
-async function deleteRow(stage,index){
-
-  const record = DB[stage][index];
-  if(!record || !record.id) return;
-
-  await sb
-    .from(stage)
-    .delete()
-    .eq("id", record.id);
-
-  await fetchAllData();
-
-  renderDaily();
-  renderStage("submission","submissionBody");
-  renderStage("proposal","proposalBody");
-  renderStage("interview","interviewBody");
-  renderStage("placement","placementBody");
-  renderStage("start","startBody");
-
-  renderKPI();
-}
-
 function viewJD(index){
 
   const jd = DB.jd[index];
@@ -1376,6 +1356,8 @@ function viewJD(index){
 
 async function deleteRow(stage,index){
 
+  if(!confirm("Delete this record?")) return;
+
   const record = DB[stage][index];
   if(!record || !record.id) return;
 
@@ -1395,7 +1377,6 @@ async function deleteRow(stage,index){
 
   renderKPI();
 }
-
 function viewResume(index){
 
   const record = DB.daily[index];
