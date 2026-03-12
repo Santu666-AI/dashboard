@@ -127,13 +127,14 @@ function today(){
 
 async function addJD(){
 
-  const record = {
-    date: jdDate.value || today(),
-    nvr: jdNvr.value.trim(),
-    title: jdTitle.value.trim(),
-    client: jdClient.value.trim(),
-    status: jdStatus.value
-  };
+const record = {
+  date: jdDate.value || today(),
+  nvr: jdNvr.value.trim(),
+  title: jdTitle.value.trim(),
+  client: jdClient.value.trim(),
+  jd_text: jdText.value.trim(),
+  status: jdStatus.value
+};
 
   await sb.from("jd").insert([record]);
 
@@ -192,20 +193,27 @@ function renderJD(){
 
     } else {
 
-      jdBody.innerHTML += `
-        <tr>
-          <td>${i+1}</td>
-          <td>${r.date}</td>
-          <td>${r.nvr || ""}</td>
-          <td>${r.title || ""}</td>
-          <td>${r.client || ""}</td>
-          <td>${r.status || ""}</td>
-          <td>
-            <button onclick="editJD(${i})">Edit</button>
-            <button onclick="deleteJD(${i})">Delete</button>
-          </td>
-        </tr>
-      `;
+     jdBody.innerHTML += `
+<tr>
+  <td>${i+1}</td>
+  <td>${r.date}</td>
+  <td>${r.nvr || ""}</td>
+
+  <td>
+    <a href="#" onclick="viewJD(${i})" style="color:#1a73e8;font-weight:600;text-decoration:none;">
+      ${r.title || ""}
+    </a>
+  </td>
+
+  <td>${r.client || ""}</td>
+  <td>${r.status || ""}</td>
+
+  <td>
+    <button onclick="editJD(${i})">Edit</button>
+    <button onclick="deleteJD(${i})">Delete</button>
+  </td>
+</tr>
+`;
     }
 
   });
@@ -423,17 +431,18 @@ async function saveDaily(){
 
   /* ✅ CREATE DAILY RECORD */
   const record = {
-    entry_date: today(),
-    name: dailyName.value.trim(),
-    email: dailyEmail.value.trim(),
-    phone: dailyPhone.value.trim(),
-    requirement: dailyRequirement.value,
-    client: dailyClient.value,
-    location: dailyLocation.value,
-    visa: dailyVisa.value,
-    source: dailySource.value,
-    notes: dailyNotes.value
-  };
+  entry_date: today(),
+  name: dailyName.value.trim(),
+  email: dailyEmail.value.trim(),
+  phone: dailyPhone.value.trim(),
+  requirement: dailyRequirement.value,
+  client: dailyClient.value,
+  location: dailyLocation.value,
+  visa: dailyVisa.value,
+  source: dailySource.value,
+  notes: dailyNotes.value,
+  resume_text: resumeText.value
+};
 
   /* ✅ INSERT INTO DATABASE */
  await sb.from("daily").insert([record]);
@@ -505,7 +514,13 @@ function renderDaily(){
           <tr>
             <td>${index+1}</td>
             <td>${r.entry_date}</td>
-            <td>${r.name||""}</td>
+
+            <td>
+            <a href="#" onclick="viewResume(${DB.daily.indexOf(r)})" style="color:#1a73e8;font-weight:600;text-decoration:none;">
+            ${r.name||""}
+            </a>
+            </td>
+
             <td>${r.email||""}</td>
             <td>${r.phone||""}</td>
             <td>${r.requirement||""}</td>
@@ -514,14 +529,23 @@ function renderDaily(){
             <td>${r.visa||""}</td>
             <td>${r.source||""}</td>
             <td>
-              <input value="${r.notes||""}"
-                onchange="updateNote('daily',${DB.daily.indexOf(r)},this.value)">
+            <input value="${r.notes||""}"
+            onchange="updateNote('daily',${DB.daily.indexOf(r)},this.value)">
             </td>
+
+            <td style="font-weight:bold;">
+            ${r.ai_score ?? ""}
+            </td>
+
+           <td>
+           ${r.ai_notes || ""}
+           </td>
+
             <td>
-              <button onclick="moveToSubmission(${DB.daily.indexOf(r)})">Sub</button>
-              <button onclick="moveToProposal(${DB.daily.indexOf(r)})">Proposal</button>
-              <button onclick="deleteRow('daily',${DB.daily.indexOf(r)})">Del</button>
-            </td>
+           <button onclick="moveToSubmission(${DB.daily.indexOf(r)})">Sub</button>
+           <button onclick="moveToProposal(${DB.daily.indexOf(r)})">Proposal</button>
+           <button onclick="deleteRow('daily',${DB.daily.indexOf(r)})">Del</button>
+          </td>
           </tr>
         `;
       });
@@ -541,11 +565,16 @@ async function moveToSubmission(i){
     submission_date: today()
   };
 
-  await sb.from("submission").insert([base]);
+  const { error } = await sb
+    .from("submission")
+    .insert([base]);
 
-  await sb.from("daily")
-    .delete()
-    .eq("id", record.id);
+  if(error){
+    alert("Submission failed: " + error.message);
+    return;
+  }
+
+  /* keep candidate in daily */
 
   await fetchAllData();
 
@@ -553,9 +582,11 @@ async function moveToSubmission(i){
   renderStage("submission","submissionBody");
   renderKPI();
 }
+
 async function moveToProposal(i){
 
   const record = DB.daily[i];
+
   if(!record) return;
 
   const base = {
@@ -563,15 +594,17 @@ async function moveToProposal(i){
     proposal_date: today()
   };
 
-  await sb.from("proposal").insert([base]);
+  const { error } = await sb
+    .from("proposal")
+    .insert([base]);
 
-  await sb.from("daily")
-    .delete()
-    .eq("id", record.id);
+  if(error){
+    alert("Proposal insert failed: " + error.message);
+    return;
+  }
 
   await fetchAllData();
 
-  renderDaily();
   renderStage("proposal","proposalBody");
   renderKPI();
 }
@@ -587,13 +620,22 @@ async function moveToInterview(i){
     interview_scheduled_on: today()
   };
 
-  await sb.from("interview").insert([base]);
+  const { error } = await sb
+    .from("interview")
+    .insert([base]);
+
+  if(error){
+    alert("Interview insert failed: " + error.message);
+    return;
+  }
 
   await fetchAllData();
 
   renderStage("interview","interviewBody");
   renderKPI();
 }
+
+
 async function moveToPlacement(i){
 
   const record = DB.interview[i];
@@ -605,13 +647,22 @@ async function moveToPlacement(i){
     placement_date: today()
   };
 
-  await sb.from("placement").insert([base]);
+  const { error } = await sb
+    .from("placement")
+    .insert([base]);
+
+  if(error){
+    alert("Placement insert failed: " + error.message);
+    return;
+  }
 
   await fetchAllData();
 
   renderStage("placement","placementBody");
   renderKPI();
 }
+
+
 async function moveToStart(i){
 
   const record = DB.placement[i];
@@ -623,7 +674,14 @@ async function moveToStart(i){
     start_date: today()
   };
 
-  await sb.from("start").insert([base]);
+  const { error } = await sb
+    .from("start")
+    .insert([base]);
+
+  if(error){
+    alert("Start insert failed: " + error.message);
+    return;
+  }
 
   await fetchAllData();
 
@@ -783,7 +841,13 @@ const paginated = sorted.slice(startIndex, endIndex);
         <td><input value="${r.client||""}"
           onchange="updateField('${stage}',${realIndex},'client',this.value)"></td>
 
-        <td><input value="${r.location||""}"
+        <td><input value="${r.program_name||""}"
+          onchange="updateField('${stage}',${realIndex},'program_name',this.value)"></td>
+
+         <td><input value="${r.pw_name||""}"
+          onchange="updateField('${stage}',${realIndex},'pw_name',this.value)"></td>
+
+         <td><input value="${r.location||""}"
           onchange="updateField('${stage}',${realIndex},'location',this.value)"></td>
 
         <td><input value="${r.visa||""}"
@@ -1251,4 +1315,315 @@ async function deleteRow(stage,index){
   renderKPI();
 }
 
- 
+function viewJD(index){
+
+  const jd = DB.jd[index];
+
+  if(!jd || !jd.jd_text){
+    alert("JD not available for this record.");
+    return;
+  }
+
+  const win = window.open("", "JD Viewer", "width=900,height=700");
+
+  win.document.write(`
+  <html>
+  <head>
+  <title>Job Description</title>
+
+  <style>
+  body{
+    font-family:Arial;
+    padding:20px;
+    line-height:1.6;
+  }
+
+  textarea{
+    width:100%;
+    height:85vh;
+    font-size:14px;
+  }
+
+  button{
+    padding:8px 12px;
+    margin-bottom:10px;
+  }
+  </style>
+
+  </head>
+
+  <body>
+
+  <h2>${jd.title}</h2>
+
+  <button onclick="copyJD()">Copy JD</button>
+
+  <textarea id="jdContent">${jd.jd_text}</textarea>
+
+  <script>
+  function copyJD(){
+    const text = document.getElementById("jdContent");
+    text.select();
+    document.execCommand("copy");
+    alert("JD copied!");
+  }
+  </script>
+
+  </body>
+  </html>
+  `);
+}
+
+async function deleteRow(stage,index){
+
+  const record = DB[stage][index];
+  if(!record || !record.id) return;
+
+  await sb
+    .from(stage)
+    .delete()
+    .eq("id", record.id);
+
+  await fetchAllData();
+
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
+
+  renderKPI();
+}
+
+function viewResume(index){
+
+  const record = DB.daily[index];
+
+  if(!record.resume_text){
+    alert("Resume not available");
+    return;
+  }
+
+  /* Find JD linked to this candidate requirement */
+  const jd = DB.jd.find(j => j.title === record.requirement);
+
+  const jdText = jd ? jd.jd_text : "";
+
+  /* Run matching analysis */
+  const result = analyzeMatch(record.resume_text, jdText);
+  record.ai_score = result.score;
+
+  record.ai_notes =
+`Missing Skills: ${result.missing}
+ Questions: ${result.questions}`;
+
+  const win = window.open("", "Resume Viewer", "width=900,height=750");
+
+  win.document.write(`
+  <html>
+  <head>
+
+  <title>Resume Viewer</title>
+
+  <style>
+  body{
+    font-family:Arial;
+    padding:20px;
+  }
+
+  textarea{
+    width:100%;
+    height:60vh;
+    font-size:14px;
+    line-height:1.5;
+  }
+
+  .box{
+    margin-bottom:15px;
+    padding:10px;
+    background:#f5f5f5;
+  }
+
+  .score{
+    font-size:18px;
+    font-weight:bold;
+  }
+
+  </style>
+
+  </head>
+
+  <body>
+
+  <h2>${record.name}</h2>
+
+  <div class="box score">
+  AI Score: ${result.score} / 100
+  </div>
+
+  <div class="box">
+  <b>Missing Skills</b><br>
+  ${result.missing || "None"}
+  </div>
+
+  <div class="box">
+  <b>Questions to Ask Candidate</b><br>
+  ${result.questions || "None"}
+  </div>
+
+  <h3>Full Resume</h3>
+
+  <textarea>${record.resume_text}</textarea>
+
+  </body>
+  </html>
+  `);
+}
+
+
+/* =====================================================
+   BASIC AI MATCH ENGINE (Temporary until ChatGPT API)
+===================================================== */
+
+function analyzeMatch(resumeText, jdText){
+
+  if(!resumeText || !jdText){
+    return {
+      score: 0,
+      missing: "Resume or JD not available",
+      questions: ""
+    };
+  }
+
+  const resume = resumeText.toLowerCase();
+  const jd = jdText.toLowerCase();
+
+  const skills = [
+    "python","java","docker","kubernetes","aws","linux",
+    "terraform","jenkins","ci/cd","selenium",
+    "react","angular","node","sql","mongodb",
+    "c++","c#","azure","gcp"
+  ];
+
+  let match = 0;
+  let missing = [];
+
+  skills.forEach(skill => {
+
+    if(jd.includes(skill)){
+
+      if(resume.includes(skill)){
+        match++;
+      }
+      else{
+        missing.push(skill);
+      }
+
+    }
+
+  });
+
+  const score = Math.min(100, match * 15);
+
+  const questions = missing
+    .map(skill => `Do you have hands-on experience with ${skill}?`)
+    .join("<br>");
+
+  return {
+    score,
+    missing: missing.join(", "),
+    questions
+  };
+
+}
+
+
+/* ================= RECURRING TASK SYSTEM ================= */
+
+function addRecurringTask(){
+
+const title = document.getElementById("recTitle").value;
+const date = document.getElementById("recDate").value;
+const repeat = document.getElementById("recRepeat").value;
+const reminder = document.getElementById("recReminder").value;
+
+if(!title || !date){
+  alert("Enter task and date");
+  return;
+}
+
+const tasks = JSON.parse(localStorage.getItem("recTasks") || "[]");
+
+tasks.push({
+  title,
+  date,
+  repeat,
+  reminder
+});
+
+localStorage.setItem("recTasks", JSON.stringify(tasks));
+
+renderRecurringTasks();
+
+document.getElementById("recTitle").value="";
+document.getElementById("recDate").value="";
+}
+
+/* ================= SHOW TASKS ================= */
+
+function renderRecurringTasks(){
+
+const tasks = JSON.parse(localStorage.getItem("recTasks") || "[]");
+
+const list = document.getElementById("recurringList");
+
+if(!list) return;
+
+list.innerHTML = "";
+
+const today = new Date();
+
+tasks.forEach(t=>{
+
+const taskDate = new Date(t.date);
+
+const diffDays = Math.ceil((taskDate - today)/(1000*60*60*24));
+
+if(diffDays < 0) return;
+
+let reminderText = "";
+
+if(diffDays == t.reminder){
+  reminderText = "⚠ Reminder coming soon";
+}
+
+if(diffDays == 1){
+  reminderText = "⚠ Tomorrow";
+}
+
+if(diffDays == 0){
+  reminderText = "⚠ Today";
+}
+
+list.innerHTML += `
+<div style="margin-bottom:10px;padding:10px;background:#1e293b;border-radius:6px">
+<b>${t.title}</b><br>
+Next Date: ${t.date} (${t.repeat})<br>
+<span style="color:orange">${reminderText}</span>
+</div>
+`;
+
+});
+
+}
+
+/* run when productivity tab opens */
+
+document.addEventListener("click", function(e){
+
+if(e.target.dataset.tab === "productivity"){
+setTimeout(renderRecurringTasks,200);
+}
+
+});
