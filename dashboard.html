@@ -402,6 +402,7 @@ const name = params.get("name");
 const email = params.get("email");
 const phone = params.get("phone");
 const location = params.get("location");
+const source = params.get("source");
 
 if(!name) return;
 
@@ -411,6 +412,10 @@ document.getElementById("dailyName").value = name || "";
 document.getElementById("dailyEmail").value = email || "";
 document.getElementById("dailyPhone").value = phone || "";
 document.getElementById("dailyLocation").value = location || "";
+
+if(source){
+document.getElementById("dailySource").value = source;
+}
 
 document.querySelector('[data-tab="daily"]').click();
 
