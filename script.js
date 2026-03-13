@@ -18,6 +18,10 @@ const sb = window.supabase.createClient(
 /* ================= DOM HELPER ================= */
 const $ = id => document.getElementById(id);
 
+function uid(){
+  return Date.now() + Math.floor(Math.random() * 1000);
+}
+
 console.log("Supabase Connected Successfully");
 
 const ATS_VERSION = "NVR ATS v1.0 LOCKED";
@@ -1372,22 +1376,14 @@ async function viewResume(index){
   const jdText = jd ? jd.jd_text : "";
 
   /* Run matching analysis */
+
   const result = analyzeMatch(record.resume_text, jdText);
+  
   record.ai_score = result.score;
 
   record.ai_notes =
 `Missing Skills: ${result.missing}
  Questions: ${result.questions}`;
-
-const result = analyzeMatch(record.resume_text, jdText);
-
-record.ai_score = result.score;
-
-record.ai_notes =
-`Missing Skills: ${result.missing}
-Questions: ${result.questions}`;
-
-/* SAVE AI RESULT TO SUPABASE */
 
 await sb
 .from("daily")
