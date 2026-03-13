@@ -1146,14 +1146,14 @@ async function checkUser(){
 
 /* ================= PAGE LOAD ================= */
 
-document.addEventListener("DOMContentLoaded", function(){
+document.addEventListener("DOMContentLoaded", async function(){
 
-  checkUser();   // login/session check
-  initTabs();    // ⭐ enable sidebar switching
+  initTabs();
 
-  // setInterval(()=>{
-//    backupToCloud();
-// },300000);
+  const app = document.getElementById("app");
+  if(app) app.style.display = "block";
+
+  await loadDashboard();
 
 });
 
