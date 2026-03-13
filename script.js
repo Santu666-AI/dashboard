@@ -18,6 +18,26 @@ const sb = window.supabase.createClient(
 /* ================= DOM HELPER ================= */
 const $ = id => document.getElementById(id);
 
+/* ================= DOM ELEMENT REFERENCES ================= */
+
+const jdBody = $("jdBody");
+const dailyBody = $("dailyBody");
+const submissionBody = $("submissionBody");
+const proposalBody = $("proposalBody");
+const interviewBody = $("interviewBody");
+const placementBody = $("placementBody");
+const startBody = $("startBody");
+
+const kpiSub = $("kpiSub");
+const kpiInt = $("kpiInt");
+const kpiPlace = $("kpiPlace");
+const kpiStart = $("kpiStart");
+
+const monthlyBody = $("monthlyBody");
+
+const taskList = $("taskList");
+const meetingList = $("meetingList");
+
 function uid(){
   return Date.now() + Math.floor(Math.random() * 1000);
 }
