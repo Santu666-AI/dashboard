@@ -1003,38 +1003,38 @@ async function fetchAllData(){
 
   try{
 
-    const jdRes = await sb.from("jd").select("*");
-    DB.jd = jdRes.data || [];
+    let { data: jd } = await sb.from("jd").select("*");
+    DB.jd = jd || [];
 
-    const dailyRes = await sb.from("daily").select("*");
-    DB.daily = dailyRes.data || [];
+    let { data: daily } = await sb.from("daily").select("*");
+    DB.daily = daily || [];
 
-    const subRes = await sb.from("submission").select("*");
-    DB.submission = subRes.data || [];
+    let { data: submission } = await sb.from("submission").select("*");
+    DB.submission = submission || [];
 
-    const propRes = await sb.from("proposal").select("*");
-    DB.proposal = propRes.data || [];
+    let { data: proposal } = await sb.from("proposal").select("*");
+    DB.proposal = proposal || [];
 
-    const intRes = await sb.from("interview").select("*");
-    DB.interview = intRes.data || [];
+    let { data: interview } = await sb.from("interview").select("*");
+    DB.interview = interview || [];
 
-    const placeRes = await sb.from("placement").select("*");
-    DB.placement = placeRes.data || [];
+    let { data: placement } = await sb.from("placement").select("*");
+    DB.placement = placement || [];
 
-    const startRes = await sb.from("start").select("*");
-    DB.start = startRes.data || [];
+    let { data: start } = await sb.from("start").select("*");
+    DB.start = start || [];
 
-    const taskRes = await sb.from("tasks").select("*");
-    DB.tasks = taskRes.data || [];
+    let { data: tasks } = await sb.from("tasks").select("*");
+    DB.tasks = tasks || [];
 
-    const meetRes = await sb.from("meetings").select("*");
-    DB.meetings = meetRes.data || [];
+    let { data: meetings } = await sb.from("meetings").select("*");
+    DB.meetings = meetings || [];
 
-    console.log("All data loaded successfully");
+    console.log("All data loaded successfully", DB);
 
   }catch(err){
 
-    console.error("Database fetch error:", err);
+    console.error("Database error:", err);
 
   }
 
@@ -1056,9 +1056,12 @@ async function loadDashboard(){
   renderStage("interview","interviewBody");
   renderStage("placement","placementBody");
   renderStage("start","startBody");
+
   renderKPI();
-  renderTasks();
+  
+renderTasks();
   renderMeetings();
+
 }
 
 async function migrateLocalToSupabase(){
