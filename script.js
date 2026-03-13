@@ -1116,19 +1116,33 @@ async function login(){
 
 async function checkUser(){
 
-  const { data: { session } } = await sb.auth.getSession();
+  try{
 
-  const loginScreen = document.getElementById("loginScreen");
-  const app = document.getElementById("app");
+    const { data } = await sb.auth.getSession();
 
-  if(session){
-  if(app) app.style.display = "block";
-  loadDashboard();
-} else {
-  window.location.href = "index.html";
+    if(data.session){
+
+      const app = document.getElementById("app");
+      if(app) app.style.display = "block";
+
+      await loadDashboard();
+
+    } else {
+
+      console.log("No active session");
+      const app = document.getElementById("app");
+      if(app) app.style.display = "block";
+
+      await loadDashboard();  // allow dashboard load anyway
+
+    }
+
+  } catch(e){
+
+    console.log("Session error:", e);
+
+  }
 }
-
-}  
 
 /* ================= PAGE LOAD ================= */
 
