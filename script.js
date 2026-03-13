@@ -566,8 +566,8 @@ function renderDaily(){
            </td>
 
             <td>
-           <button onclick="moveToSubmission(${DB.daily.indexOf(r)})">Sub</button>
-           <button onclick="moveToProposal(${DB.daily.indexOf(r)})">Proposal</button>
+           <button onclick="moveDailyToSubmission('${r.id}')">Sub</button>
+           <button onclick="moveDailyToProposal('${r.id}')">Proposal</button>
            <button onclick="deleteRow('daily',${DB.daily.indexOf(r)})">Del</button>
           </td>
           </tr>
@@ -741,57 +741,90 @@ function findIndexById(stage,id){
 
 async function moveToInterviewById(id){
 
-  const i = findIndexById("submission", id);
-  if(i === -1) return;
+  const record = DB.submission.find(r => r.id == id);
+  if(!record) return;
 
-  moveToInterview(i);
+  const base = {
+    interview_scheduled_on: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
+  };
+
+  const { error } = await sb.from("interview").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("interview","interviewBody");
+  renderKPI();
 }
 
 async function moveToPlacementById(id){
 
-  const i = findIndexById("interview", id);
-  if(i === -1) return;
+  const record = DB.interview.find(r => r.id == id);
+  if(!record) return;
 
-  moveToPlacement(i);
+  const base = {
+    placement_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
+  };
+
+  const { error } = await sb.from("placement").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("placement","placementBody");
+  renderKPI();
 }
-
 async function moveToStartById(id){
 
-  const i = findIndexById("placement", id);
-  if(i === -1) return;
+  const record = DB.placement.find(r => r.id == id);
+  if(!record) return;
 
-  moveToStart(i);
+  const base = {
+    start_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
+  };
+
+  const { error } = await sb.from("start").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("start","startBody");
+  renderKPI();
 }
 
-/* ================= ID HELPER FOR STAGE MOVEMENT ================= */
-
-function findIndexById(stage,id){
-  return DB[stage].findIndex(r => r.id == id);
-}
-
-async function moveToInterviewById(id){
-
-  const i = findIndexById("submission", id);
-  if(i === -1) return;
-
-  moveToInterview(i);
-}
-
-async function moveToPlacementById(id){
-
-  const i = findIndexById("interview", id);
-  if(i === -1) return;
-
-  moveToPlacement(i);
-}
-
-async function moveToStartById(id){
-
-  const i = findIndexById("placement", id);
-  if(i === -1) return;
-
-  moveToStart(i);
-}
 
 /* ADD THIS FUNCTION RIGHT HERE */
 
