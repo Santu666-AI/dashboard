@@ -981,50 +981,43 @@ function startHourlyReminder(){
 
 async function fetchAllData(){
 
-  DB.jd = (await sb.from("jd")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+  try{
 
-  DB.daily = (await sb.from("daily")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+    const jdRes = await sb.from("jd").select("*");
+    DB.jd = jdRes.data || [];
 
-  DB.submission = (await sb.from("submission")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+    const dailyRes = await sb.from("daily").select("*");
+    DB.daily = dailyRes.data || [];
 
-  DB.proposal = (await sb.from("proposal")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+    const subRes = await sb.from("submission").select("*");
+    DB.submission = subRes.data || [];
 
-  DB.interview = (await sb.from("interview")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+    const propRes = await sb.from("proposal").select("*");
+    DB.proposal = propRes.data || [];
 
-  DB.placement = (await sb.from("placement")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+    const intRes = await sb.from("interview").select("*");
+    DB.interview = intRes.data || [];
 
-  DB.start = (await sb.from("start")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+    const placeRes = await sb.from("placement").select("*");
+    DB.placement = placeRes.data || [];
 
-  DB.tasks = (await sb.from("tasks")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+    const startRes = await sb.from("start").select("*");
+    DB.start = startRes.data || [];
 
-  DB.meetings = (await sb.from("meetings")
-    .select("*")
-    .order("created_at", { ascending: false })
-  ).data || [];
+    const taskRes = await sb.from("tasks").select("*");
+    DB.tasks = taskRes.data || [];
+
+    const meetRes = await sb.from("meetings").select("*");
+    DB.meetings = meetRes.data || [];
+
+    console.log("All data loaded successfully");
+
+  }catch(err){
+
+    console.error("Database fetch error:", err);
+
+  }
+
 }
 
 
