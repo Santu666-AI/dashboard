@@ -763,6 +763,71 @@ async function moveToStartById(id){
   moveToStart(i);
 }
 
+/* ================= ID HELPER FOR STAGE MOVEMENT ================= */
+
+function findIndexById(stage,id){
+  return DB[stage].findIndex(r => r.id == id);
+}
+
+async function moveToInterviewById(id){
+
+  const i = findIndexById("submission", id);
+  if(i === -1) return;
+
+  moveToInterview(i);
+}
+
+async function moveToPlacementById(id){
+
+  const i = findIndexById("interview", id);
+  if(i === -1) return;
+
+  moveToPlacement(i);
+}
+
+async function moveToStartById(id){
+
+  const i = findIndexById("placement", id);
+  if(i === -1) return;
+
+  moveToStart(i);
+}
+
+/* ADD THIS FUNCTION RIGHT HERE */
+
+async function moveProposalToInterview(id){
+
+  const i = findIndexById("proposal", id);
+  if(i === -1) return;
+
+  const record = DB.proposal[i];
+
+  const base = {
+    interview_scheduled_on: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
+  };
+
+  const { error } = await sb.from("interview").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("interview","interviewBody");
+  renderKPI();
+  switchSection("interview");
+
+}
+
 /* ================= STAGE RENDER ================= */
 
 function renderStage(stage, bodyId){
@@ -794,7 +859,7 @@ function renderStage(stage, bodyId){
     }
 
     if(stage==="proposal"){
-      actionButtons = `<button onclick="moveToInterviewById('${r.id}')">Interview</button>`;
+      actionButtons = `<button onclick="moveProposalToInterview('${r.id}')">Interview</button>`;
     }
 
     if(stage==="interview"){
