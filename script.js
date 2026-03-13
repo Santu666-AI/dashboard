@@ -526,7 +526,7 @@ function renderDaily(){
       /* Date header row */
       dailyBody.innerHTML += `
         <tr class="date-row ${isToday ? 'today-row' : ''}">
-          <td colspan="12">
+          <td colspan="14">
             ${formatDisplayDate(date)}
           </td>
         </tr>
@@ -1602,8 +1602,8 @@ Next Date: ${t.date} (${t.repeat})<br>
 
 document.addEventListener("click", function(e){
 
-if(e.target.dataset.tab === "productivity"){
-setTimeout(renderRecurringTasks,200);
-}
+  if(e.target && e.target.dataset && e.target.dataset.tab === "productivity"){
+    setTimeout(renderRecurringTasks,200);
+  }
 
 });
