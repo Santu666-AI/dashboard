@@ -870,42 +870,48 @@ function renderStage(stage, bodyId){
       actionButtons = `<button onclick="moveToStartById('${r.id}')">Start</button>`;
     }
 
-    body.innerHTML += `
-      <tr>
+    
+   let row = `
+<tr>
 
-        <td>${index+1}</td>
+<td>${index+1}</td>
 
-        <td>${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ""}</td>
+<td>${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ""}</td>
 
-        <td>${r.name||""}</td>
+<td>${r.name||""}</td>
 
-        <td>${r.email||""}</td>
+<td>${r.email||""}</td>
 
-        <td>${r.phone||""}</td>
+<td>${r.phone||""}</td>
 
-        <td>${r.requirement||""}</td>
+<td>${r.requirement||""}</td>
 
-        <td>${r.client||""}</td>
+<td>${r.client||""}</td>
+`;
 
-        ${stage==="proposal" ? `
-        <td>${r.program_name||""}</td>
-        <td>${r.pw_name||""}</td>
-        ` : ""}
+if(stage === "proposal"){
+row += `
+<td>${r.program_name||""}</td>
+<td>${r.pw_name||""}</td>
+`;
+}
 
-        <td>${r.location||""}</td>
+row += `
+<td>${r.location||""}</td>
 
-        <td>${r.visa||""}</td>
+<td>${r.visa||""}</td>
 
-        <td>${r.notes||""}</td>
+<td>${r.notes||""}</td>
 
-        <td>
-          ${actionButtons}
-          <button onclick="deleteRow('${stage}',DB['${stage}'].findIndex(x=>x.id==='${r.id}'))">Del</button>
-        </td>
+<td>
+${actionButtons}
+<button onclick="deleteRow('${stage}',DB['${stage}'].findIndex(x=>x.id==='${r.id}'))">Del</button>
+</td>
 
-      </tr>
-    `;
+</tr>
+`;
 
+body.innerHTML += row;
   });
 
 }
