@@ -713,6 +713,36 @@ async function moveToStart(i){
   renderKPI();
 }
 
+/* ================= ID HELPER FOR STAGE MOVEMENT ================= */
+
+function findIndexById(stage,id){
+  return DB[stage].findIndex(r => r.id == id);
+}
+
+async function moveToInterviewById(id){
+
+  const i = findIndexById("submission", id);
+  if(i === -1) return;
+
+  moveToInterview(i);
+}
+
+async function moveToPlacementById(id){
+
+  const i = findIndexById("interview", id);
+  if(i === -1) return;
+
+  moveToPlacement(i);
+}
+
+async function moveToStartById(id){
+
+  const i = findIndexById("placement", id);
+  if(i === -1) return;
+
+  moveToStart(i);
+}
+
 /* ================= STAGE RENDER ================= */
 
 function renderStage(stage, bodyId){
@@ -732,124 +762,69 @@ function renderStage(stage, bodyId){
       stage === "start" ? "start_date" : "";
 
     return new Date(b[dateField]) - new Date(a[dateField]);
+
   });
 
-const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-
-if(totalPages > 1){
-
-  body.innerHTML += `
-    <tr>
-      <td colspan="12" style="text-align:center;">
-        ${Array.from({length: totalPages}, (_,i)=>`
-          <button onclick="changePage('${stage}',${i+1})"
-            ${paginationState[stage]===i+1?'style="font-weight:bold;"':''}>
-            ${i+1}
-          </button>
-        `).join("")}
-      </td>
-    </tr>
-  `;
-}
-
-const currentPage = paginationState[stage] || 1;
-const startIndex = (currentPage - 1) * PAGE_SIZE;
-const endIndex = startIndex + PAGE_SIZE;
-
-const paginated = sorted.slice(startIndex, endIndex);
-  paginated.forEach((r, displayIndex)=>{
-
-    const realIndex = DB[stage].findIndex(x => x.id === r.id);
+  sorted.forEach((r,index)=>{
 
     let actionButtons = "";
 
     if(stage==="submission"){
-      actionButtons = `<button onclick="moveToInterview(${realIndex})">Interview</button>`;
+      actionButtons = `<button onclick="moveToInterviewById('${r.id}')">Interview</button>`;
     }
 
     if(stage==="proposal"){
-      actionButtons = `<button onclick="moveToInterview(${realIndex})">Interview</button>`;
+      actionButtons = `<button onclick="moveToInterviewById('${r.id}')">Interview</button>`;
     }
 
     if(stage==="interview"){
-      actionButtons = `<button onclick="moveToPlacement(${realIndex})">Placement</button>`;
+      actionButtons = `<button onclick="moveToPlacementById('${r.id}')">Placement</button>`;
     }
 
     if(stage==="placement"){
-      actionButtons = `<button onclick="moveToStart(${realIndex})">Start</button>`;
+      actionButtons = `<button onclick="moveToStartById('${r.id}')">Start</button>`;
     }
 
     body.innerHTML += `
       <tr>
-        <td>${displayIndex+1}</td>
 
-        <td>
-          <input type="date"
-            value="${
-  (() => {
-    const raw =
-      stage === "submission" ? r.submission_date :
-      stage === "proposal" ? r.proposal_date :
-      stage === "interview" ? r.interview_scheduled_on :
-      stage === "placement" ? r.placement_date :
-      stage === "start" ? r.start_date : "";
+        <td>${index+1}</td>
 
-    if(!raw) return "";
+        <td>${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ""}</td>
 
-    if(raw.includes("-")) return raw;   // already YYYY-MM-DD
+        <td>${r.name||""}</td>
 
-    // convert MM/DD/YYYY → YYYY-MM-DD
-    const parts = raw.split("/");
-    if(parts.length === 3){
-      return `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
-    }
+        <td>${r.email||""}</td>
 
-    return raw;
-  })()
-}"
-            onchange="updateStageDate('${stage}',${realIndex},this.value)">
-        </td>
+        <td>${r.phone||""}</td>
 
-        <td><input value="${r.name||""}"
-          onchange="updateField('${stage}',${realIndex},'name',this.value)"></td>
+        <td>${r.requirement||""}</td>
 
-        <td><input value="${r.email||""}"
-          onchange="updateField('${stage}',${realIndex},'email',this.value)"></td>
+        <td>${r.client||""}</td>
 
-        <td><input value="${r.phone||""}"
-          onchange="updateField('${stage}',${realIndex},'phone',this.value)"></td>
+        ${stage==="proposal" ? `
+        <td>${r.program_name||""}</td>
+        <td>${r.pw_name||""}</td>
+        ` : ""}
 
-        <td><input value="${r.requirement||""}"
-          onchange="updateField('${stage}',${realIndex},'requirement',this.value)"></td>
+        <td>${r.location||""}</td>
 
-        <td><input value="${r.client||""}"
-          onchange="updateField('${stage}',${realIndex},'client',this.value)"></td>
+        <td>${r.visa||""}</td>
 
-         ${stage==="proposal" ? `
-         <td><input value="${r.program_name||""}"
-         onchange="updateField('${stage}',${realIndex},'program_name',this.value)"></td>
-
-         <td><input value="${r.pw_name||""}"
-         onchange="updateField('${stage}',${realIndex},'pw_name',this.value)"></td>
-         ` : ""}
-
-         <td><input value="${r.location||""}"
-          onchange="updateField('${stage}',${realIndex},'location',this.value)"></td>
-
-        <td><input value="${r.visa||""}"
-          onchange="updateField('${stage}',${realIndex},'visa',this.value)"></td>
-
-        <td><input value="${r.notes||""}"
-          onchange="updateField('${stage}',${realIndex},'notes',this.value)"></td>
+        <td>${r.notes||""}</td>
 
         <td>
           ${actionButtons}
-          <button onclick="deleteRow('${stage}',${realIndex})">Del</button>
+          <button onclick="deleteRow('${stage}',DB['${stage}'].findIndex(x=>x.id==='${r.id}'))">Del</button>
         </td>
+
       </tr>
     `;
+
   });
+
 }
+
 
 /* ================= KPI ================= */
 
