@@ -82,18 +82,6 @@ let DB = {
 };
 
 
-/* ✅ SAFE PRODUCTION LOCK */
-Object.seal(DB);
-function ensureIds(){
-  ["daily","submission","proposal","interview","placement","start"]
-  .forEach(stage=>{
-    DB[stage].forEach(item=>{
-      if(!item.id){
-        item.id = Date.now() + Math.random();
-      }
-    });
-  });
-}
 
 /* ================= PAGINATION ================= */
 
@@ -588,7 +576,6 @@ async function moveDailyToSubmission(id){
   if(!record) return;
 
   const base = {
-    id: uid(),
     submission_date: today(),
     name: record.name,
     email: record.email,
@@ -622,7 +609,6 @@ async function moveDailyToProposal(id){
   if(!record) return;
 
   const base = {
-    id: uid(),
     proposal_date: today(),
     name: record.name,
     email: record.email,
@@ -656,7 +642,6 @@ async function moveToInterviewById(id){
   if(!record) return;
 
   const base = {
-    id: uid(),
     interview_scheduled_on: today(),
     name: record.name,
     email: record.email,
@@ -688,7 +673,6 @@ async function moveProposalToInterview(id){
   if(!record) return;
 
   const base = {
-    id: uid(),
     interview_scheduled_on: today(),
     name: record.name,
     email: record.email,
@@ -720,7 +704,6 @@ async function moveToPlacementById(id){
   if(!record) return;
 
   const base = {
-    id: uid(),
     placement_date: today(),
     name: record.name,
     email: record.email,
@@ -752,7 +735,6 @@ async function moveToStartById(id){
   if(!record) return;
 
   const base = {
-    id: uid(),
     start_date: today(),
     name: record.name,
     email: record.email,
@@ -776,137 +758,6 @@ async function moveToStartById(id){
   renderKPI();
 }
  
-
-/* ================= ID HELPER FOR STAGE MOVEMENT ================= */
-
-function findIndexById(stage,id){
-  return DB[stage].findIndex(r => r.id == id);
-}
-
-async function moveToInterviewById(id){
-
-  const record = DB.submission.find(r => r.id == id);
-  if(!record) return;
-
-  const base = {
-    interview_scheduled_on: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
-
-  const { error } = await sb.from("interview").insert([base]);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-
-
-  await fetchAllData();
-  renderStage("interview","interviewBody");
-  renderKPI();
-}
-
-async function moveToPlacementById(id){
-
-  const record = DB.interview.find(r => String(r.id) === String(id));
-
-
-
-  const base = {
-    placement_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
-
-  const { error } = await sb.from("placement").insert([base]);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-
-  await fetchAllData();
-  renderStage("placement","placementBody");
-  renderKPI();
-}
-async function moveToStartById(id){
-
-  const record = DB.placement.find(r => String(r.id) === String(id));
-  if(!record) return;
-
-  const base = {
-    start_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
-
-  const { error } = await sb.from("start").insert([base]);
-
-
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-
-
-  await fetchAllData();
-  renderStage("start","startBody");
-  renderKPI();
-}
-
-async function moveProposalToInterview(id){
-
-  const record = DB.proposal.find(r => String(r.id) === String(id));
-  if(!record) return;
-
-  const base = {
-    interview_scheduled_on: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
-
-  const { error } = await sb.from("interview").insert([base]);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  // ✅ NO DELETE (copy only)
-
-  await fetchAllData();
-  renderStage("interview","interviewBody");
-  renderKPI();
-}
 
 /* ================= STAGE RENDER ================= */
 
@@ -1040,7 +891,7 @@ function addTask(){
   if(!taskTitle.value || !taskDue.value) return;
 
   DB.tasks.unshift({
-    id: uid(),
+    
     title: taskTitle.value,
     due: taskDue.value,
     status: "pending"
@@ -1097,7 +948,7 @@ function addMeeting(){
   if(!meetingDate.value || !meetingTitle.value) return;
 
   DB.meetings.unshift({
-    id: uid(),
+   
     date: meetingDate.value,
     title: meetingTitle.value,
     notes: meetingNotes.value
@@ -1195,8 +1046,6 @@ async function fetchAllData(){
 async function loadDashboard(){
 
   await fetchAllData();
-
-  ensureIds();   
 
   renderJD();
   populateRequirementDropdown(); 
