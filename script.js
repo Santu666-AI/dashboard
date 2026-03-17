@@ -433,6 +433,40 @@ function parseResume(){
   switchSection("daily");
 }
 
+/* ================= UPDATE DATE (INLINE EDIT) ================= */
+
+async function updateDate(stage, id, value){
+  if(!id) return;
+
+  const dateFieldMap = {
+    daily:      "entry_date",
+    submission: "submission_date",
+    proposal:   "proposal_date",
+    interview:  "interview_scheduled_on",
+    placement:  "placement_date",
+    start:      "start_date"
+  };
+
+  const field = dateFieldMap[stage];
+  if(!field) return;
+
+  const updateObj = {};
+  updateObj[field] = value;
+
+  const { error } = await sb.from(stage).update(updateObj).eq("id", id);
+
+  if(error){
+    alert("Date update failed: " + error.message);
+    return;
+  }
+
+  /* Update local DB so KPI re-render is accurate */
+  const record = DB[stage] ? DB[stage].find(r => r.id === id) : null;
+  if(record) record[field] = value;
+
+  renderKPI();
+}
+
 /* ================= UPDATE NOTE (INLINE EDIT) ================= */
 
 async function updateNote(stage, index, value){
@@ -564,7 +598,12 @@ function renderDaily(){
         dailyBody.innerHTML += `
           <tr>
             <td>${index+1}</td>
-            <td>${r.entry_date}</td>
+            <td>
+              <input type="date"
+                value="${r.entry_date||''}"
+                style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 6px;font-size:12px;width:130px;"
+                onchange="updateDate('daily','${r.id}',this.value)">
+            </td>
 
             <td>
             <a href="#" onclick="viewResume(${DB.daily.indexOf(r)})" style="color:#1a73e8;font-weight:600;text-decoration:none;">
@@ -580,8 +619,10 @@ function renderDaily(){
             <td>${r.visa||""}</td>
             <td>${r.source||""}</td>
             <td>
-            <input value="${r.notes||""}"
-            onchange="updateNote('daily',${DB.daily.indexOf(r)},this.value)">
+            <input value="${r.notes||''}"
+              placeholder="Add notes..."
+              style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:160px;"
+              onchange="updateNoteById('daily','${r.id}',this.value)">
             </td>
 
             <td style="font-weight:bold;">
@@ -636,7 +677,7 @@ async function moveDailyToSubmission(id){
     client: record.client,
     location: record.location,
     visa: record.visa,
-    notes: record.notes
+    notes: ""
   };
 
   const { error: insertError } =
@@ -659,44 +700,95 @@ async function moveDailyToSubmission(id){
 }
 
 
-/* ✅ DAILY → PROPOSAL (optional, keep or remove based on your flow) */
+/* ✅ DAILY → PROPOSAL with modal for Program & PW Name */
 async function moveDailyToProposal(id){
+  const { data } = await sb.from("daily").select("*").eq("id", id).single();
+  if(!data){ alert("Record not found"); return; }
+  showProposalModal(data);
+}
 
-  const { data } = await sb
-    .from("daily")
-    .select("*")
-    .eq("id", id)
-    .single();
+function showProposalModal(data){
+  const existing = document.getElementById("proposalModal");
+  if(existing) existing.remove();
 
-  if(!data){
-    alert("Record not found");
+  const modal = document.createElement("div");
+  modal.id = "proposalModal";
+  modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;";
+
+  modal.innerHTML = `
+    <div style="background:#1e293b;border:1px solid #1f2a3a;border-radius:14px;padding:30px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <h3 style="margin-bottom:6px;color:#f1f5f9;font-size:16px;">Send to Proposal</h3>
+      <p style="color:#94a3b8;font-size:13px;margin-bottom:20px;">Candidate: <strong style="color:#f1f5f9;">${data.name}</strong></p>
+
+      <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:6px;">Program Name</label>
+      <input id="modalProgram" placeholder="Enter Program Name"
+        style="width:100%;padding:10px;background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:8px;font-size:13px;margin-bottom:14px;">
+
+      <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:6px;">PW Name</label>
+      <input id="modalPWName" placeholder="Enter PW Name"
+        style="width:100%;padding:10px;background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:8px;font-size:13px;margin-bottom:20px;">
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="closeProposalModal()"
+          style="background:#334155;padding:8px 18px;border-radius:8px;border:none;color:#f1f5f9;cursor:pointer;font-size:13px;">
+          Cancel
+        </button>
+        <button onclick="submitProposal('${data.id}')"
+          style="background:#3b82f6;padding:8px 18px;border-radius:8px;border:none;color:white;cursor:pointer;font-size:13px;font-weight:600;">
+          Save Proposal
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.getElementById("modalProgram").focus();
+}
+
+function closeProposalModal(){
+  const modal = document.getElementById("proposalModal");
+  if(modal) modal.remove();
+}
+
+async function submitProposal(dailyId){
+  const programName = document.getElementById("modalProgram").value.trim();
+  const pwName      = document.getElementById("modalPWName").value.trim();
+
+  if(!programName || !pwName){
+    alert("Please enter both Program Name and PW Name");
     return;
   }
+
+  const { data } = await sb.from("daily").select("*").eq("id", dailyId).single();
+  if(!data){ alert("Record not found"); return; }
 
   const payload = {
     proposal_date: today(),
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    requirement: data.requirement,
-    client: data.client,
-    location: data.location,
-    visa: data.visa,
-    notes: data.notes
+    name:         data.name,
+    email:        data.email,
+    phone:        data.phone,
+    requirement:  data.requirement,
+    client:       data.client,
+    location:     data.location,
+    visa:         data.visa,
+    notes:        "",
+    program_name: programName,
+    pw_name:      pwName
   };
 
   const { error } = await sb.from("proposal").insert([payload]);
+  if(error){ alert(error.message); return; }
 
-  if(error){
-    alert(error.message);
-    return;
-  }
-
+  closeProposalModal();
   await fetchAllData();
   renderStage("proposal","proposalBody");
   renderKPI();
   switchSection("proposal");
 }
+
+window.submitProposal     = submitProposal;
+window.closeProposalModal = closeProposalModal;
+window.showProposalModal  = showProposalModal;
 
 
 /* ✅ SUBMISSION → INTERVIEW */
@@ -726,7 +818,7 @@ async function moveToInterviewById(id){
     client: record.client,
     location: record.location,
     visa: record.visa,
-    notes: record.notes
+    notes: ""
   };
 
   const { error: insertError } =
@@ -772,7 +864,7 @@ async function moveToPlacementById(id){
     client: record.client,
     location: record.location,
     visa: record.visa,
-    notes: record.notes
+    notes: ""
   };
 
   await sb.from("placement").insert([payload]);
@@ -809,7 +901,7 @@ async function moveToStartById(id){
     client: record.client,
     location: record.location,
     visa: record.visa,
-    notes: record.notes
+    notes: ""
   };
 
   await sb.from("start").insert([payload]);
@@ -865,7 +957,12 @@ function renderStage(stage, bodyId){
 
 <td>${index+1}</td>
 
-<td>${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ""}</td>
+<td>
+  <input type="date"
+    value="${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ''}"
+    style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 6px;font-size:12px;width:130px;"
+    onchange="updateDate('${stage}','${r.id}',this.value)">
+</td>
 
 <td>${r.name||""}</td>
 
@@ -890,7 +987,12 @@ row += `
 
 <td>${r.visa||""}</td>
 
-<td>${r.notes||""}</td>
+<td>
+<input value="${r.notes||''}"
+  placeholder="Add notes..."
+  style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:160px;"
+  onchange="updateNoteById('${stage}','${r.id}',this.value)">
+</td>
 
 <td>
 ${actionButtons}
@@ -1711,6 +1813,8 @@ window.moveToStartById = moveToStartById;
 
 window.deleteRowById = deleteRowById;
 window.updateNote = updateNote;
+window.updateDate = updateDate;
+window.updateNoteById = updateNoteById;
 window.deleteRow = deleteRow;
 window.viewResume = viewResume;
 window.editJD = editJD;
