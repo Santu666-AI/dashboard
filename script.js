@@ -269,9 +269,7 @@ async function deleteJD(i){
     return;
   }
 
-  await sb.from("jd")
-    .delete()
-    .eq("id", record.id);
+ 
 
   await fetchAllData();
 
@@ -733,6 +731,38 @@ async function moveToStart(i){
   renderKPI();
 }
 
+async function moveDailyToSubmission(id){
+
+  const record = DB.daily.find(r => String(r.id) === String(id));
+  if(!record) return;
+
+  const base = {
+    submission_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes,
+    ai_score: record.ai_score,
+    ai_notes: record.ai_notes
+  };
+
+  const { error } = await sb.from("submission").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+
+  await fetchAllData();
+  renderStage("submission","submissionBody");
+  renderKPI();
+}
+
 /* ================= ID HELPER FOR STAGE MOVEMENT ================= */
 
 function findIndexById(stage,id){
@@ -763,6 +793,8 @@ async function moveToInterviewById(id){
     return;
   }
 
+
+
   await fetchAllData();
   renderStage("interview","interviewBody");
   renderKPI();
@@ -770,8 +802,9 @@ async function moveToInterviewById(id){
 
 async function moveToPlacementById(id){
 
-  const record = DB.interview.find(r => r.id == id);
-  if(!record) return;
+  const record = DB.interview.find(r => String(r.id) === String(id));
+
+
 
   const base = {
     placement_date: today(),
@@ -792,13 +825,14 @@ async function moveToPlacementById(id){
     return;
   }
 
+
   await fetchAllData();
   renderStage("placement","placementBody");
   renderKPI();
 }
 async function moveToStartById(id){
 
-  const record = DB.placement.find(r => r.id == id);
+  const record = DB.placement.find(r => String(r.id) === String(id));
   if(!record) return;
 
   const base = {
@@ -815,25 +849,24 @@ async function moveToStartById(id){
 
   const { error } = await sb.from("start").insert([base]);
 
+
+
   if(error){
     alert(error.message);
     return;
   }
+
+
 
   await fetchAllData();
   renderStage("start","startBody");
   renderKPI();
 }
 
-
-/* ADD THIS FUNCTION RIGHT HERE */
-
 async function moveProposalToInterview(id){
 
-  const i = findIndexById("proposal", id);
-  if(i === -1) return;
-
-  const record = DB.proposal[i];
+  const record = DB.proposal.find(r => String(r.id) === String(id));
+  if(!record) return;
 
   const base = {
     interview_scheduled_on: today(),
@@ -854,11 +887,11 @@ async function moveProposalToInterview(id){
     return;
   }
 
+  // ✅ NO DELETE (copy only)
+
   await fetchAllData();
   renderStage("interview","interviewBody");
   renderKPI();
-  switchSection("interview");
-
 }
 
 /* ================= STAGE RENDER ================= */
@@ -1454,11 +1487,7 @@ async function deleteRow(stage,index){
   const record = DB[stage][index];
   if(!record || !record.id) return;
 
-  await sb
-    .from(stage)
-    .delete()
-    .eq("id", record.id);
-
+  
   await fetchAllData();
 
   renderDaily();
@@ -1711,3 +1740,16 @@ document.addEventListener("click", function(e){
   }
 
 });
+
+
+// ✅ MAKE FUNCTIONS GLOBAL (IMPORTANT)
+
+window.moveDailyToSubmission = moveDailyToSubmission;
+window.moveDailyToProposal = moveDailyToProposal;
+
+window.moveToInterviewById = moveToInterviewById;
+window.moveProposalToInterview = moveProposalToInterview;
+
+window.moveToPlacementById = moveToPlacementById;
+window.moveToStartById = moveToStartById;
+
