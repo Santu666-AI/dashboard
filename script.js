@@ -1629,7 +1629,6 @@ window.moveDailyToSubmission = moveDailyToSubmission;
 window.moveDailyToProposal = moveDailyToProposal;
 
 window.moveToInterviewById = moveToInterviewById;
-window.moveProposalToInterview = moveProposalToInterview;
 
 window.moveToPlacementById = moveToPlacementById;
 window.moveToStartById = moveToStartById;
