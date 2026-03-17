@@ -564,8 +564,8 @@ function renderDaily(){
     });
 }
 
+/* ================= STAGE MOVEMENT (FINAL CLEAN ARCHITECTURE) ================= */
 
-/* ================= STAGE MOVEMENT (FINAL WORKING VERSION) ================= */
 
 /* ✅ DAILY → SUBMISSION */
 async function moveDailyToSubmission(id){
@@ -581,9 +581,17 @@ async function moveDailyToSubmission(id){
     return;
   }
 
-  const payload = {...data};
- 
-  payload.submission_date = today();
+  const payload = {
+    submission_date: today(),
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    requirement: data.requirement,
+    client: data.client,
+    location: data.location,
+    visa: data.visa,
+    notes: data.notes
+  };
 
   const { error } = await sb.from("submission").insert([payload]);
 
@@ -599,7 +607,7 @@ async function moveDailyToSubmission(id){
 }
 
 
-/* ✅ DAILY → PROPOSAL */
+/* ✅ DAILY → PROPOSAL (optional, keep or remove based on your flow) */
 async function moveDailyToProposal(id){
 
   const { data } = await sb
@@ -613,9 +621,17 @@ async function moveDailyToProposal(id){
     return;
   }
 
-  const payload = {...data};
-
-  payload.proposal_date = today();
+  const payload = {
+    proposal_date: today(),
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    requirement: data.requirement,
+    client: data.client,
+    location: data.location,
+    visa: data.visa,
+    notes: data.notes
+  };
 
   const { error } = await sb.from("proposal").insert([payload]);
 
@@ -645,9 +661,17 @@ async function moveToInterviewById(id){
     return;
   }
 
-  const payload = {...data};
-
-  payload.interview_scheduled_on = today();
+  const payload = {
+    interview_scheduled_on: today(),
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    requirement: data.requirement,
+    client: data.client,
+    location: data.location,
+    visa: data.visa,
+    notes: data.notes
+  };
 
   const { error } = await sb.from("interview").insert([payload]);
 
@@ -677,9 +701,17 @@ async function moveToPlacementById(id){
     return;
   }
 
-  const payload = {...data};
-
-  payload.placement_date = today();
+  const payload = {
+    placement_date: today(),
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    requirement: data.requirement,
+    client: data.client,
+    location: data.location,
+    visa: data.visa,
+    notes: data.notes
+  };
 
   const { error } = await sb.from("placement").insert([payload]);
 
@@ -709,9 +741,17 @@ async function moveToStartById(id){
     return;
   }
 
-  const payload = {...data};
-
-  payload.start_date = today();
+  const payload = {
+    start_date: today(),
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    requirement: data.requirement,
+    client: data.client,
+    location: data.location,
+    visa: data.visa,
+    notes: data.notes
+  };
 
   const { error } = await sb.from("start").insert([payload]);
 
