@@ -137,7 +137,12 @@ function today(){
 
 /* ================= JD ================= */
 
+let _addJDLock = false;
+
 async function addJD(){
+
+  if(_addJDLock) return;
+  _addJDLock = true;
 
   const dateEl   = document.getElementById("jdDate");
   const nvrEl    = document.getElementById("jdNvr");
@@ -145,15 +150,42 @@ async function addJD(){
   const clientEl = document.getElementById("jdClient");
   const textEl   = document.getElementById("jdText");
   const statusEl = document.getElementById("jdStatus");
+  const btn      = document.querySelector("button[onclick='addJD()']");
+
+  if(btn){ btn.disabled = true; btn.textContent = "Saving..."; }
+
+  const nvrInput = nvrEl.value.trim();
 
   if(!titleEl.value.trim()){
     alert("Job Title is required");
+    _addJDLock = false;
+    if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ri-add-line"></i> Add JD'; }
     return;
   }
 
+  /* ── DUPLICATE NVR CHECK ── */
+  if(nvrInput){
+    const duplicate = DB.jd.find(j => j.nvr && j.nvr.trim().toLowerCase() === nvrInput.toLowerCase());
+    if(duplicate){
+      const proceed = confirm(
+        "⚠️ Duplicate NVR Detected!\n\n" +
+        "NVR: " + nvrInput + "\n" +
+        "Existing Job: " + (duplicate.title || "—") + "\n" +
+        "Client: " + (duplicate.client || "—") + "\n" +
+        "Status: " + (duplicate.status || "—") + "\n\n" +
+        "This NVR already exists. Do you still want to save it?"
+      );
+      if(!proceed){
+        _addJDLock = false;
+        if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ri-add-line"></i> Add JD'; }
+        return;
+      }
+    }
+  }
+
   const record = {
-    date:     dateEl.value   || today(),
-    nvr:      nvrEl.value.trim(),
+    date:     dateEl.value || today(),
+    nvr:      nvrInput || null,
     title:    titleEl.value.trim(),
     client:   clientEl.value.trim(),
     jd_text:  textEl.value.trim(),
@@ -164,6 +196,8 @@ async function addJD(){
 
   if(error){
     alert("Failed to add JD: " + error.message);
+    _addJDLock = false;
+    if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ri-add-line"></i> Add JD'; }
     return;
   }
 
@@ -178,6 +212,9 @@ async function addJD(){
   await fetchAllData();
   renderJD();
   populateRequirementDropdown();
+
+  _addJDLock = false;
+  if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ri-add-line"></i> Add JD'; }
 }
 
 async function updateJDStatus(i,val){
@@ -496,10 +533,16 @@ async function updateDate(stage, id, value){
 async function updateNote(stage, index, value){
   const record = DB[stage][index];
   if(!record || !record.id) return;
-
   record.notes = value;
-
   await sb.from(stage).update({ notes: value }).eq("id", record.id);
+}
+
+async function updateNoteById(stage, id, value){
+  if(!id) return;
+  const { error } = await sb.from(stage).update({ notes: value }).eq("id", id);
+  if(error){ console.error("Note save failed:", error.message); return; }
+  const record = DB[stage] ? DB[stage].find(r => r.id === id) : null;
+  if(record) record.notes = value;
 }
 
 /* ================= DAILY ================= */

@@ -1,476 +1,431 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
   <meta charset="UTF-8">
-  <title>NetVision ATS – Master Build</title>
-  <link rel="stylesheet" href="style.css">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NetVision ATS — Recruiting Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<!-- LOGIN SCREEN -->
-
-
-<!-- DASHBOARD WRAPPER -->
 <div id="app">
 
-  <!-- SIDEBAR -->
+  <!-- ═══════════ SIDEBAR ═══════════ -->
   <div class="sidebar">
 
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">NV</div>
+      <div>
+        <div class="sidebar-brand-name">NetVision</div>
+        <div class="sidebar-brand-sub">ATS Platform</div>
+      </div>
+    </div>
+
+    <div class="nav-label">Main</div>
+
     <a data-tab="dashboard" class="active-link">
-      <i class="ri-dashboard-fill"></i>
-      Dashboard
+      <i class="ri-dashboard-3-line"></i> Dashboard
+    </a>
+    <a data-tab="productivity">
+      <i class="ri-bar-chart-box-line"></i> Productivity
     </a>
 
-    <a data-tab="productivity">
-      <i class="ri-bar-chart-fill"></i>
-      Productivity
-    </a>
+    <div class="nav-label">Pipeline</div>
 
     <a data-tab="jd">
-      <i class="ri-briefcase-fill"></i>
-      JD
+      <i class="ri-briefcase-4-line"></i> Job Requirements
     </a>
-
     <a data-tab="resume">
-      <i class="ri-user-fill"></i>
-      Resume
+      <i class="ri-file-user-line"></i> Resume Parser
     </a>
-
     <a data-tab="daily">
-      <i class="ri-file-list-fill"></i>
-      Daily
+      <i class="ri-contacts-line"></i> Daily Tracker
     </a>
-
     <a data-tab="submission">
-      <i class="ri-upload-2-fill"></i>
-      Submission
+      <i class="ri-send-plane-line"></i> Submissions
     </a>
-
     <a data-tab="proposal">
-      <i class="ri-draft-fill"></i>
-      Proposal
+      <i class="ri-draft-line"></i> Proposals
     </a>
-
     <a data-tab="interview">
-      <i class="ri-calendar-fill"></i>
-      Interview
+      <i class="ri-calendar-check-line"></i> Interviews
     </a>
-
     <a data-tab="placement">
-      <i class="ri-award-fill"></i>
-      Placement
+      <i class="ri-award-line"></i> Placements
     </a>
-
     <a data-tab="start">
-      <i class="ri-rocket-fill"></i>
-      Start
+      <i class="ri-rocket-line"></i> Starts
     </a>
 
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">NR</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">NetVision</div>
+          <div class="sidebar-user-role">Recruiter</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- MAIN CONTENT -->
+  <!-- ═══════════ MAIN ═══════════ -->
   <div class="main">
-  
 
-<!-- ================= DASHBOARD ================= -->
+    <!-- ════ DASHBOARD ════ -->
+    <div id="dashboard" class="section active">
+      <h2>Dashboard Overview</h2>
 
-<div id="dashboard" class="section active">
-  <h2>Dashboard Overview</h2>
+      <div class="kpi-cards">
+        <div class="card">Submissions<span id="kpiSub">0</span></div>
+        <div class="card">Interviews<span id="kpiInt">0</span></div>
+        <div class="card">Placements<span id="kpiPlace">0</span></div>
+        <div class="card">Starts<span id="kpiStart">0</span></div>
+      </div>
 
-  <div class="kpi-cards">
-    <div class="card">Submissions <span id="kpiSub">0</span></div>
-    <div class="card">Interviews <span id="kpiInt">0</span></div>
-    <div class="card">Placements <span id="kpiPlace">0</span></div>
-    <div class="card">Starts <span id="kpiStart">0</span></div>
-  </div>
-
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Month</th>
-          <th>Sub</th>
-          <th>Int</th>
-          <th>Place</th>
-          <th>Start</th>
-        </tr>
-      </thead>
-      <tbody id="monthlyBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ================= PRODUCTIVITY ================= -->
-
-<div id="productivity" class="section">
-
-  <h2>Productivity Center</h2>
-
-  <!-- TASK MANAGER -->
-  <div class="panel">
-    <h3>🔔 Task Manager</h3>
-
-    <div class="form-row">
-      <input id="taskTitle" placeholder="Task title">
-      <input type="date" id="taskDue">
-      <button onclick="addTask()">Add Task</button>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Submissions</th>
+              <th>Interviews</th>
+              <th>Placements</th>
+              <th>Starts</th>
+            </tr>
+          </thead>
+          <tbody id="monthlyBody"></tbody>
+        </table>
+      </div>
     </div>
 
-    <div id="taskList"></div>
-  </div>
+    <!-- ════ PRODUCTIVITY ════ -->
+    <div id="productivity" class="section">
+      <h2>Productivity Center</h2>
 
+      <div class="panel">
+        <h3><i class="ri-task-line"></i> Task Manager</h3>
+        <div class="form-row">
+          <input id="taskTitle" placeholder="Task title">
+          <input type="date" id="taskDue">
+          <button onclick="addTask()">Add Task</button>
+        </div>
+        <div id="taskList"></div>
+      </div>
 
-  <!-- MEETING NOTES -->
-  <div class="panel">
-    <h3>📅 Meeting Notes</h3>
+      <div class="panel">
+        <h3><i class="ri-calendar-event-line"></i> Meeting Notes</h3>
+        <div class="form-row">
+          <input type="date" id="meetingDate">
+          <input id="meetingTitle" placeholder="Meeting title">
+        </div>
+        <textarea id="meetingNotes" placeholder="Write detailed meeting notes here..."></textarea>
+        <button onclick="addMeeting()">Add Meeting</button>
+        <div id="meetingList"></div>
+      </div>
 
-    <div class="form-row">
-      <input type="date" id="meetingDate">
-      <input id="meetingTitle" placeholder="Meeting title">
+      <div class="panel">
+        <h3><i class="ri-time-line"></i> Weekly / Monthly Reminders</h3>
+        <div class="form-row">
+          <input id="recTitle" placeholder="Task name (e.g. Send Monthly Report)">
+          <input type="date" id="recDate">
+        </div>
+        <div class="form-row">
+          <select id="recRepeat">
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Bi-Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+          <select id="recReminder">
+            <option value="2">Remind 2 days before</option>
+            <option value="1">Remind 1 day before</option>
+          </select>
+          <button onclick="addRecurringTask()">Add Reminder</button>
+        </div>
+        <div id="recurringList"></div>
+      </div>
     </div>
 
-    <textarea id="meetingNotes" placeholder="Write detailed meeting notes here..."></textarea>
+    <!-- ════ JD ════ -->
+    <div id="jd" class="section">
+      <h2>Job Requirements</h2>
 
-    <button onclick="addMeeting()">Add Meeting</button>
+      <div class="entry-panel">
+        <div class="entry-panel-label">Add New Job Requirement</div>
+        <div class="form-row">
+          <input type="date" id="jdDate" style="max-width:160px;">
+          <input id="jdNvr" placeholder="NVR #" style="max-width:140px;">
+          <input id="jdTitle" placeholder="Job Title">
+          <input id="jdClient" placeholder="Client">
+          <select id="jdStatus" style="max-width:130px;">
+            <option>Active</option>
+            <option>Hold</option>
+            <option>Closed</option>
+          </select>
+          <button onclick="addJD()"><i class="ri-add-line"></i> Add JD</button>
+        </div>
+        <textarea id="jdText" placeholder="Paste full Job Description here..." style="margin-top:4px;"></textarea>
+      </div>
 
-    <div id="meetingList"></div>
-  </div>
-
-
-  <!-- RECURRING TASKS -->
-  <div class="panel">
-    <h3>⏰ Weekly / Monthly Task Reminders</h3>
-
-    <div class="form-row">
-      <input id="recTitle" placeholder="Task name (Example: Send Monthly Report)">
-      <input type="date" id="recDate">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>NVR</th>
+              <th>Job Title</th>
+              <th>Client</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="jdBody"></tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="form-row">
+    <!-- ════ RESUME ════ -->
+    <div id="resume" class="section">
+      <h2>Resume Parser</h2>
 
-      <select id="recRepeat">
-        <option value="weekly">Weekly</option>
-        <option value="biweekly">Bi-Weekly</option>
-        <option value="monthly">Monthly</option>
-      </select>
+      <div class="entry-panel">
+        <div class="entry-panel-label">Paste Resume Text</div>
+        <textarea id="resumeText" placeholder="Paste full resume content here..." style="min-height:160px;"></textarea>
+        <button onclick="parseResume()" style="margin-top:12px;"><i class="ri-scan-line"></i> Parse Resume</button>
+      </div>
 
-      <select id="recReminder">
-        <option value="2">Remind 2 days before</option>
-        <option value="1">Remind 1 day before</option>
-      </select>
-
-      <button onclick="addRecurringTask()">Add Reminder</button>
-
+      <div class="entry-panel">
+        <div class="entry-panel-label">Parsed Details</div>
+        <div class="form-row">
+          <input id="resumeName" placeholder="Full Name">
+          <input id="resumeEmail" placeholder="Email Address">
+          <input id="resumePhone" placeholder="Phone Number">
+          <input id="resumeLocation" placeholder="Location">
+          <select id="resumeVisa">
+            <option>US Citizen</option>
+            <option>GC</option>
+            <option>H1B</option>
+            <option>OPT</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div id="recurringList"></div>
+    <!-- ════ DAILY ════ -->
+    <div id="daily" class="section">
+      <h2>Daily Tracker</h2>
 
-  </div>
+      <div class="entry-panel">
+        <div class="entry-panel-label">Add Candidate</div>
+        <div class="form-row">
+          <input type="date" id="dailyDate" style="max-width:160px;">
+          <input id="dailyName" placeholder="Full Name">
+          <input id="dailyEmail" placeholder="Email Address">
+          <input id="dailyPhone" placeholder="Phone Number">
+        </div>
+        <div class="form-row">
+          <select id="dailyRequirement" onchange="autoFillClient()"></select>
+          <input id="dailyClient" placeholder="Client" readonly>
+          <input id="dailyLocation" placeholder="Location">
+          <select id="dailyVisa">
+            <option>US Citizen</option>
+            <option>GC</option>
+            <option>H1B</option>
+            <option>OPT</option>
+          </select>
+          <select id="dailySource">
+            <option value="">Source</option>
+            <option>Dice</option>
+            <option>Monster</option>
+            <option>CB</option>
+            <option>LinkedIn</option>
+            <option>Indeed</option>
+            <option>Referral</option>
+          </select>
+        </div>
+        <textarea id="dailyNotes" placeholder="Notes (optional)..."></textarea>
+        <button onclick="saveDaily()" style="margin-top:12px;"><i class="ri-save-line"></i> Save Candidate</button>
+      </div>
 
-</div>
+      <div class="table-scroll-wrapper">
+        <div class="table-scroll-top"><div></div></div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Requirement</th>
+                <th>Client</th>
+                <th>Location</th>
+                <th>Visa</th>
+                <th>Source</th>
+                <th>Notes</th>
+                <th>AI Score</th>
+                <th>AI Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="dailyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
+    <!-- ════ SUBMISSION ════ -->
+    <div id="submission" class="section">
+      <h2>Submissions</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Sub Date</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Requirement</th>
+              <th>Client</th>
+              <th>Location</th>
+              <th>Visa</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="submissionBody"></tbody>
+        </table>
+      </div>
+    </div>
 
-<!-- ================= JD ================= -->
+    <!-- ════ PROPOSAL ════ -->
+    <div id="proposal" class="section">
+      <h2>Proposals</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Proposal Date</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Requirement</th>
+              <th>Client</th>
+              <th>Program</th>
+              <th>PW Name</th>
+              <th>Location</th>
+              <th>Visa</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="proposalBody"></tbody>
+        </table>
+      </div>
+    </div>
 
-<div id="jd" class="section">
-  <h2>Job Requirements</h2>
+    <!-- ════ INTERVIEW ════ -->
+    <div id="interview" class="section">
+      <h2>Interviews</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Interview Date</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Requirement</th>
+              <th>Client</th>
+              <th>Location</th>
+              <th>Visa</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="interviewBody"></tbody>
+        </table>
+      </div>
+    </div>
 
-  <div class="form-row">
-    <input type="date" id="jdDate">
-    <input id="jdNvr" placeholder="NVR">
-    <input id="jdTitle" placeholder="Job Title">
-    <input id="jdClient" placeholder="Client">
-<textarea id="jdText" placeholder="Paste Full JD Here..." style="width:100%;height:120px;"></textarea>
-    <select id="jdStatus">
-      <option>Active</option>
-      <option>Hold</option>
-      <option>Closed</option>
-    </select>
-    <button onclick="addJD()">Add JD</button>
-  </div>
+    <!-- ════ PLACEMENT ════ -->
+    <div id="placement" class="section">
+      <h2>Placements</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Placement Date</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Requirement</th>
+              <th>Client</th>
+              <th>Location</th>
+              <th>Visa</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="placementBody"></tbody>
+        </table>
+      </div>
+    </div>
 
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Sl</th>
-          <th>Date</th>
-          <th>NVR</th>
-          <th>Job</th>
-          <th>Client</th>
-          <th>Status</th>
-          <th>Delete</th>
-        </tr>
-      </thead>
-      <tbody id="jdBody"></tbody>
-    </table>
-  </div>
-</div>
-<!-- ================= RESUME ================= -->
+    <!-- ════ START ════ -->
+    <div id="start" class="section">
+      <h2>Starts</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Start Date</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Requirement</th>
+              <th>Client</th>
+              <th>Location</th>
+              <th>Visa</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="startBody"></tbody>
+        </table>
+      </div>
+    </div>
 
-<div id="resume" class="section">
-  <h2>Resume Parser</h2>
-
-  <textarea id="resumeText" placeholder="Paste resume content here..."></textarea>
-  <button onclick="parseResume()">Parse Resume</button>
-
-  <div class="form-row">
-    <input id="resumeName" placeholder="Name">
-    <input id="resumeEmail" placeholder="Email">
-    <input id="resumePhone" placeholder="Phone">
-    <input id="resumeLocation" placeholder="Location">
-    <select id="resumeVisa">
-      <option>US Citizen</option>
-      <option>GC</option>
-      <option>H1B</option>
-    </select>
-  </div>
-</div>
-
-<!-- ================= DAILY ================= -->
-
-<div id="daily" class="section">
-  <h2>Daily Tracker</h2>
-
-  <div class="form-row">
-    <input type="date" id="dailyDate">
-    <input id="dailyName" placeholder="Name">
-    <input id="dailyEmail" placeholder="Email">
-    <input id="dailyPhone" placeholder="Phone">
-    <select id="dailyRequirement" onchange="autoFillClient()"></select>
-    <input id="dailyClient" placeholder="Client" readonly>
-    <input id="dailyLocation" placeholder="Location">
-    <select id="dailyVisa">
-      <option>US Citizen</option>
-      <option>GC</option>
-      <option>H1B</option>
-    </select>
-  </div>
-
-  <select id="dailySource">
-    <option value="">Source</option>
-    <option>Dice</option>
-    <option>Monster</option>
-    <option>CB</option>
-    <option>Linkedin</option>
-    <option>Indeed</option>
-    <option>Referal</option>
-  </select>
-
-  <textarea id="dailyNotes" placeholder="Notes"></textarea>
-  <button onclick="saveDaily()">Save Candidate</button>
-
- <div class="table-scroll-wrapper">
-
-  <!-- TOP SCROLL BAR -->
-  <div class="table-scroll-top">
-    <div></div>
-  </div>
-
-  <!-- MAIN TABLE -->
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Sl</th>
-          <th>Date</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Req</th>
-          <th>Client</th>
-          <th>Location</th>
-          <th>Visa</th>
-          <th>Source</th>
-          <th>Notes</th>
-          <th>AI Score</th>
-          <th>AI Notes</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="dailyBody"></tbody>
-    </table>
-  </div>
-
-</div>
-</div><!-- closes #daily -->
-
-<!-- ================= SUBMISSION ================= -->
-
-<div id="submission" class="section">
-  <h2>Submissions</h2>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Sl</th>
-          <th>Submission Date</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Req</th>
-          <th>Client</th>
-          <th>Location</th>
-          <th>Visa</th>
-          <th>Notes</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="submissionBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ================= PROPOSAL ================= -->
-
-<div id="proposal" class="section">
-  <h2>Proposals</h2>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Sl</th>
-          <th>Proposal Date</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Req</th>
-          <th>Client</th>
-          <th>Program</th>
-          <th>PW Name</th>
-          <th>Location</th>
-          <th>Visa</th>
-          <th>Notes</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="proposalBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ================= INTERVIEW ================= -->
-
-<div id="interview" class="section">
-  <h2>Interviews</h2>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Sl</th>
-          <th>Interview Date</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Req</th>
-          <th>Client</th>
-          <th>Location</th>
-          <th>Visa</th>
-          <th>Notes</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="interviewBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ================= PLACEMENT ================= -->
-
-<div id="placement" class="section">
-  <h2>Placements</h2>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Sl</th>
-          <th>Placement Date</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Req</th>
-          <th>Client</th>
-          <th>Location</th>
-          <th>Visa</th>
-          <th>Notes</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="placementBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ================= START ================= -->
-
-<div id="start" class="section">
-  <h2>Starts</h2>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Sl</th>
-          <th>Start Date</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Req</th>
-          <th>Client</th>
-          <th>Location</th>
-          <th>Visa</th>
-          <th>Notes</th>
-          <th>Delete</th>
-        </tr>
-      </thead>
-      <tbody id="startBody"></tbody>
-    </table>
-  </div>
-</div>
-
-</div>
-
-</div>   <!-- closes main -->
-</div>   <!-- closes app -->
+  </div><!-- /main -->
+</div><!-- /app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 
 <script>
-
-
 window.addEventListener("load", () => {
-
-const params = new URLSearchParams(window.location.search);
-
-const name = params.get("name");
-const email = params.get("email");
-const phone = params.get("phone");
-const location = params.get("location");
-const source = params.get("source");
-
-if(!name) return;
-
-setTimeout(()=>{
-
-document.getElementById("dailyName").value = name || "";
-document.getElementById("dailyEmail").value = email || "";
-document.getElementById("dailyPhone").value = phone || "";
-document.getElementById("dailyLocation").value = location || "";
-
-if(source){
-document.getElementById("dailySource").value = source;
-}
-
-document.querySelector('[data-tab="daily"]').click();
-
-},800);
-
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get("name");
+  if(!name) return;
+  setTimeout(()=>{
+    document.getElementById("dailyName").value     = params.get("name")     || "";
+    document.getElementById("dailyEmail").value    = params.get("email")    || "";
+    document.getElementById("dailyPhone").value    = params.get("phone")    || "";
+    document.getElementById("dailyLocation").value = params.get("location") || "";
+    const src = params.get("source");
+    if(src) document.getElementById("dailySource").value = src;
+    document.querySelector('[data-tab="daily"]').click();
+  }, 800);
 });
-
 </script>
+
 </body>
 </html>
-
