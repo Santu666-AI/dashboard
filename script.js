@@ -600,6 +600,8 @@ async function moveDailyToSubmission(id){
   await fetchAllData();
   renderStage("submission","submissionBody");
   renderKPI();
+
+switchSection("submission");   // 🔥 ADD THIS
 }
 
 
@@ -633,6 +635,8 @@ async function moveDailyToProposal(id){
   await fetchAllData();
   renderStage("proposal","proposalBody");
   renderKPI();
+
+switchSection("proposal");
 }
 
 
@@ -664,39 +668,9 @@ async function moveToInterviewById(id){
   await fetchAllData();
   renderStage("interview","interviewBody");
   renderKPI();
+
+switchSection("interview");
 }
-
-
-/* ✅ PROPOSAL → INTERVIEW */
-async function moveProposalToInterview(id){
-
-  const record = DB.proposal.find(r => String(r.id) === String(id));
-  if(!record) return;
-
-  const base = {
-    interview_scheduled_on: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
-
-  const { error } = await sb.from("interview").insert([base]);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  await fetchAllData();
-  renderStage("interview","interviewBody");
-  renderKPI();
-}
-
 
 /* ✅ INTERVIEW → PLACEMENT */
 async function moveToPlacementById(id){
@@ -726,6 +700,8 @@ async function moveToPlacementById(id){
   await fetchAllData();
   renderStage("placement","placementBody");
   renderKPI();
+
+switchSection("placement");
 }
 
 
@@ -757,6 +733,8 @@ async function moveToStartById(id){
   await fetchAllData();
   renderStage("start","startBody");
   renderKPI();
+
+switchSection("start");
 }
  
 
