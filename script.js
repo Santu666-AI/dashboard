@@ -577,166 +577,16 @@ function renderDaily(){
 
 
     /* ================= STAGE MOVEMENT ================= */
+/* ================= STAGE MOVEMENT (FINAL CLEAN VERSION) ================= */
 
-async function moveToSubmission(i){
-
-  const record = DB.daily[i];
-  if(!record) return;
-
-  const base = {
-    submission_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes,
-    ai_score: record.ai_score,
-    ai_notes: record.ai_notes
-  };
-
-  const { error } = await sb.from("submission").insert([base]);
-
-  if(error){
-    alert("Submission failed: " + error.message);
-    return;
-  }
-
-  await fetchAllData();
-  renderStage("submission","submissionBody");
-  renderKPI();
-}
-
-
-async function moveToProposal(i){
-
-  const record = DB.daily[i];
-  if(!record) return;
-
-  const base = {
-    proposal_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes,
-    program_name: "",
-    pw_name: ""
-  };
-
-  const { error } = await sb.from("proposal").insert([base]);
-
-  if(error){
-    alert("Proposal insert failed: " + error.message);
-    return;
-  }
-
-  await fetchAllData();
-  renderStage("proposal","proposalBody");
-  renderKPI();
-}
-
-
-async function moveToInterview(i){
-
-  const record = DB.submission[i];
-  if(!record) return;
-
-  const base = {
-    interview_scheduled_on: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
-
-  const { error } = await sb.from("interview").insert([base]);
-
-  if(error){
-    alert("Interview insert failed: " + error.message);
-    return;
-  }
-
-  await fetchAllData();
-  renderStage("interview","interviewBody");
-  renderKPI();
-}
-
-
-async function moveToPlacement(i){
-
-  const record = DB.interview[i];
-  if(!record) return;
-
-  const base = {
-    placement_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
-
-  const { error } = await sb.from("placement").insert([base]);
-
-  if(error){
-    alert("Placement insert failed: " + error.message);
-    return;
-  }
-
-  await fetchAllData();
-  renderStage("placement","placementBody");
-  renderKPI();
-}
-
-
-async function moveToStart(i){
-
-  const record = DB.placement[i];
-  if(!record) return;
-
-  const base = {
-    start_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
-
-  const { error } = await sb.from("start").insert([base]);
-
-  if(error){
-    alert("Start insert failed: " + error.message);
-    return;
-  }
-
-  await fetchAllData();
-  renderStage("start","startBody");
-  renderKPI();
-}
-
+/* ✅ DAILY → SUBMISSION */
 async function moveDailyToSubmission(id){
 
   const record = DB.daily.find(r => String(r.id) === String(id));
   if(!record) return;
 
   const base = {
+    id: uid(),
     submission_date: today(),
     name: record.name,
     email: record.email,
@@ -757,11 +607,173 @@ async function moveDailyToSubmission(id){
     return;
   }
 
-
   await fetchAllData();
   renderStage("submission","submissionBody");
   renderKPI();
 }
+
+
+/* ✅ DAILY → PROPOSAL */
+async function moveDailyToProposal(id){
+
+  const record = DB.daily.find(r => String(r.id) === String(id));
+  if(!record) return;
+
+  const base = {
+    id: uid(),
+    proposal_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes,
+    program_name: "",
+    pw_name: ""
+  };
+
+  const { error } = await sb.from("proposal").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("proposal","proposalBody");
+  renderKPI();
+}
+
+
+/* ✅ SUBMISSION → INTERVIEW */
+async function moveToInterviewById(id){
+
+  const record = DB.submission.find(r => String(r.id) === String(id));
+  if(!record) return;
+
+  const base = {
+    id: uid(),
+    interview_scheduled_on: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
+  };
+
+  const { error } = await sb.from("interview").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("interview","interviewBody");
+  renderKPI();
+}
+
+
+/* ✅ PROPOSAL → INTERVIEW */
+async function moveProposalToInterview(id){
+
+  const record = DB.proposal.find(r => String(r.id) === String(id));
+  if(!record) return;
+
+  const base = {
+    id: uid(),
+    interview_scheduled_on: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
+  };
+
+  const { error } = await sb.from("interview").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("interview","interviewBody");
+  renderKPI();
+}
+
+
+/* ✅ INTERVIEW → PLACEMENT */
+async function moveToPlacementById(id){
+
+  const record = DB.interview.find(r => String(r.id) === String(id));
+  if(!record) return;
+
+  const base = {
+    id: uid(),
+    placement_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
+  };
+
+  const { error } = await sb.from("placement").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("placement","placementBody");
+  renderKPI();
+}
+
+
+/* ✅ PLACEMENT → START */
+async function moveToStartById(id){
+
+  const record = DB.placement.find(r => String(r.id) === String(id));
+  if(!record) return;
+
+  const base = {
+    id: uid(),
+    start_date: today(),
+    name: record.name,
+    email: record.email,
+    phone: record.phone,
+    requirement: record.requirement,
+    client: record.client,
+    location: record.location,
+    visa: record.visa,
+    notes: record.notes
+  };
+
+  const { error } = await sb.from("start").insert([base]);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await fetchAllData();
+  renderStage("start","startBody");
+  renderKPI();
+}
+ 
 
 /* ================= ID HELPER FOR STAGE MOVEMENT ================= */
 
