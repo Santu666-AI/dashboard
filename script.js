@@ -440,7 +440,8 @@ async function saveDaily(){
   }
 
   /* ✅ CREATE DAILY RECORD */
-  const record = {
+ const record = {
+  id: crypto.randomUUID(), 
   entry_date: today(),
   name: dailyName.value.trim(),
   email: dailyEmail.value.trim(),
