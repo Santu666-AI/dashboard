@@ -156,12 +156,17 @@ const record = {
   populateRequirementDropdown();
 }
 
-function updateJDStatus(i,val){
-  DB.jd[i].status = val;
-  saveAndRender();
+async function updateJDStatus(i,val){
+  const record = DB.jd[i];
+  record.status = val;
 
+  if(record.id){
+    await sb.from("jd").update({ status: val }).eq("id", record.id);
+  }
+
+  await fetchAllData();
+  renderJD();
   populateRequirementDropdown();
-
 }
 
 function renderJD(){
@@ -242,10 +247,27 @@ function updateJDField(index,field,value){
   DB.jd[index][field] = value;
 }
 
-function saveJDRow(index){
-  DB.jd[index].isEditing = false;
-  saveDB();
+async function saveJDRow(index){
+  const record = DB.jd[index];
+  record.isEditing = false;
+
+  if(record.id){
+    const { error } = await sb.from("jd").update({
+      nvr: record.nvr,
+      title: record.title,
+      client: record.client,
+      status: record.status
+    }).eq("id", record.id);
+
+    if(error){
+      alert("Save failed: " + error.message);
+      return;
+    }
+  }
+
+  await fetchAllData();
   renderJD();
+  populateRequirementDropdown();
 }
 
 async function deleteJD(i){
@@ -257,7 +279,14 @@ async function deleteJD(i){
     return;
   }
 
- 
+  if(!confirm("Delete this JD?")) return;
+
+  const { error } = await sb.from("jd").delete().eq("id", record.id);
+
+  if(error){
+    alert("Delete failed: " + error.message);
+    return;
+  }
 
   await fetchAllData();
 
@@ -402,6 +431,17 @@ function parseResume(){
   alert("✅ Enterprise Resume Parsed Successfully");
 
   switchSection("daily");
+}
+
+/* ================= UPDATE NOTE (INLINE EDIT) ================= */
+
+async function updateNote(stage, index, value){
+  const record = DB[stage][index];
+  if(!record || !record.id) return;
+
+  record.notes = value;
+
+  await sb.from(stage).update({ notes: value }).eq("id", record.id);
 }
 
 /* ================= DAILY ================= */
@@ -854,7 +894,7 @@ row += `
 
 <td>
 ${actionButtons}
-<button onclick="deleteRow('${stage}',DB['${stage}'].findIndex(x=>x.id==='${r.id}'))">Del</button>
+<button onclick="deleteRowById('${stage}','${r.id}')">Del</button>
 </td>
 
 </tr>
@@ -1368,7 +1408,13 @@ async function deleteRow(stage,index){
   const record = DB[stage][index];
   if(!record || !record.id) return;
 
-  
+  const { error } = await sb.from(stage).delete().eq("id", record.id);
+
+  if(error){
+    alert("Delete failed: " + error.message);
+    return;
+  }
+
   await fetchAllData();
 
   renderDaily();
@@ -1378,6 +1424,26 @@ async function deleteRow(stage,index){
   renderStage("placement","placementBody");
   renderStage("start","startBody");
 
+  renderKPI();
+}
+async function deleteRowById(stage, id){
+  if(!confirm("Delete this record?")) return;
+
+  const { error } = await sb.from(stage).delete().eq("id", id);
+
+  if(error){
+    alert("Delete failed: " + error.message);
+    return;
+  }
+
+  await fetchAllData();
+
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
   renderKPI();
 }
 async function viewResume(index){
@@ -1632,4 +1698,15 @@ window.moveToInterviewById = moveToInterviewById;
 
 window.moveToPlacementById = moveToPlacementById;
 window.moveToStartById = moveToStartById;
+
+window.deleteRowById = deleteRowById;
+window.updateNote = updateNote;
+window.deleteRow = deleteRow;
+window.viewResume = viewResume;
+window.editJD = editJD;
+window.saveJDRow = saveJDRow;
+window.deleteJD = deleteJD;
+window.viewJD = viewJD;
+window.updateJDField = updateJDField;
+window.updateJDStatus = updateJDStatus;
 
