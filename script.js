@@ -1429,10 +1429,20 @@ async function deleteRow(stage,index){
 async function deleteRowById(stage, id){
   if(!confirm("Delete this record?")) return;
 
-  const { error } = await sb.from(stage).delete().eq("id", id);
+  if(!id || id === "undefined" || id === "null"){
+    alert("Cannot delete: record has no valid ID. Please refresh and try again.");
+    return;
+  }
+
+  const { data, error, status } = await sb.from(stage).delete().eq("id", id).select();
 
   if(error){
-    alert("Delete failed: " + error.message);
+    alert("Delete failed (" + status + "): " + error.message + "\n\nIf 403/RLS error: enable DELETE policy in Supabase for table: " + stage);
+    return;
+  }
+
+  if(!data || data.length === 0){
+    alert("Nothing was deleted.\n\nLikely cause: Supabase Row Level Security (RLS) is blocking DELETE.\nFix: In Supabase → Table Editor → " + stage + " → RLS Policies → Add policy: allow DELETE for anon role.");
     return;
   }
 
