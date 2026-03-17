@@ -139,19 +139,43 @@ function today(){
 
 async function addJD(){
 
-const record = {
-  date: jdDate.value || today(),
-  nvr: jdNvr.value.trim(),
-  title: jdTitle.value.trim(),
-  client: jdClient.value.trim(),
-  jd_text: jdText.value.trim(),
-  status: jdStatus.value
-};
+  const dateEl   = document.getElementById("jdDate");
+  const nvrEl    = document.getElementById("jdNvr");
+  const titleEl  = document.getElementById("jdTitle");
+  const clientEl = document.getElementById("jdClient");
+  const textEl   = document.getElementById("jdText");
+  const statusEl = document.getElementById("jdStatus");
 
-  await sb.from("jd").insert([record]);
+  if(!titleEl.value.trim()){
+    alert("Job Title is required");
+    return;
+  }
+
+  const record = {
+    date:     dateEl.value   || today(),
+    nvr:      nvrEl.value.trim(),
+    title:    titleEl.value.trim(),
+    client:   clientEl.value.trim(),
+    jd_text:  textEl.value.trim(),
+    status:   statusEl.value
+  };
+
+  const { error } = await sb.from("jd").insert([record]);
+
+  if(error){
+    alert("Failed to add JD: " + error.message);
+    return;
+  }
+
+  /* Clear form */
+  dateEl.value   = "";
+  nvrEl.value    = "";
+  titleEl.value  = "";
+  clientEl.value = "";
+  textEl.value   = "";
+  statusEl.value = "Active";
 
   await fetchAllData();
-
   renderJD();
   populateRequirementDropdown();
 }
