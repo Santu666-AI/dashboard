@@ -576,7 +576,9 @@ function renderDaily(){
 }
 
 
-    /* ================= STAGE MOVEMENT ================= */
+
+
+
 /* ================= STAGE MOVEMENT (FINAL CLEAN VERSION) ================= */
 
 /* ✅ DAILY → SUBMISSION */
