@@ -565,32 +565,27 @@ function renderDaily(){
 }
 
 
-
-
-
-/* ================= STAGE MOVEMENT (FINAL CLEAN VERSION) ================= */
+/* ================= STAGE MOVEMENT (FINAL WORKING VERSION) ================= */
 
 /* ✅ DAILY → SUBMISSION */
 async function moveDailyToSubmission(id){
 
-  const record = DB.daily.find(r => String(r.id) === String(id));
-  if(!record) return;
+  const { data } = await sb
+    .from("daily")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  const base = {
-    submission_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes,
-    ai_score: record.ai_score,
-    ai_notes: record.ai_notes
-  };
+  if(!data){
+    alert("Record not found");
+    return;
+  }
 
-  const { error } = await sb.from("submission").insert([base]);
+  const payload = {...data};
+ 
+  payload.submission_date = today();
+
+  const { error } = await sb.from("submission").insert([payload]);
 
   if(error){
     alert(error.message);
@@ -600,32 +595,29 @@ async function moveDailyToSubmission(id){
   await fetchAllData();
   renderStage("submission","submissionBody");
   renderKPI();
-
-switchSection("submission");   // 🔥 ADD THIS
+  switchSection("submission");
 }
 
 
 /* ✅ DAILY → PROPOSAL */
 async function moveDailyToProposal(id){
 
-  const record = DB.daily.find(r => String(r.id) === String(id));
-  if(!record) return;
+  const { data } = await sb
+    .from("daily")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  const base = {
-    proposal_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes,
-    program_name: "",
-    pw_name: ""
-  };
+  if(!data){
+    alert("Record not found");
+    return;
+  }
 
-  const { error } = await sb.from("proposal").insert([base]);
+  const payload = {...data};
+
+  payload.proposal_date = today();
+
+  const { error } = await sb.from("proposal").insert([payload]);
 
   if(error){
     alert(error.message);
@@ -635,30 +627,29 @@ async function moveDailyToProposal(id){
   await fetchAllData();
   renderStage("proposal","proposalBody");
   renderKPI();
-
-switchSection("proposal");
+  switchSection("proposal");
 }
 
 
 /* ✅ SUBMISSION → INTERVIEW */
 async function moveToInterviewById(id){
 
-  const record = DB.submission.find(r => String(r.id) === String(id));
-  if(!record) return;
+  const { data } = await sb
+    .from("submission")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  const base = {
-    interview_scheduled_on: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
+  if(!data){
+    alert("Record not found");
+    return;
+  }
 
-  const { error } = await sb.from("interview").insert([base]);
+  const payload = {...data};
+
+  payload.interview_scheduled_on = today();
+
+  const { error } = await sb.from("interview").insert([payload]);
 
   if(error){
     alert(error.message);
@@ -668,29 +659,29 @@ async function moveToInterviewById(id){
   await fetchAllData();
   renderStage("interview","interviewBody");
   renderKPI();
-
-switchSection("interview");
+  switchSection("interview");
 }
+
 
 /* ✅ INTERVIEW → PLACEMENT */
 async function moveToPlacementById(id){
 
-  const record = DB.interview.find(r => String(r.id) === String(id));
-  if(!record) return;
+  const { data } = await sb
+    .from("interview")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  const base = {
-    placement_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
+  if(!data){
+    alert("Record not found");
+    return;
+  }
 
-  const { error } = await sb.from("placement").insert([base]);
+  const payload = {...data};
+
+  payload.placement_date = today();
+
+  const { error } = await sb.from("placement").insert([payload]);
 
   if(error){
     alert(error.message);
@@ -700,30 +691,29 @@ async function moveToPlacementById(id){
   await fetchAllData();
   renderStage("placement","placementBody");
   renderKPI();
-
-switchSection("placement");
+  switchSection("placement");
 }
 
 
 /* ✅ PLACEMENT → START */
 async function moveToStartById(id){
 
-  const record = DB.placement.find(r => String(r.id) === String(id));
-  if(!record) return;
+  const { data } = await sb
+    .from("placement")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  const base = {
-    start_date: today(),
-    name: record.name,
-    email: record.email,
-    phone: record.phone,
-    requirement: record.requirement,
-    client: record.client,
-    location: record.location,
-    visa: record.visa,
-    notes: record.notes
-  };
+  if(!data){
+    alert("Record not found");
+    return;
+  }
 
-  const { error } = await sb.from("start").insert([base]);
+  const payload = {...data};
+
+  payload.start_date = today();
+
+  const { error } = await sb.from("start").insert([payload]);
 
   if(error){
     alert(error.message);
@@ -733,8 +723,7 @@ async function moveToStartById(id){
   await fetchAllData();
   renderStage("start","startBody");
   renderKPI();
-
-switchSection("start");
+  switchSection("start");
 }
  
 
