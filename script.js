@@ -489,9 +489,48 @@ function parseResume(){
   dailyLocation.value = locationFound;
   if(dailyVisa) dailyVisa.value = visaStatus;
 
-  alert("✅ Enterprise Resume Parsed Successfully");
+  // Also fill Resume Parser parsed fields display
+  const rName = document.getElementById("resumeName");
+  const rEmail = document.getElementById("resumeEmail");
+  const rPhone = document.getElementById("resumePhone");
+  const rLoc = document.getElementById("resumeLocation");
+  if(rName) rName.value = detectedName;
+  if(rEmail) rEmail.value = email;
+  if(rPhone) rPhone.value = phone;
+  if(rLoc) rLoc.value = locationFound;
 
-  switchSection("daily");
+  // Show inline Save to Daily button on Resume Parser page
+  let existingBtn = document.getElementById("resumeSaveToDailyBtn");
+  if(!existingBtn){
+    const resumeSection = document.getElementById("resume");
+    if(resumeSection){
+      const btn = document.createElement("button");
+      btn.id = "resumeSaveToDailyBtn";
+      btn.innerHTML = '<i class="ri-save-line"></i> Save to Daily Tracker';
+      btn.style.cssText = "margin-top:16px;background:#3b82f6;color:white;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:block;";
+      btn.onclick = function(){
+        switchSection("daily");
+        // Set date if not set
+        const dateEl = document.getElementById("dailyDate");
+        if(dateEl && !dateEl.value) dateEl.value = today();
+        const panel = document.querySelector("#daily .entry-panel");
+        if(panel) panel.scrollIntoView({ behavior:"smooth", block:"start" });
+      };
+      resumeSection.appendChild(btn);
+    }
+  }
+
+  // No alert — just show success state inline
+  const parseBtn = document.querySelector("button[onclick='parseResume()']");
+  if(parseBtn){
+    const orig = parseBtn.innerHTML;
+    parseBtn.innerHTML = "✅ Parsed!";
+    parseBtn.style.background = "#10b981";
+    setTimeout(() => {
+      parseBtn.innerHTML = orig;
+      parseBtn.style.background = "";
+    }, 2500);
+  }
 }
 
 /* ================= UPDATE DATE (INLINE EDIT) ================= */
@@ -1398,30 +1437,34 @@ document.addEventListener("DOMContentLoaded", async function(){
 
   await loadDashboard();
 
-  /* ── EXTENSION HANDOFF ──────────────────────────────────
-     After saving a candidate, the extension either:
-     A) Sends a message directly if this tab was already open
-     B) Stores data in chrome.storage.local and opens a new tab
-     Either way, we read it here and fill the Daily form.
-  ────────────────────────────────────────────────────────── */
-  function fillDailyFromCandidate(data) {
-    if (!data || (!data.name && !data.email)) return;
+  /* ── EXTENSION HANDOFF → Resume Parser ─────────────────────
+     Extension saves candidate + resume text to chrome.storage,
+     then opens the dashboard. We read it here, switch to the
+     Resume Parser tab, and pre-fill everything so the recruiter
+     just clicks "Parse Resume" to confirm & save to Daily.
+  ─────────────────────────────────────────────────────────── */
+  function fillResumeParser(data) {
+    if (!data) return;
 
-    switchSection("daily");
+    // Switch to Resume Parser tab
+    switchSection("resume");
 
+    // Fill the resume textarea
+    const resumeEl = document.getElementById("resumeText");
+    if (resumeEl) resumeEl.value = data.resume_text || "";
+
+    // Pre-fill the parsed detail fields too (below the textarea)
     const set = (id, val) => {
       const el = document.getElementById(id);
       if (el && val) el.value = val;
     };
+    set("resumeName",     data.name     || "");
+    set("resumeEmail",    data.email    || "");
+    set("resumePhone",    data.phone    || "");
+    set("resumeLocation", data.location || "");
 
-    set("dailyName",     data.name     || "");
-    set("dailyEmail",    data.email    || "");
-    set("dailyPhone",    data.phone    || "");
-    set("dailyLocation", data.location || "");
-
-    // Visa dropdown
     if (data.visa) {
-      const visaSel = document.getElementById("dailyVisa");
+      const visaSel = document.getElementById("resumeVisa");
       if (visaSel) {
         const opt = Array.from(visaSel.options)
           .find(o => o.value.toLowerCase() === data.visa.toLowerCase());
@@ -1429,7 +1472,12 @@ document.addEventListener("DOMContentLoaded", async function(){
       }
     }
 
-    // Source dropdown
+    // Also stash into Daily fields so after Parse it transfers
+    set("dailyName",     data.name     || "");
+    set("dailyEmail",    data.email    || "");
+    set("dailyPhone",    data.phone    || "");
+    set("dailyLocation", data.location || "");
+
     if (data.source) {
       const srcSel = document.getElementById("dailySource");
       if (srcSel) {
@@ -1439,33 +1487,40 @@ document.addEventListener("DOMContentLoaded", async function(){
       }
     }
 
-    // Auto-set date
+    if (data.visa) {
+      const visaSel = document.getElementById("dailyVisa");
+      if (visaSel) {
+        const opt = Array.from(visaSel.options)
+          .find(o => o.value.toLowerCase() === data.visa.toLowerCase());
+        if (opt) visaSel.value = opt.value;
+      }
+    }
+
+    // Set today's date on daily form
     const dateEl = document.getElementById("dailyDate");
     if (dateEl && !dateEl.value) dateEl.value = today();
 
-    // Scroll form into view
-    const panel = document.querySelector("#daily .entry-panel");
-    if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Scroll resume textarea into view
+    if (resumeEl) resumeEl.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  // Case A: tab was already open, extension sends a message
+  // Case A: tab already open — extension sends direct message
   if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.action === "fillDailyForm") {
-        fillDailyFromCandidate(request.data);
+      if (request.action === "fillResumeParser") {
+        fillResumeParser(request.data);
         sendResponse({ ok: true });
       }
       return true;
     });
   }
 
-  // Case B: extension stored data and opened a fresh tab
+  // Case B: fresh tab opened — read from chrome.storage
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.get("pendingCandidate", (result) => {
-      if (result && result.pendingCandidate) {
-        fillDailyFromCandidate(result.pendingCandidate);
-        // Clear so it doesn't re-fill on next refresh
-        chrome.storage.local.remove("pendingCandidate");
+    chrome.storage.local.get("pendingResume", (result) => {
+      if (result && result.pendingResume) {
+        fillResumeParser(result.pendingResume);
+        chrome.storage.local.remove("pendingResume");
       }
     });
   }
