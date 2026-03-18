@@ -1398,28 +1398,16 @@ document.addEventListener("DOMContentLoaded", async function(){
 
   await loadDashboard();
 
-  /* ── EXTENSION HANDOFF ──────────────────────────────────
-     popup.js encodes candidate data in URL hash:
-     dashboard.html#candidate={...json...}
-     This works on ANY website — no chrome.storage needed.
-  ─────────────────────────────────────────────────────── */
+  /* ── EXTENSION HANDOFF: read candidate data from URL hash ── */
   try {
     const hash = window.location.hash;
     if (hash && hash.startsWith("#candidate=")) {
       const encoded = hash.replace("#candidate=", "");
       const data = JSON.parse(decodeURIComponent(encoded));
-
-      // Clean the URL so refresh doesn't re-fill
       window.history.replaceState(null, "", window.location.pathname);
-
-      // Switch to Resume Parser
       switchSection("resume");
-
-      // Fill resume textarea
       const resumeEl = document.getElementById("resumeText");
       if (resumeEl) resumeEl.value = data.resume_text || "";
-
-      // Fill all fields
       const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
       set("resumeName",     data.name);
       set("resumeEmail",    data.email);
@@ -1429,10 +1417,8 @@ document.addEventListener("DOMContentLoaded", async function(){
       set("dailyEmail",     data.email);
       set("dailyPhone",     data.phone);
       set("dailyLocation",  data.location);
-
       const dateEl = document.getElementById("dailyDate");
       if (dateEl && !dateEl.value) dateEl.value = today();
-
       if (data.visa) {
         ["resumeVisa","dailyVisa"].forEach(id => {
           const sel = document.getElementById(id);
@@ -1448,22 +1434,511 @@ document.addEventListener("DOMContentLoaded", async function(){
           if (opt) sel.value = opt.value;
         }
       }
-
-      // Add Go to Daily button
       if (!document.getElementById("extGoToDailyBtn")) {
         const btn = document.createElement("button");
         btn.id = "extGoToDailyBtn";
         btn.textContent = "✅ Done — Save to Daily Tracker";
         btn.style.cssText = "margin-top:16px;background:#3b82f6;color:#fff;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:inline-block;";
-        btn.onclick = () => { switchSection("daily"); };
+        btn.addEventListener("click", () => switchSection("daily"));
         const sec = document.getElementById("resume");
         if (sec) sec.appendChild(btn);
       }
-
-      if (resumeEl) resumeEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (resumeEl) resumeEl.scrollIntoView({ behavior:"smooth", block:"start" });
     }
   } catch(e) {
     console.log("Extension handoff error:", e.message);
   }
 
 });
+
+/* ===============================
+   TAB ROUTER FIX
+================================*/
+
+function initTabs(){
+
+  const links = document.querySelectorAll(".sidebar a[data-tab]");
+  const sections = document.querySelectorAll(".section");
+
+  links.forEach(link => {
+
+    link.addEventListener("click", function(){
+
+      const tab = this.getAttribute("data-tab");
+
+      // remove active section
+      sections.forEach(sec =>
+        sec.classList.remove("active")
+      );
+
+      // activate selected section
+      const target = document.getElementById(tab);
+      if(target){
+        target.classList.add("active");
+      }
+    // sidebar highlight
+      links.forEach(l =>
+        l.classList.remove("active-link")
+      );
+
+      this.classList.add("active-link");
+
+    });
+
+  });
+
+}
+
+function switchSection(tab){
+
+
+  document.querySelectorAll(".section")
+    .forEach(sec => sec.classList.remove("active"));
+
+  const target = document.getElementById(tab);
+  if(target) target.classList.add("active");
+
+  document.querySelectorAll(".sidebar a")
+    .forEach(a => a.classList.remove("active-link"));
+
+  const link =
+    document.querySelector(`.sidebar a[data-tab="${tab}"]`);
+
+  if(link) link.classList.add("active-link");
+}
+    
+/* ================= MASTER SAVE + REFRESH ================= */
+
+function changePage(stage,page){
+  paginationState[stage] = page;
+  renderStage(stage, stage + "Body");
+}
+
+function saveAndRender(){
+  saveDB();
+
+  renderJD();
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
+  renderKPI();
+  renderTasks();
+  renderMeetings();
+}
+
+function enableTopScrollSync() {
+
+  document.querySelectorAll(".table-scroll-wrapper")
+    .forEach(wrapper => {
+
+      const topScroll =
+        wrapper.querySelector(".table-scroll-top");
+
+      const tableContainer =
+        wrapper.querySelector(".table-container");
+
+      const table =
+        wrapper.querySelector("table");
+
+      if(!topScroll || !tableContainer || !table)
+        return;
+
+      topScroll.firstElementChild.style.width =
+        table.scrollWidth + "px";
+
+      topScroll.addEventListener("scroll", () => {
+        tableContainer.scrollLeft =
+          topScroll.scrollLeft;
+      });
+
+      tableContainer.addEventListener("scroll", () => {
+        topScroll.scrollLeft =
+          tableContainer.scrollLeft;
+      });
+
+  });
+}
+
+function viewJD(index){
+
+  const jd = DB.jd[index];
+
+  if(!jd || !jd.jd_text){
+    alert("JD not available for this record.");
+    return;
+  }
+
+  const win = window.open("", "JD Viewer", "width=900,height=700");
+
+  win.document.write(`
+  <html>
+  <head>
+  <title>Job Description</title>
+
+  <style>
+  body{
+    font-family:Arial;
+    padding:20px;
+    line-height:1.6;
+  }
+
+  textarea{
+    width:100%;
+    height:85vh;
+    font-size:14px;
+  }
+
+  button{
+    padding:8px 12px;
+    margin-bottom:10px;
+  }
+  </style>
+
+  </head>
+
+  <body>
+
+  <h2>${jd.title}</h2>
+
+  <button onclick="copyJD()">Copy JD</button>
+
+  <textarea id="jdContent">${jd.jd_text}</textarea>
+
+  <script>
+  function copyJD(){
+    const text = document.getElementById("jdContent");
+    text.select();
+    document.execCommand("copy");
+    alert("JD copied!");
+  }
+  </script>
+
+  </body>
+  </html>
+  `);
+}
+
+async function deleteRow(stage,index){
+
+  if(!confirm("Delete this record?")) return;
+
+  const record = DB[stage][index];
+  if(!record || !record.id) return;
+
+  const { error } = await sb.from(stage).delete().eq("id", record.id);
+
+  if(error){
+    alert("Delete failed: " + error.message);
+    return;
+  }
+
+  await fetchAllData();
+
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
+
+  renderKPI();
+}
+async function deleteRowById(stage, id){
+  if(!confirm("Delete this record?")) return;
+
+  if(!id || id === "undefined" || id === "null"){
+    alert("Cannot delete: record has no valid ID. Please refresh and try again.");
+    return;
+  }
+
+  const { data, error, status } = await sb.from(stage).delete().eq("id", id).select();
+
+  if(error){
+    alert("Delete failed (" + status + "): " + error.message + "\n\nIf 403/RLS error: enable DELETE policy in Supabase for table: " + stage);
+    return;
+  }
+
+  if(!data || data.length === 0){
+    alert("Nothing was deleted.\n\nLikely cause: Supabase Row Level Security (RLS) is blocking DELETE.\nFix: In Supabase → Table Editor → " + stage + " → RLS Policies → Add policy: allow DELETE for anon role.");
+    return;
+  }
+
+  await fetchAllData();
+
+  renderDaily();
+  renderStage("submission","submissionBody");
+  renderStage("proposal","proposalBody");
+  renderStage("interview","interviewBody");
+  renderStage("placement","placementBody");
+  renderStage("start","startBody");
+  renderKPI();
+}
+async function viewResume(index){
+
+  const record = DB.daily[index];
+
+  if(!record.resume_text){
+    alert("Resume not available");
+    return;
+  }
+
+  /* Find JD linked to this candidate requirement */
+  const jd = DB.jd.find(j => j.title === record.requirement);
+
+  const jdText = jd ? jd.jd_text : "";
+
+  /* Run matching analysis */
+
+  const result = analyzeMatch(record.resume_text, jdText);
+  
+  record.ai_score = result.score;
+
+  record.ai_notes =
+`Missing Skills: ${result.missing}
+ Questions: ${result.questions}`;
+
+await sb
+.from("daily")
+.update({
+  ai_score: record.ai_score,
+  ai_notes: record.ai_notes
+})
+.eq("id", record.id);
+
+  const win = window.open("", "Resume Viewer", "width=900,height=750");
+
+  win.document.write(`
+  <html>
+  <head>
+
+  <title>Resume Viewer</title>
+
+  <style>
+  body{
+    font-family:Arial;
+    padding:20px;
+  }
+
+  textarea{
+    width:100%;
+    height:60vh;
+    font-size:14px;
+    line-height:1.5;
+  }
+
+  .box{
+    margin-bottom:15px;
+    padding:10px;
+    background:#f5f5f5;
+  }
+
+  .score{
+    font-size:18px;
+    font-weight:bold;
+  }
+
+  </style>
+
+  </head>
+
+  <body>
+
+  <h2>${record.name}</h2>
+
+  <div class="box score">
+  AI Score: ${result.score} / 100
+  </div>
+
+  <div class="box">
+  <b>Missing Skills</b><br>
+  ${result.missing || "None"}
+  </div>
+
+  <div class="box">
+  <b>Questions to Ask Candidate</b><br>
+  ${result.questions || "None"}
+  </div>
+
+  <h3>Full Resume</h3>
+
+  <textarea>${record.resume_text}</textarea>
+
+  </body>
+  </html>
+  `);
+}
+
+
+/* =====================================================
+   BASIC AI MATCH ENGINE (Temporary until ChatGPT API)
+===================================================== */
+
+function analyzeMatch(resumeText, jdText){
+
+  if(!resumeText || !jdText){
+    return {
+      score: 0,
+      missing: "Resume or JD not available",
+      questions: ""
+    };
+  }
+
+  const resume = resumeText.toLowerCase();
+  const jd = jdText.toLowerCase();
+
+  const skills = [
+    "python","java","docker","kubernetes","aws","linux",
+    "terraform","jenkins","ci/cd","selenium",
+    "react","angular","node","sql","mongodb",
+    "c++","c#","azure","gcp"
+  ];
+
+  let match = 0;
+  let missing = [];
+
+  skills.forEach(skill => {
+
+    if(jd.includes(skill)){
+
+      if(resume.includes(skill)){
+        match++;
+      }
+      else{
+        missing.push(skill);
+      }
+
+    }
+
+  });
+
+  const score = Math.min(100, match * 15);
+
+  const questions = missing
+    .map(skill => `Do you have hands-on experience with ${skill}?`)
+    .join("<br>");
+
+  return {
+    score,
+    missing: missing.join(", "),
+    questions
+  };
+
+}
+
+
+/* ================= RECURRING TASK SYSTEM ================= */
+
+function addRecurringTask(){
+
+const title = document.getElementById("recTitle").value;
+const date = document.getElementById("recDate").value;
+const repeat = document.getElementById("recRepeat").value;
+const reminder = document.getElementById("recReminder").value;
+
+if(!title || !date){
+  alert("Enter task and date");
+  return;
+}
+
+const tasks = JSON.parse(localStorage.getItem("recTasks") || "[]");
+
+tasks.push({
+  title,
+  date,
+  repeat,
+  reminder
+});
+
+localStorage.setItem("recTasks", JSON.stringify(tasks));
+
+renderRecurringTasks();
+
+document.getElementById("recTitle").value="";
+document.getElementById("recDate").value="";
+}
+
+/* ================= SHOW TASKS ================= */
+
+function renderRecurringTasks(){
+
+const tasks = JSON.parse(localStorage.getItem("recTasks") || "[]");
+
+const list = document.getElementById("recurringList");
+
+if(!list) return;
+
+list.innerHTML = "";
+
+const today = new Date();
+
+tasks.forEach(t=>{
+
+const taskDate = new Date(t.date);
+
+const diffDays = Math.ceil((taskDate - today)/(1000*60*60*24));
+
+if(diffDays < 0) return;
+
+let reminderText = "";
+
+if(diffDays == parseInt(t.reminder)){
+  reminderText = "⚠ Reminder coming soon";
+}
+
+if(diffDays == 1){
+  reminderText = "⚠ Tomorrow";
+}
+
+if(diffDays == 0){
+  reminderText = "⚠ Today";
+}
+
+list.innerHTML += `
+<div style="margin-bottom:10px;padding:10px;background:#1e293b;border-radius:6px">
+<b>${t.title}</b><br>
+Next Date: ${t.date} (${t.repeat})<br>
+<span style="color:orange">${reminderText}</span>
+</div>
+`;
+
+});
+
+}
+
+/* run when productivity tab opens */
+
+document.addEventListener("click", function(e){
+
+  if(e.target && e.target.dataset && e.target.dataset.tab === "productivity"){
+    setTimeout(renderRecurringTasks,200);
+  }
+
+});
+
+
+// ✅ MAKE FUNCTIONS GLOBAL (IMPORTANT)
+
+window.moveDailyToSubmission = moveDailyToSubmission;
+window.moveDailyToProposal = moveDailyToProposal;
+
+window.moveToInterviewById = moveToInterviewById;
+
+window.moveToPlacementById = moveToPlacementById;
+window.moveToStartById = moveToStartById;
+
+window.deleteRowById = deleteRowById;
+window.updateNote = updateNote;
+window.updateDate = updateDate;
+window.updateNoteById = updateNoteById;
+window.deleteRow = deleteRow;
+window.viewResume = viewResume;
+window.editJD = editJD;
+window.saveJDRow = saveJDRow;
+window.deleteJD = deleteJD;
+window.viewJD = viewJD;
+window.updateJDField = updateJDField;
+window.updateJDStatus = updateJDStatus;
+
