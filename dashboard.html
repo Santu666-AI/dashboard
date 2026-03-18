@@ -413,17 +413,64 @@
 <script>
 window.addEventListener("load", () => {
   const params = new URLSearchParams(window.location.search);
-  const name = params.get("name");
-  if(!name) return;
-  setTimeout(()=>{
-    document.getElementById("dailyName").value     = params.get("name")     || "";
-    document.getElementById("dailyEmail").value    = params.get("email")    || "";
-    document.getElementById("dailyPhone").value    = params.get("phone")    || "";
-    document.getElementById("dailyLocation").value = params.get("location") || "";
-    const src = params.get("source");
-    if(src) document.getElementById("dailySource").value = src;
-    document.querySelector('[data-tab="daily"]').click();
-  }, 800);
+  const name  = params.get("name")  || "";
+  const email = params.get("email") || "";
+
+  /* Only run if the extension sent us candidate data */
+  if (!name && !email) return;
+
+  /* Wait for script.js to finish setting up the UI before we click/fill */
+  setTimeout(() => {
+
+    /* Switch to Daily Tracker tab */
+    const dailyTab = document.querySelector('[data-tab="daily"]');
+    if (dailyTab) dailyTab.click();
+
+    /* Fill every field from URL params */
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val) el.value = val;
+    };
+
+    set("dailyName",     name);
+    set("dailyEmail",    email);
+    set("dailyPhone",    params.get("phone")    || "");
+    set("dailyLocation", params.get("location") || "");
+
+    /* Visa dropdown — match any option that contains the param value */
+    const visaParam = params.get("visa") || "";
+    if (visaParam) {
+      const visaSel = document.getElementById("dailyVisa");
+      if (visaSel) {
+        const opt = Array.from(visaSel.options)
+          .find(o => o.value.toLowerCase() === visaParam.toLowerCase());
+        if (opt) visaSel.value = opt.value;
+      }
+    }
+
+    /* Source dropdown */
+    const srcParam = params.get("source") || "";
+    if (srcParam) {
+      const srcSel = document.getElementById("dailySource");
+      if (srcSel) {
+        const opt = Array.from(srcSel.options)
+          .find(o => o.value.toLowerCase() === srcParam.toLowerCase());
+        if (opt) srcSel.value = opt.value;
+      }
+    }
+
+    /* Set today's date if blank */
+    const dateEl = document.getElementById("dailyDate");
+    if (dateEl && !dateEl.value) {
+      dateEl.value = new Date().toLocaleDateString("en-CA", {
+        timeZone: "America/New_York"
+      });
+    }
+
+    /* Clean the URL so refreshing doesn't re-fill the form */
+    window.history.replaceState({}, "", window.location.pathname);
+
+  }, 900);
 });
 </script>
 
