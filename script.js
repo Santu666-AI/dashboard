@@ -1398,65 +1398,76 @@ document.addEventListener("DOMContentLoaded", async function(){
 
   await loadDashboard();
 
-  /* ── EXTENSION HANDOFF ──────────────────────────────────────
-     When the Chrome extension saves a candidate and opens the
-     dashboard, it passes data as URL params:
-     ?tab=daily&name=...&email=...&phone=...&location=...&visa=...&source=...
-     We fill the Daily Tracker form and switch to that tab here,
-     AFTER loadDashboard() finishes so dropdowns are populated.
-  ──────────────────────────────────────────────────────────── */
-  const params = new URLSearchParams(window.location.search);
-  const paramName  = params.get("name")  || "";
-  const paramEmail = params.get("email") || "";
+  /* ── EXTENSION HANDOFF ──────────────────────────────────
+     After saving a candidate, the extension either:
+     A) Sends a message directly if this tab was already open
+     B) Stores data in chrome.storage.local and opens a new tab
+     Either way, we read it here and fill the Daily form.
+  ────────────────────────────────────────────────────────── */
+  function fillDailyFromCandidate(data) {
+    if (!data || (!data.name && !data.email)) return;
 
-  if(paramName || paramEmail){
-
-    /* Switch to Daily tab */
     switchSection("daily");
 
-    /* Helper: safely set a field value */
-    const setField = (id, val) => {
+    const set = (id, val) => {
       const el = document.getElementById(id);
-      if(el && val) el.value = val;
+      if (el && val) el.value = val;
     };
 
-    setField("dailyName",     paramName);
-    setField("dailyEmail",    paramEmail);
-    setField("dailyPhone",    params.get("phone")    || "");
-    setField("dailyLocation", params.get("location") || "");
+    set("dailyName",     data.name     || "");
+    set("dailyEmail",    data.email    || "");
+    set("dailyPhone",    data.phone    || "");
+    set("dailyLocation", data.location || "");
 
-    /* Visa dropdown - case-insensitive match */
-    const paramVisa = params.get("visa") || "";
-    if(paramVisa){
+    // Visa dropdown
+    if (data.visa) {
       const visaSel = document.getElementById("dailyVisa");
-      if(visaSel){
-        const match = Array.from(visaSel.options)
-          .find(o => o.value.toLowerCase() === paramVisa.toLowerCase());
-        if(match) visaSel.value = match.value;
+      if (visaSel) {
+        const opt = Array.from(visaSel.options)
+          .find(o => o.value.toLowerCase() === data.visa.toLowerCase());
+        if (opt) visaSel.value = opt.value;
       }
     }
 
-    /* Source dropdown - case-insensitive match */
-    const paramSource = params.get("source") || "";
-    if(paramSource){
+    // Source dropdown
+    if (data.source) {
       const srcSel = document.getElementById("dailySource");
-      if(srcSel){
-        const match = Array.from(srcSel.options)
-          .find(o => o.value.toLowerCase() === paramSource.toLowerCase());
-        if(match) srcSel.value = match.value;
+      if (srcSel) {
+        const opt = Array.from(srcSel.options)
+          .find(o => o.value.toLowerCase() === data.source.toLowerCase());
+        if (opt) srcSel.value = opt.value;
       }
     }
 
-    /* Auto-set today's date */
+    // Auto-set date
     const dateEl = document.getElementById("dailyDate");
-    if(dateEl && !dateEl.value) dateEl.value = today();
+    if (dateEl && !dateEl.value) dateEl.value = today();
 
-    /* Scroll the form into view */
-    const entryPanel = document.querySelector("#daily .entry-panel");
-    if(entryPanel) entryPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Scroll form into view
+    const panel = document.querySelector("#daily .entry-panel");
+    if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
-    /* Clean URL so refresh does not re-fill */
-    window.history.replaceState({}, "", window.location.pathname);
+  // Case A: tab was already open, extension sends a message
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.action === "fillDailyForm") {
+        fillDailyFromCandidate(request.data);
+        sendResponse({ ok: true });
+      }
+      return true;
+    });
+  }
+
+  // Case B: extension stored data and opened a fresh tab
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get("pendingCandidate", (result) => {
+      if (result && result.pendingCandidate) {
+        fillDailyFromCandidate(result.pendingCandidate);
+        // Clear so it doesn't re-fill on next refresh
+        chrome.storage.local.remove("pendingCandidate");
+      }
+    });
   }
 
 });
