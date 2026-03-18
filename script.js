@@ -1398,82 +1398,61 @@ document.addEventListener("DOMContentLoaded", async function(){
 
   await loadDashboard();
 
-  /* ── EXTENSION HANDOFF → Resume Parser ── */
+  /* EXTENSION HANDOFF - fill Resume Parser from chrome.storage */
   function fillResumeParser(data) {
     if (!data) return;
-
     switchSection("resume");
-
-    const set = (id, val) => { const el = document.getElementById(id); if(el && val) el.value = val; };
-
     const resumeEl = document.getElementById("resumeText");
-    if(resumeEl) resumeEl.value = data.resume_text || "";
-
-    set("resumeName",     data.name     || "");
-    set("resumeEmail",    data.email    || "");
-    set("resumePhone",    data.phone    || "");
-    set("resumeLocation", data.location || "");
-
-    if(data.visa){
-      const v = document.getElementById("resumeVisa");
-      if(v){ const o = Array.from(v.options).find(o=>o.value.toLowerCase()===data.visa.toLowerCase()); if(o) v.value=o.value; }
-    }
-
-    // pre-fill daily fields too
-    set("dailyName",     data.name     || "");
-    set("dailyEmail",    data.email    || "");
-    set("dailyPhone",    data.phone    || "");
-    set("dailyLocation", data.location || "");
-
-    if(data.visa){
-      const v = document.getElementById("dailyVisa");
-      if(v){ const o = Array.from(v.options).find(o=>o.value.toLowerCase()===data.visa.toLowerCase()); if(o) v.value=o.value; }
-    }
-    if(data.source){
-      const v = document.getElementById("dailySource");
-      if(v){ const o = Array.from(v.options).find(o=>o.value.toLowerCase()===data.source.toLowerCase()); if(o) v.value=o.value; }
-    }
-
+    if (resumeEl) resumeEl.value = data.resume_text || "";
+    const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ""; };
+    set("resumeName",     data.name);
+    set("resumeEmail",    data.email);
+    set("resumePhone",    data.phone);
+    set("resumeLocation", data.location);
+    set("dailyName",      data.name);
+    set("dailyEmail",     data.email);
+    set("dailyPhone",     data.phone);
+    set("dailyLocation",  data.location);
     const dateEl = document.getElementById("dailyDate");
-    if(dateEl && !dateEl.value) dateEl.value = today();
-
-    // Add "Save to Daily" button on resume section if not already there
-    if(!document.getElementById("resumeSaveToDailyBtn")){
-      const resumeSection = document.getElementById("resume");
-      if(resumeSection){
-        const btn = document.createElement("button");
-        btn.id = "resumeSaveToDailyBtn";
-        btn.innerHTML = '<i class="ri-arrow-right-line"></i> Done — Go to Daily Tracker';
-        btn.style.cssText = "margin-top:16px;background:#3b82f6;color:white;padding:10px 28px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;";
-        btn.onclick = function(){
-          const dateEl2 = document.getElementById("dailyDate");
-          if(dateEl2 && !dateEl2.value) dateEl2.value = today();
-          switchSection("daily");
-          const panel = document.querySelector("#daily .entry-panel");
-          if(panel) panel.scrollIntoView({behavior:"smooth",block:"start"});
-        };
-        resumeSection.appendChild(btn);
-      }
+    if (dateEl && !dateEl.value) dateEl.value = today();
+    if (data.visa) {
+      ["resumeVisa","dailyVisa"].forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) { const o = Array.from(sel.options).find(o => o.value.toLowerCase() === data.visa.toLowerCase()); if(o) sel.value = o.value; }
+      });
     }
-
-    if(resumeEl) resumeEl.scrollIntoView({behavior:"smooth", block:"start"});
+    if (data.source) {
+      const sel = document.getElementById("dailySource");
+      if (sel) { const o = Array.from(sel.options).find(o => o.value.toLowerCase() === data.source.toLowerCase()); if(o) sel.value = o.value; }
+    }
+    if (!document.getElementById("extSaveToDailyBtn")) {
+      const btn = document.createElement("button");
+      btn.id = "extSaveToDailyBtn";
+      btn.textContent = "✅ Done — Go to Daily Tracker";
+      btn.style.cssText = "margin-top:16px;background:#3b82f6;color:#fff;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:block;";
+      btn.onclick = () => { switchSection("daily"); };
+      const resumeSec = document.getElementById("resume");
+      if (resumeSec) resumeSec.appendChild(btn);
+    }
+    if (resumeEl) resumeEl.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  // Listen for message if tab already open
-  if(typeof chrome!=="undefined" && chrome.runtime && chrome.runtime.onMessage){
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse)=>{
-      if(request.action==="fillResumeParser"){ fillResumeParser(request.data); sendResponse({ok:true}); }
-      return true;
-    });
-  }
-
-  // Read from storage if fresh tab
-  if(typeof chrome!=="undefined" && chrome.storage && chrome.storage.local){
-    chrome.storage.local.get("pendingResume", (result)=>{
-      if(result && result.pendingResume){
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get("pendingResume", function(result) {
+      if (result && result.pendingResume) {
         fillResumeParser(result.pendingResume);
         chrome.storage.local.remove("pendingResume");
       }
+    });
+  }
+
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      if (request.action === "fillResumeParser") {
+        fillResumeParser(request.data);
+        sendResponse({ ok: true });
+      }
+      return true;
     });
   }
 
