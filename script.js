@@ -1398,6 +1398,67 @@ document.addEventListener("DOMContentLoaded", async function(){
 
   await loadDashboard();
 
+  /* ── EXTENSION HANDOFF ──────────────────────────────────────
+     When the Chrome extension saves a candidate and opens the
+     dashboard, it passes data as URL params:
+     ?tab=daily&name=...&email=...&phone=...&location=...&visa=...&source=...
+     We fill the Daily Tracker form and switch to that tab here,
+     AFTER loadDashboard() finishes so dropdowns are populated.
+  ──────────────────────────────────────────────────────────── */
+  const params = new URLSearchParams(window.location.search);
+  const paramName  = params.get("name")  || "";
+  const paramEmail = params.get("email") || "";
+
+  if(paramName || paramEmail){
+
+    /* Switch to Daily tab */
+    switchSection("daily");
+
+    /* Helper: safely set a field value */
+    const setField = (id, val) => {
+      const el = document.getElementById(id);
+      if(el && val) el.value = val;
+    };
+
+    setField("dailyName",     paramName);
+    setField("dailyEmail",    paramEmail);
+    setField("dailyPhone",    params.get("phone")    || "");
+    setField("dailyLocation", params.get("location") || "");
+
+    /* Visa dropdown - case-insensitive match */
+    const paramVisa = params.get("visa") || "";
+    if(paramVisa){
+      const visaSel = document.getElementById("dailyVisa");
+      if(visaSel){
+        const match = Array.from(visaSel.options)
+          .find(o => o.value.toLowerCase() === paramVisa.toLowerCase());
+        if(match) visaSel.value = match.value;
+      }
+    }
+
+    /* Source dropdown - case-insensitive match */
+    const paramSource = params.get("source") || "";
+    if(paramSource){
+      const srcSel = document.getElementById("dailySource");
+      if(srcSel){
+        const match = Array.from(srcSel.options)
+          .find(o => o.value.toLowerCase() === paramSource.toLowerCase());
+        if(match) srcSel.value = match.value;
+      }
+    }
+
+    /* Auto-set today's date */
+    const dateEl = document.getElementById("dailyDate");
+    if(dateEl && !dateEl.value) dateEl.value = today();
+
+    /* Scroll the form into view */
+    const entryPanel = document.querySelector("#daily .entry-panel");
+    if(entryPanel) entryPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    /* Clean URL so refresh does not re-fill */
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+
 });
 
 /* ===============================
