@@ -1398,62 +1398,96 @@ document.addEventListener("DOMContentLoaded", async function(){
 
   await loadDashboard();
 
-  /* EXTENSION HANDOFF - fill Resume Parser from chrome.storage */
-  function fillResumeParser(data) {
-    if (!data) return;
-    switchSection("resume");
-    const resumeEl = document.getElementById("resumeText");
-    if (resumeEl) resumeEl.value = data.resume_text || "";
-    const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ""; };
-    set("resumeName",     data.name);
-    set("resumeEmail",    data.email);
-    set("resumePhone",    data.phone);
-    set("resumeLocation", data.location);
-    set("dailyName",      data.name);
-    set("dailyEmail",     data.email);
-    set("dailyPhone",     data.phone);
-    set("dailyLocation",  data.location);
-    const dateEl = document.getElementById("dailyDate");
-    if (dateEl && !dateEl.value) dateEl.value = today();
-    if (data.visa) {
-      ["resumeVisa","dailyVisa"].forEach(id => {
-        const sel = document.getElementById(id);
-        if (sel) { const o = Array.from(sel.options).find(o => o.value.toLowerCase() === data.visa.toLowerCase()); if(o) sel.value = o.value; }
-      });
-    }
-    if (data.source) {
-      const sel = document.getElementById("dailySource");
-      if (sel) { const o = Array.from(sel.options).find(o => o.value.toLowerCase() === data.source.toLowerCase()); if(o) sel.value = o.value; }
-    }
-    if (!document.getElementById("extSaveToDailyBtn")) {
-      const btn = document.createElement("button");
-      btn.id = "extSaveToDailyBtn";
-      btn.textContent = "✅ Done — Go to Daily Tracker";
-      btn.style.cssText = "margin-top:16px;background:#3b82f6;color:#fff;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:block;";
-      btn.onclick = () => { switchSection("daily"); };
-      const resumeSec = document.getElementById("resume");
-      if (resumeSec) resumeSec.appendChild(btn);
-    }
-    if (resumeEl) resumeEl.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+  /* ── EXTENSION HANDOFF ──────────────────────────────────
+     Extension writes candidate data to chrome.storage.local
+     then opens this tab. We read it here after load.
+     NO messaging used — storage only (avoids connection errors).
+  ─────────────────────────────────────────────────────── */
+  try {
     chrome.storage.local.get("pendingResume", function(result) {
-      if (result && result.pendingResume) {
-        fillResumeParser(result.pendingResume);
-        chrome.storage.local.remove("pendingResume");
-      }
-    });
-  }
+      if (!result || !result.pendingResume) return;
 
-  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
-    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-      if (request.action === "fillResumeParser") {
-        fillResumeParser(request.data);
-        sendResponse({ ok: true });
+      const data = result.pendingResume;
+      chrome.storage.local.remove("pendingResume");
+
+      // Switch to Resume Parser tab
+      switchSection("resume");
+
+      // Fill resume textarea
+      const resumeEl = document.getElementById("resumeText");
+      if (resumeEl) resumeEl.value = data.resume_text || "";
+
+      // Helper
+      const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || "";
+      };
+
+      // Fill parsed details fields
+      set("resumeName",     data.name);
+      set("resumeEmail",    data.email);
+      set("resumePhone",    data.phone);
+      set("resumeLocation", data.location);
+
+      // Fill daily fields too
+      set("dailyName",     data.name);
+      set("dailyEmail",    data.email);
+      set("dailyPhone",    data.phone);
+      set("dailyLocation", data.location);
+
+      const dateEl = document.getElementById("dailyDate");
+      if (dateEl && !dateEl.value) dateEl.value = today();
+
+      // Visa
+      if (data.visa) {
+        ["resumeVisa", "dailyVisa"].forEach(function(id) {
+          const sel = document.getElementById(id);
+          if (!sel) return;
+          const opt = Array.from(sel.options).find(function(o) {
+            return o.value.toLowerCase() === data.visa.toLowerCase();
+          });
+          if (opt) sel.value = opt.value;
+        });
       }
-      return true;
+
+      // Source
+      if (data.source) {
+        const sel = document.getElementById("dailySource");
+        if (sel) {
+          const opt = Array.from(sel.options).find(function(o) {
+            return o.value.toLowerCase() === data.source.toLowerCase();
+          });
+          if (opt) sel.value = opt.value;
+        }
+      }
+
+      // Add "Go to Daily Tracker" button
+      if (!document.getElementById("extGoToDailyBtn")) {
+        const btn = document.createElement("button");
+        btn.id = "extGoToDailyBtn";
+        btn.textContent = "✅ Done — Go to Daily Tracker";
+        btn.style.cssText = [
+          "margin-top:16px",
+          "background:#3b82f6",
+          "color:#fff",
+          "padding:10px 24px",
+          "border:none",
+          "border-radius:8px",
+          "font-size:14px",
+          "font-weight:600",
+          "cursor:pointer",
+          "display:block"
+        ].join(";");
+        btn.onclick = function() { switchSection("daily"); };
+        const resumeSec = document.getElementById("resume");
+        if (resumeSec) resumeSec.appendChild(btn);
+      }
+
+      // Scroll into view
+      if (resumeEl) resumeEl.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  } catch(e) {
+    // Not in extension context (e.g. opened directly in browser) — ignore
   }
 
 });
