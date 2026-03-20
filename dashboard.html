@@ -216,6 +216,18 @@
     <!-- ════ DAILY ════ -->
     <div id="daily" class="section">
       <h2>Daily Tracker</h2>
+      
+      <div class="ie-toolbar" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Import / Export</span>
+        
+        <button onclick="importGeneric('daily')" style="background:rgba(59,130,246,0.10);color:#93c5fd;border:1px solid rgba(59,130,246,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-upload-2-line"></i> Import Excel/CSV
+        </button>
+        <input type="file" id="importFile_daily" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleGenericImport(this,'daily')">
+        <button onclick="exportTab('daily')" style="background:rgba(16,185,129,0.10);color:#6ee7b7;border:1px solid rgba(16,185,129,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-download-2-line"></i> Export Excel
+        </button>
+      </div>
 
       <div class="entry-panel">
         <div class="entry-panel-label">Add Candidate</div>
@@ -280,6 +292,21 @@
     <!-- ════ SUBMISSION ════ -->
     <div id="submission" class="section">
       <h2>Submissions</h2>
+      
+      <div class="ie-toolbar" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Import / Export</span>
+        <button onclick="importCeipal()" style="background:rgba(245,158,11,0.12);color:#fcd34d;border:1px solid rgba(245,158,11,0.25);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+            <i class="ri-file-excel-2-line"></i> Import Ceipal Report
+          </button>
+          <input type="file" id="ceipalFileInput" accept=".xlsx,.xls" style="display:none" onchange="handleCeipalFile(this)">
+        <button onclick="importGeneric('submission')" style="background:rgba(59,130,246,0.10);color:#93c5fd;border:1px solid rgba(59,130,246,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-upload-2-line"></i> Import Excel/CSV
+        </button>
+        <input type="file" id="importFile_submission" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleGenericImport(this,'submission')">
+        <button onclick="exportTab('submission')" style="background:rgba(16,185,129,0.10);color:#6ee7b7;border:1px solid rgba(16,185,129,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-download-2-line"></i> Export Excel
+        </button>
+      </div>
       <div class="table-container">
         <table>
           <thead>
@@ -305,6 +332,18 @@
     <!-- ════ PROPOSAL ════ -->
     <div id="proposal" class="section">
       <h2>Proposals</h2>
+      
+      <div class="ie-toolbar" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Import / Export</span>
+        
+        <button onclick="importGeneric('proposal')" style="background:rgba(59,130,246,0.10);color:#93c5fd;border:1px solid rgba(59,130,246,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-upload-2-line"></i> Import Excel/CSV
+        </button>
+        <input type="file" id="importFile_proposal" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleGenericImport(this,'proposal')">
+        <button onclick="exportTab('proposal')" style="background:rgba(16,185,129,0.10);color:#6ee7b7;border:1px solid rgba(16,185,129,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-download-2-line"></i> Export Excel
+        </button>
+      </div>
       <div class="table-container">
         <table>
           <thead>
@@ -332,6 +371,18 @@
     <!-- ════ INTERVIEW ════ -->
     <div id="interview" class="section">
       <h2>Interviews</h2>
+      
+      <div class="ie-toolbar" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Import / Export</span>
+        
+        <button onclick="importGeneric('interview')" style="background:rgba(59,130,246,0.10);color:#93c5fd;border:1px solid rgba(59,130,246,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-upload-2-line"></i> Import Excel/CSV
+        </button>
+        <input type="file" id="importFile_interview" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleGenericImport(this,'interview')">
+        <button onclick="exportTab('interview')" style="background:rgba(16,185,129,0.10);color:#6ee7b7;border:1px solid rgba(16,185,129,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-download-2-line"></i> Export Excel
+        </button>
+      </div>
       <div class="table-container">
         <table>
           <thead>
@@ -357,6 +408,18 @@
     <!-- ════ PLACEMENT ════ -->
     <div id="placement" class="section">
       <h2>Placements</h2>
+      
+      <div class="ie-toolbar" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Import / Export</span>
+        
+        <button onclick="importGeneric('placement')" style="background:rgba(59,130,246,0.10);color:#93c5fd;border:1px solid rgba(59,130,246,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-upload-2-line"></i> Import Excel/CSV
+        </button>
+        <input type="file" id="importFile_placement" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleGenericImport(this,'placement')">
+        <button onclick="exportTab('placement')" style="background:rgba(16,185,129,0.10);color:#6ee7b7;border:1px solid rgba(16,185,129,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-download-2-line"></i> Export Excel
+        </button>
+      </div>
       <div class="table-container">
         <table>
           <thead>
@@ -382,6 +445,18 @@
     <!-- ════ START ════ -->
     <div id="start" class="section">
       <h2>Starts</h2>
+      
+      <div class="ie-toolbar" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Import / Export</span>
+        
+        <button onclick="importGeneric('start')" style="background:rgba(59,130,246,0.10);color:#93c5fd;border:1px solid rgba(59,130,246,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-upload-2-line"></i> Import Excel/CSV
+        </button>
+        <input type="file" id="importFile_start" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleGenericImport(this,'start')">
+        <button onclick="exportTab('start')" style="background:rgba(16,185,129,0.10);color:#6ee7b7;border:1px solid rgba(16,185,129,0.22);padding:7px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ri-download-2-line"></i> Export Excel
+        </button>
+      </div>
       <div class="table-container">
         <table>
           <thead>
@@ -408,6 +483,7 @@
 </div><!-- /app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="script.js"></script>
 
 
