@@ -299,10 +299,33 @@ td:last-child button{margin-right:4px;}
 
 .today-row td{background:rgba(59,130,246,0.1);color:#93c5fd;}
 
-/* ── SCROLL SYNC ── */
+/* ── SCROLL SYNC — BOTTOM HORIZONTAL SCROLLBAR ── */
 .table-scroll-wrapper{position:relative;margin-top:18px;}
-.table-scroll-top{overflow-x:auto;height:7px;margin-bottom:2px;scrollbar-width:thin;}
+
+/* TOP ghost bar (hidden — kept for JS compat) */
+.table-scroll-top{
+  overflow-x:auto;height:0px;margin-bottom:0;
+  scrollbar-width:none;pointer-events:none;
+}
+.table-scroll-top::-webkit-scrollbar{display:none;}
 .table-scroll-top div{height:1px;}
+
+/* BOTTOM scroll bar — visible, styled */
+.table-container{
+  overflow-x:auto;
+  scrollbar-width:thin;
+  scrollbar-color:#3b82f6 #0c1628;
+}
+.table-container::-webkit-scrollbar{height:8px;}
+.table-container::-webkit-scrollbar-track{background:#0c1628;border-radius:8px;}
+.table-container::-webkit-scrollbar-thumb{
+  background:linear-gradient(90deg,#3b82f6,#06b6d4);
+  border-radius:8px;
+  border:1px solid #1e293b;
+}
+.table-container::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(90deg,#60a5fa,#22d3ee);
+}
 
 /* ── PRODUCTIVITY ── */
 .panel{
@@ -353,4 +376,26 @@ td:last-child button{margin-right:4px;}
   .main{margin-left:0;padding:20px;height:auto;}
   .kpi-cards{grid-template-columns:1fr 1fr;}
   #app{flex-direction:column;}
+}
+
+/* ── DAILY PAGINATION BAR ── */
+#dailyPagBar{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  padding:14px 4px 6px;
+  margin-top:4px;
+}
+#dailyPagBar button{
+  min-width:32px;
+  padding:5px 9px;
+  border-radius:7px;
+  font-size:12px;
+  transition:all 0.12s;
+}
+#dailyPagBar button:disabled{
+  opacity:0.35;
+  cursor:default;
+  transform:none;
 }

@@ -85,7 +85,7 @@ let DB = {
 
 /* ================= PAGINATION ================= */
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 50;
 
 const paginationState = {
   daily: 1,
@@ -632,56 +632,58 @@ function clearDaily(){
 function renderDaily(){
   if(!dailyBody) return;
 
-  dailyBody.innerHTML="";
+  dailyBody.innerHTML = "";
 
-  const todayDate = today();
+  const todayDate  = today();
+  const currentPage = paginationState.daily || 1;
 
-  let grouped = {};
+  /* ── 1. Flatten all records sorted: newest date first, newest entry first within day ── */
+  const allRecords = [...DB.daily].sort((a, b) => {
+    const dateDiff = new Date(b.entry_date) - new Date(a.entry_date);
+    if (dateDiff !== 0) return dateDiff;
+    return DB.daily.indexOf(b) - DB.daily.indexOf(a);
+  });
 
-  /* Group by entry_date */
-  DB.daily.forEach(r=>{
-    if(!grouped[r.entry_date]){
-      grouped[r.entry_date] = [];
-    }
+  const totalRecords = allRecords.length;
+  const totalPages   = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
+  const safePage     = Math.min(currentPage, totalPages);
+  paginationState.daily = safePage;
+
+  /* ── 2. Slice for current page ── */
+  const startIdx = (safePage - 1) * PAGE_SIZE;
+  const pageRecs = allRecords.slice(startIdx, startIdx + PAGE_SIZE);
+
+  /* ── 3. Group sliced records by date for display headers ── */
+  const grouped = {};
+  pageRecs.forEach(r => {
+    if (!grouped[r.entry_date]) grouped[r.entry_date] = [];
     grouped[r.entry_date].push(r);
   });
 
+  /* Global row counter for this page (1-based, continuous) */
+  let rowNum = startIdx + 1;
+
   Object.keys(grouped)
-    .sort((a,b)=> new Date(b) - new Date(a))  // latest first
-    .forEach(date=>{
-
+    .sort((a, b) => new Date(b) - new Date(a))
+    .forEach(date => {
       const isToday = date === todayDate;
-
-      /* Date header row */
       dailyBody.innerHTML += `
-        <tr class="date-row ${isToday ? 'today-row' : ''}">
-          <td colspan="14">
-            ${formatDisplayDate(date)}
-          </td>
-        </tr>
-      `;
+        <tr class="date-row ${isToday ? "today-row" : ""}">
+          <td colspan="14">${formatDisplayDate(date)}</td>
+        </tr>`;
 
-      /* Newest entries at top within each day group */
-      const dayEntries = [...grouped[date]].reverse();
-
-      dayEntries.forEach((r,index)=>{
-
+      grouped[date].forEach(r => {
         dailyBody.innerHTML += `
           <tr>
-            <td>${index+1}</td>
+            <td>${rowNum++}</td>
             <td>
-              <input type="date"
-                value="${r.entry_date||''}"
+              <input type="date" value="${r.entry_date||""}"
                 style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 6px;font-size:12px;width:130px;"
                 onchange="updateDate('daily','${r.id}',this.value)">
             </td>
-
             <td>
-            <a href="#" onclick="viewResume(${DB.daily.indexOf(r)})" style="color:#1a73e8;font-weight:600;text-decoration:none;">
-            ${r.name||""}
-            </a>
+              <a href="#" onclick="viewResume(${DB.daily.indexOf(r)})" style="color:#1a73e8;font-weight:600;text-decoration:none;">${r.name||""}</a>
             </td>
-
             <td>${r.email||""}</td>
             <td>${r.phone||""}</td>
             <td>${r.requirement||""}</td>
@@ -690,30 +692,111 @@ function renderDaily(){
             <td>${r.visa||""}</td>
             <td>${r.source||""}</td>
             <td>
-            <input value="${r.notes||''}"
-              placeholder="Add notes..."
-              style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:160px;"
-              onchange="updateNoteById('daily','${r.id}',this.value)">
+              <input value="${r.notes||""}" placeholder="Add notes..."
+                style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:160px;"
+                onchange="updateNoteById('daily','${r.id}',this.value)">
             </td>
-
-            <td style="font-weight:bold;">
-            ${r.ai_score ?? ""}
-            </td>
-
-           <td>
-           ${r.ai_notes || ""}
-           </td>
-
+            <td style="font-weight:bold;">${r.ai_score ?? ""}</td>
+            <td>${r.ai_notes || ""}</td>
             <td>
-           <button onclick="moveDailyToSubmission('${r.id}')">Sub</button>
-           <button onclick="moveDailyToProposal('${r.id}')">Proposal</button>
-           <button onclick="deleteRow('daily',${DB.daily.indexOf(r)})">Del</button>
-          </td>
-          </tr>
-        `;
+              <button onclick="moveDailyToSubmission('${r.id}')">Sub</button>
+              <button onclick="moveDailyToProposal('${r.id}')">Proposal</button>
+              <button onclick="deleteRow('daily',${DB.daily.indexOf(r)})">Del</button>
+            </td>
+          </tr>`;
       });
-
     });
+
+  /* ── 4. Render pagination bar BELOW the table ── */
+  renderDailyPagination(safePage, totalPages, totalRecords);
+
+  /* ── 5. Sync bottom scroll bar width ── */
+  setTimeout(syncDailyScrollBar, 50);
+}
+
+function renderDailyPagination(currentPage, totalPages, totalRecords){
+  let bar = document.getElementById("dailyPagBar");
+  if(!bar){
+    bar = document.createElement("div");
+    bar.id = "dailyPagBar";
+    bar.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:14px 4px 4px;";
+    const wrapper = document.querySelector("#daily .table-scroll-wrapper") ||
+                    document.querySelector("#daily .table-container");
+    if(wrapper) wrapper.parentNode.insertBefore(bar, wrapper.nextSibling);
+  }
+
+  const from = (currentPage - 1) * PAGE_SIZE + 1;
+  const to   = Math.min(currentPage * PAGE_SIZE, totalRecords);
+
+  let html = `<span style="font-size:12px;color:#64748b;margin-right:6px;">
+    Showing <strong style="color:#93c5fd;">${from}–${to}</strong> of
+    <strong style="color:#93c5fd;">${totalRecords}</strong>
+  </span>`;
+
+  /* Prev */
+  html += `<button onclick="changeDailyPage(${currentPage - 1})"
+    ${currentPage === 1 ? "disabled" : ""}
+    style="padding:5px 11px;border-radius:7px;border:1px solid ${currentPage===1?"#1e293b":"#334155"};
+      background:${currentPage===1?"#0f172a":"#1e293b"};color:${currentPage===1?"#334155":"#94a3b8"};
+      font-size:12px;cursor:${currentPage===1?"default":"pointer"};">‹ Prev</button>`;
+
+  /* Page number buttons — show max 7 around current */
+  const delta = 3;
+  const pages = [];
+  for(let p = 1; p <= totalPages; p++){
+    if(p === 1 || p === totalPages || (p >= currentPage - delta && p <= currentPage + delta)){
+      pages.push(p);
+    }
+  }
+  let prev = null;
+  pages.forEach(p => {
+    if(prev !== null && p - prev > 1){
+      html += `<span style="color:#334155;font-size:13px;padding:0 2px;">…</span>`;
+    }
+    const isActive = p === currentPage;
+    html += `<button onclick="changeDailyPage(${p})"
+      style="min-width:32px;padding:5px 9px;border-radius:7px;
+        border:1px solid ${isActive?"#3b82f6":"#334155"};
+        background:${isActive?"#3b82f6":"#1e293b"};
+        color:${isActive?"#fff":"#94a3b8"};
+        font-size:12px;font-weight:${isActive?"700":"400"};cursor:pointer;">${p}</button>`;
+    prev = p;
+  });
+
+  /* Next */
+  html += `<button onclick="changeDailyPage(${currentPage + 1})"
+    ${currentPage === totalPages ? "disabled" : ""}
+    style="padding:5px 11px;border-radius:7px;border:1px solid ${currentPage===totalPages?"#1e293b":"#334155"};
+      background:${currentPage===totalPages?"#0f172a":"#1e293b"};color:${currentPage===totalPages?"#334155":"#94a3b8"};
+      font-size:12px;cursor:${currentPage===totalPages?"default":"pointer"};">Next ›</button>`;
+
+  bar.innerHTML = html;
+}
+
+function changeDailyPage(page){
+  const total = Math.max(1, Math.ceil(DB.daily.length / PAGE_SIZE));
+  if(page < 1 || page > total) return;
+  paginationState.daily = page;
+  renderDaily();
+  /* Scroll table back to top */
+  const tc = document.querySelector("#daily .table-container");
+  if(tc) tc.scrollTop = 0;
+}
+
+/* ── BOTTOM HORIZONTAL SCROLL SYNC ── */
+function syncDailyScrollBar(){
+  const wrapper = document.querySelector("#daily .table-scroll-wrapper");
+  if(!wrapper) return;
+  const tc    = wrapper.querySelector(".table-container");
+  const tbl   = wrapper.querySelector("table");
+  const topSc = wrapper.querySelector(".table-scroll-top");
+  if(!tc || !tbl || !topSc) return;
+  /* Set the inner div width to match actual table width */
+  const inner = topSc.querySelector("div");
+  if(inner) inner.style.width = tbl.scrollWidth + "px";
+  /* Sync scroll positions */
+  topSc.onscroll = () => { tc.scrollLeft = topSc.scrollLeft; };
+  tc.onscroll    = () => { topSc.scrollLeft = tc.scrollLeft; };
 }
 
 /* ================= STAGE MOVEMENT (FINAL CLEAN ARCHITECTURE) ================= */
@@ -2011,6 +2094,8 @@ window.updateNote = updateNote;
 window.updateDate = updateDate;
 window.updateNoteById = updateNoteById;
 window.deleteRow = deleteRow;
+window.changeDailyPage = changeDailyPage;
+window.renderDailyPagination = renderDailyPagination;
 window.viewResume = viewResume;
 window.editJD = editJD;
 window.saveJDRow = saveJDRow;
