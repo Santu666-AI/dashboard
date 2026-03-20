@@ -2104,3 +2104,225 @@ window.viewJD = viewJD;
 window.updateJDField = updateJDField;
 window.updateJDStatus = updateJDStatus;
 
+
+
+/* =====================================================
+   IMPORT / EXPORT ENGINE — ALL TABS
+   Ceipal Column Map (xlsx cell refs, 0-indexed after skipping col A):
+     B=ProfileStatusID, C=NVR/JobCode, D=JobApplied, E=JobLocation
+     F=ClientJobID, G=Client, H=RecruitMgr, I=PrimaryRecruiter
+     J=ApplicantID, K=ApplicantName(Full), L=ApplicantLastName
+     M=EmailAddress, N=MobileNumber, O=Location, P=Source
+     Q=BillRate, R=PayRateTaxTerms, S=ClientBillRate
+     T=SubmittedOn, U=SubmittedBy, V=ReqAssignedOn, W=ApplicantFirstName
+===================================================== */
+
+/* ── CEIPAL IMPORT (Submission tab only) ── */
+function importCeipal(){
+  document.getElementById("ceipalFileInput").click();
+}
+
+async function handleCeipalFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  input.value = "";
+
+  const btn = document.querySelector("button[onclick='importCeipal()']");
+  if(btn){ btn.innerHTML = '<i class="ri-loader-4-line"></i> Importing...'; btn.disabled = true; }
+
+  try {
+    const arrayBuf = await file.arrayBuffer();
+
+    /* ── Read using cell-address approach (handles Ceipal's corrupt stylesheet + sparse rows) ── */
+    const wb = XLSX.read(arrayBuf, { type:"array", cellDates:false, raw:true, WTF:false });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+
+    /* Convert column letter(s) to 0-based index */
+    function colLetterToIdx(col){
+      col = col.toUpperCase();
+      let n = 0;
+      for(let i=0; i<col.length; i++) n = n*26 + (col.charCodeAt(i)-64);
+      return n - 1;  // 0-based
+    }
+
+    /* Get cell value by col-letter + row-number (1-based) */
+    function cellVal(col, row){
+      const key = col.toUpperCase() + row;
+      const cell = ws[key];
+      if(!cell) return "";
+      if(cell.t === 'n') return String(cell.v);
+      return String(cell.v || cell.w || "").trim();
+    }
+
+    /* Find the header row — look for "Applicant Name" anywhere in the sheet */
+    const range = XLSX.utils.decode_range(ws["!ref"] || "A1:Z200");
+    const totalRows = range.e.r + 1;  // 1-based max row
+    const totalCols = range.e.c + 1;
+
+    let headerRowNum = -1;
+    let colMap = {};  // fieldName → column letter
+
+    for(let r = 1; r <= Math.min(totalRows, 10); r++){
+      for(let c = 0; c < totalCols; c++){
+        const letter = XLSX.utils.encode_col(c);
+        const v = cellVal(letter, r).toLowerCase();
+        if(v.includes("applicant name") && !v.includes("last") && !v.includes("first")){
+          headerRowNum = r;
+          break;
+        }
+      }
+      if(headerRowNum > 0) break;
+    }
+
+    if(headerRowNum < 0){ alert("Could not find header row.\nExpected a row with 'Applicant Name'."); return; }
+
+    /* Build column map from header row */
+    for(let c = 0; c < totalCols; c++){
+      const letter = XLSX.utils.encode_col(c);
+      const hdr = cellVal(letter, headerRowNum).toLowerCase().trim();
+      if(hdr) colMap[hdr] = letter;
+    }
+
+    /* Helper: get column letter by header keyword */
+    function colOf(...keywords){
+      for(const kw of keywords){
+        for(const [hdr, letter] of Object.entries(colMap)){
+          if(hdr.includes(kw.toLowerCase())) return letter;
+        }
+      }
+      return null;
+    }
+
+    const cName   = colOf("applicant name");   // K — full name
+    const cFirst  = colOf("applicant first");   // W — first name
+    const cLast   = colOf("applicant last");    // L — last name
+    const cEmail  = colOf("email address","email");
+    const cPhone  = colOf("mobile number","phone","mobile");
+    const cNVR    = colOf("job code","id");     // C — NVR#
+    const cJob    = colOf("job applied");       // D — job title
+    const cClient = colOf("client");            // G
+    const cLoc    = colOf("location");          // O
+    const cSrc    = colOf("submission source","source");
+    const cDate   = colOf("submitted on");      // T
+    const cBy     = colOf("submitted by");      // U
+    const cBill   = colOf("bill rate");         // Q
+    const cPay    = colOf("submission pay rate","pay rate");
+    const cCBR    = colOf("client bill rate");  // S
+
+    /* Parse Ceipal date  MM/DD/YY HH:MM:SS → YYYY-MM-DD */
+    function parseCDate(raw){
+      if(!raw) return today();
+      const m = String(raw).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if(!m) return today();
+      let yr = parseInt(m[3]);
+      if(yr < 100) yr += 2000;
+      return `${yr}-${String(m[1]).padStart(2,"0")}-${String(m[2]).padStart(2,"0")}`;
+    }
+
+    function g(col, row){ return col ? cellVal(col, row) : ""; }
+
+    /* Section-header detector — row with only col A filled and data cols empty */
+    function isSectionHeader(r){
+      const nameVal  = g(cName,  r);
+      const emailVal = g(cEmail, r);
+      const nvrVal   = g(cNVR,   r);
+      return !nameVal && !emailVal && !nvrVal;
+    }
+
+    const inserts = [];
+    let skipped = 0;
+
+    for(let r = headerRowNum + 1; r <= totalRows; r++){
+      if(isSectionHeader(r)){ skipped++; continue; }
+
+      /* Build full name: prefer K (full), fallback W+L */
+      let name = g(cName, r).trim();
+      if(!name){
+        const first = g(cFirst, r).trim();
+        const last  = g(cLast,  r).trim();
+        name = [first, last].filter(Boolean).join(" ");
+      }
+
+      const email = g(cEmail, r).trim();
+      if(!name && !email){ skipped++; continue; }
+
+      const rawDate = g(cDate, r);
+      const bill    = g(cBill, r);
+      const pay     = g(cPay,  r);
+      const cbr     = g(cCBR,  r);
+      const subBy   = g(cBy,   r);
+
+      const notes = [
+        subBy                       ? `Submitted by: ${subBy}` : "",
+        bill && bill !== "N/A"      ? `Bill Rate: ${bill}`     : "",
+        pay  && pay  !== "N/A"      ? `Pay Rate: ${pay}`       : "",
+        cbr  && cbr  !== "N/A"      ? `Client Rate: ${cbr}`    : "",
+      ].filter(Boolean).join(" | ");
+
+      inserts.push({
+        submission_date: parseCDate(rawDate),
+        name,
+        email,
+        phone:       g(cPhone,  r),
+        requirement: g(cNVR,    r) || g(cJob, r),
+        client:      g(cClient, r),
+        location:    g(cLoc,    r),
+        visa:        "",
+        source:      g(cSrc,    r),
+        notes,
+      });
+    }
+
+    if(inserts.length === 0){
+      alert(`No valid records found in the file.\nRows checked: ${totalRows - headerRowNum}\nSkipped (empty/section headers): ${skipped}\n\nMake sure this is a Ceipal Submission Report.`);
+      return;
+    }
+
+    /* Preview confirm */
+    const first = inserts[0];
+    const ok = confirm(
+      `✅ Ceipal Report Ready to Import\n\n` +
+      `Records found:  ${inserts.length}\n` +
+      `Skipped (dividers/empty):  ${skipped}\n\n` +
+      `── First Record Preview ──\n` +
+      `Name:    ${first.name}\n` +
+      `Email:   ${first.email}\n` +
+      `Phone:   ${first.phone}\n` +
+      `NVR:     ${first.requirement}\n` +
+      `Client:  ${first.client}\n` +
+      `Date:    ${first.submission_date}\n` +
+      `Source:  ${first.source}\n\n` +
+      `Click OK to import all into Submissions.`
+    );
+    if(!ok) return;
+
+    /* Batch insert → Supabase */
+    const BATCH = 50;
+    let failCount = 0;
+    for(let b = 0; b < inserts.length; b += BATCH){
+      const chunk = inserts.slice(b, b + BATCH);
+      const { error } = await sb.from("submission").insert(chunk);
+      if(error){
+        failCount += chunk.length;
+        console.error("Insert batch error:", error.message, JSON.stringify(chunk[0]));
+      }
+    }
+
+    await fetchAllData();
+    renderStage("submission", "submissionBody");
+    renderKPI();
+    switchSection("submission");
+
+    if(failCount > 0){
+      alert(`Import finished.\n✅ Imported: ${inserts.length - failCount}\n❌ Failed: ${failCount}\n\nCheck console for error details.`);
+    } else {
+      alert(`✅ All ${inserts.length} records imported successfully!`);
+    }
+
+  } catch(err){
+    console.error("Ceipal import error:", err);
+    alert("Import failed:\n" + err.message + "\n\nCheck browser console for details.");
+  } finally {
+    if(btn){ btn.innerHTML = '<i class="ri-file-excel-2-line"></i> Import Ceipal Report'; btn.disabled = false; }
+  }
+}
