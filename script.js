@@ -51,6 +51,17 @@ window.handleCeipalFile    = function(){ console.warn("handleCeipalFile not read
 window.handleGenericImport = function(){ console.warn("handleGenericImport not ready yet"); };
 window.exportTab           = function(tab){ console.warn("exportTab not ready yet"); };
 
+/* ── EXACT columns per table — only these are sent to Supabase ── */
+const TABLE_COLS = {
+  daily: ['entry_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'source', 'notes', 'resume_text', 'ai_score', 'ai_notes'],
+  submission: ['submission_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
+  proposal: ['proposal_date', 'name', 'email', 'phone', 'requirement', 'client', 'program_name', 'pw_name', 'location', 'visa', 'notes'],
+  interview: ['interview_scheduled_on', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
+  placement: ['placement_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
+  start: ['start_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
+};
+
+
 const ATS_VERSION = "NVR ATS v1.0 LOCKED";
 console.log(ATS_VERSION);
 
@@ -808,6 +819,23 @@ function syncDailyScrollBar(){
 
 /* ================= STAGE MOVEMENT (FINAL CLEAN ARCHITECTURE) ================= */
 
+
+/* ── SAFE SUBMISSION INSERT: strips columns not in schema ── */
+async function insertSubmission(payload){
+  // Remove any fields that don't exist in the submission table
+  const safe = {
+    submission_date: payload.submission_date || payload.entry_date || "",
+    name:            payload.name            || "",
+    email:           payload.email           || "",
+    phone:           payload.phone           || "",
+    requirement:     payload.requirement     || "",
+    client:          payload.client          || "",
+    location:        payload.location        || "",
+    visa:            payload.visa            || "",
+    notes:           payload.notes           || "",
+  };
+  return await sb.from("submission").insert([safe]);
+}
 
 /* ✅ DAILY → SUBMISSION */
 async function moveDailyToSubmission(id){
@@ -2314,10 +2342,22 @@ async function handleCeipalFile(input){
     let failCount = 0;
     for(let b = 0; b < inserts.length; b += BATCH){
       const chunk = inserts.slice(b, b + BATCH);
-      const { error } = await sb.from("submission").insert(chunk);
+      /* Strip any unknown columns before insert */
+      const safeChunk = chunk.map(r => ({
+        submission_date: r.submission_date || "",
+        name:            r.name            || "",
+        email:           r.email           || "",
+        phone:           r.phone           || "",
+        requirement:     r.requirement     || "",
+        client:          r.client          || "",
+        location:        r.location        || "",
+        visa:            r.visa            || "",
+        notes:           r.notes           || "",
+      }));
+      const { error } = await sb.from("submission").insert(safeChunk);
       if(error){
         failCount += chunk.length;
-        console.error("Insert batch error:", error.message, JSON.stringify(chunk[0]));
+        console.error("Insert batch error:", error.message, JSON.stringify(safeChunk[0]));
       }
     }
 
@@ -2355,26 +2395,30 @@ async function handleGenericImport(input, tab){
   input.value = "";
 
   try {
-    const data = await file.arrayBuffer();
-    const wb   = XLSX.read(data, { type:"array", raw:false });
-    const ws   = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { defval:"" });
+    const arrayBuf = await file.arrayBuffer();
+    /* Use raw:true + cellDates:false to handle corrupt stylesheets gracefully */
+    const wb = XLSX.read(arrayBuf, { type:"array", raw:true, cellDates:false });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+
+    /* sheet_to_json with header:1 gives us arrays; use object mode with defval */
+    const rows = XLSX.utils.sheet_to_json(ws, { defval:"", raw:false });
 
     if(!rows.length){ alert("No data found in file."); return; }
 
-    const dateFieldMap = {
-      daily:      "entry_date",
-      submission: "submission_date",
-      proposal:   "proposal_date",
-      interview:  "interview_scheduled_on",
-      placement:  "placement_date",
-      start:      "start_date"
+    /* Exact date field per table */
+    const DATE_FIELD = {
+      daily:"entry_date", submission:"submission_date", proposal:"proposal_date",
+      interview:"interview_scheduled_on", placement:"placement_date", start:"start_date"
     };
-    const dateField = dateFieldMap[tab] || "entry_date";
+    const dateField = DATE_FIELD[tab] || "entry_date";
+
+    /* Exact allowed columns per table — matches Supabase schema exactly */
+    const allowed = TABLE_COLS[tab] || [];
 
     const norm = s => String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
 
-    function findVal(row, ...keys){
+    /* Find value in a row by fuzzy column name match */
+    function fv(row, ...keys){
       for(const k of keys){
         for(const rk of Object.keys(row)){
           if(norm(rk).includes(norm(k))) return String(row[rk]||"").trim();
@@ -2383,119 +2427,99 @@ async function handleGenericImport(input, tab){
       return "";
     }
 
-    function parseDate(raw){
+    /* Parse date: MM/DD/YY, MM/DD/YYYY, YYYY-MM-DD */
+    function pd(raw){
       if(!raw) return today();
-      const m = String(raw).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-      if(m){ let y=parseInt(m[3]); if(y<100)y+=2000; return `${y}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`; }
-      if(/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.substring(0,10);
+      const s = String(raw);
+      const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if(m1){ let y=parseInt(m1[3]); if(y<100)y+=2000; return `${y}-${m1[1].padStart(2,"0")}-${m1[2].padStart(2,"0")}`; }
+      if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
       return today();
     }
 
-    const inserts = rows.map(row => {
-      const rec = {
-        name:        findVal(row,"name","applicant","candidate","full"),
-        email:       findVal(row,"email"),
-        phone:       findVal(row,"phone","mobile","contact"),
-        requirement: findVal(row,"requirement","job","nvr","position","title"),
-        client:      findVal(row,"client","company","end client"),
-        location:    findVal(row,"location","city","address"),
-        visa:        findVal(row,"visa","work auth"),
-        notes:       findVal(row,"notes","comments","remark"),
+    const inserts = [];
+    rows.forEach(row => {
+      /* Build every possible field */
+      const all = {
+        entry_date:             pd(fv(row,"date","entry")),
+        submission_date:        pd(fv(row,"submission date","submitted on","sub date","date")),
+        proposal_date:          pd(fv(row,"proposal date","date")),
+        interview_scheduled_on: pd(fv(row,"interview date","interview","date")),
+        placement_date:         pd(fv(row,"placement date","date")),
+        start_date:             pd(fv(row,"start date","date")),
+        name:        fv(row,"name","applicant","candidate","full name"),
+        email:       fv(row,"email"),
+        phone:       fv(row,"phone","mobile","contact"),
+        requirement: fv(row,"requirement","job","nvr","position","title","job code"),
+        client:      fv(row,"client","company","end client"),
+        location:    fv(row,"location","city","address"),
+        visa:        fv(row,"visa","work auth","authorization"),
+        source:      fv(row,"source"),
+        notes:       fv(row,"notes","comments","remark"),
+        program_name:fv(row,"program name","program"),
+        pw_name:     fv(row,"pw name","pw"),
+        resume_text: fv(row,"resume text","resume"),
+        ai_score:    fv(row,"ai score","score") || null,
+        ai_notes:    fv(row,"ai notes"),
       };
-      rec[dateField] = parseDate(findVal(row,"date","submitted","start","placement","interview","proposal","entry"));
-      if(tab==="proposal"){
-        rec.program_name = findVal(row,"program");
-        rec.pw_name      = findVal(row,"pw");
-      }
-      return rec;
-    }).filter(r => r.name || r.email);
 
-    if(!inserts.length){ alert("No valid records found.\nFile needs at least a Name or Email column."); return; }
+      /* Skip rows with no name AND no email */
+      if(!all.name && !all.email) return;
 
+      /* Build safe record — ONLY columns that exist in this table */
+      const rec = {};
+      allowed.forEach(col => {
+        const val = all[col];
+        rec[col] = val !== undefined && val !== null ? val : "";
+      });
+
+      inserts.push(rec);
+    });
+
+    if(!inserts.length){
+      alert("No valid records found.\nFile must have at least a Name or Email column.");
+      return;
+    }
+
+    const tabName = tab.charAt(0).toUpperCase() + tab.slice(1);
+    const first   = inserts[0];
     const ok = confirm(
-      `Import ${inserts.length} records into ${tab.charAt(0).toUpperCase()+tab.slice(1)}?\n\n` +
-      `First record:\nName: ${inserts[0].name}\nEmail: ${inserts[0].email}\nDate: ${inserts[0][dateField]}`
+      `Import ${inserts.length} records into ${tabName}?\n\n` +
+      `── First Record ──\n` +
+      `Name:  ${first.name || ""}\n` +
+      `Email: ${first.email || ""}\n` +
+      `Date:  ${first[dateField] || ""}\n` +
+      `NVR:   ${first.requirement || ""}\n` +
+      `Client:${first.client || ""}\n\n` +
+      `Columns to import: ${Object.keys(first).join(", ")}`
     );
     if(!ok) return;
 
-    const BATCH=50; let fails=0;
-    for(let b=0; b<inserts.length; b+=BATCH){
-      const { error } = await sb.from(tab).insert(inserts.slice(b,b+BATCH));
-      if(error){ fails+=Math.min(BATCH,inserts.length-b); console.error("Generic import error:",error.message); }
+    const BATCH = 50;
+    let fails = 0;
+    for(let b = 0; b < inserts.length; b += BATCH){
+      const chunk = inserts.slice(b, b + BATCH);
+      const { error } = await sb.from(tab).insert(chunk);
+      if(error){
+        fails += chunk.length;
+        console.error(`[${tab}] insert error:`, error.message, JSON.stringify(chunk[0]));
+      }
     }
 
     await fetchAllData();
-    if(tab==="daily") renderDaily();
-    else renderStage(tab, tab+"Body");
+    if(tab === "daily") renderDaily();
+    else renderStage(tab, tab + "Body");
     renderKPI();
     switchSection(tab);
-    alert(`✅ Imported ${inserts.length - fails} records into ${tab}.\n${fails>0?`❌ Failed: ${fails}`:"All successful!"}`);
+
+    alert(
+      fails > 0
+        ? `Import done.\n✅ Imported: ${inserts.length - fails}\n❌ Failed: ${fails}\n\nCheck browser console for details.`
+        : `✅ ${inserts.length} records imported into ${tabName} successfully!`
+    );
 
   } catch(err){
     console.error("Generic import error:", err);
     alert("Import failed: " + err.message);
   }
 }
-
-
-/* ══════════════════════════════════════════
-   EXPORT — all tabs → Excel download
-══════════════════════════════════════════ */
-function exportTab(tab){
-  const data = DB[tab];
-  if(!data || !data.length){ alert("No data to export in this tab."); return; }
-
-  const dateFieldMap = {
-    daily:      "entry_date",
-    submission: "submission_date",
-    proposal:   "proposal_date",
-    interview:  "interview_scheduled_on",
-    placement:  "placement_date",
-    start:      "start_date"
-  };
-  const dateF = dateFieldMap[tab] || "entry_date";
-
-  const exportRows = data.map((r,i) => {
-    const row = {
-      "#":           i+1,
-      "Date":        r[dateF] || "",
-      "Name":        r.name || "",
-      "Email":       r.email || "",
-      "Phone":       r.phone || "",
-      "Requirement": r.requirement || "",
-      "Client":      r.client || "",
-      "Location":    r.location || "",
-      "Visa":        r.visa || "",
-      "Notes":       r.notes || "",
-    };
-    if(tab==="daily"){
-      row["AI Score"] = r.ai_score || "";
-      row["AI Notes"] = r.ai_notes || "";
-    }
-    if(tab==="proposal"){
-      row["Program"]  = r.program_name || "";
-      row["PW Name"]  = r.pw_name || "";
-    }
-    return row;
-  });
-
-  const ws = XLSX.utils.json_to_sheet(exportRows);
-  ws["!cols"] = [
-    {wch:4},{wch:12},{wch:24},{wch:30},{wch:16},
-    {wch:26},{wch:22},{wch:22},{wch:12},{wch:40}
-  ];
-  const wbOut = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wbOut, ws, tab.charAt(0).toUpperCase()+tab.slice(1));
-  XLSX.writeFile(wbOut, `NVR_${tab}_${today()}.xlsx`);
-}
-
-
-/* ══════════════════════════════════════════
-   EXPOSE ALL IMPORT/EXPORT GLOBALS
-══════════════════════════════════════════ */
-window.importCeipal        = importCeipal;
-window.handleCeipalFile    = handleCeipalFile;
-window.importGeneric       = importGeneric;
-window.handleGenericImport = handleGenericImport;
-window.exportTab           = exportTab;
-
