@@ -44,6 +44,13 @@ function uid(){
 
 console.log("Supabase Connected Successfully");
 
+/* ── EARLY STUBS: prevent "not defined" if buttons clicked before script fully loads ── */
+window.importCeipal        = function(){ document.getElementById("ceipalFileInput")?.click(); };
+window.importGeneric       = function(tab){ document.getElementById("importFile_"+tab)?.click(); };
+window.handleCeipalFile    = function(){ console.warn("handleCeipalFile not ready yet"); };
+window.handleGenericImport = function(){ console.warn("handleGenericImport not ready yet"); };
+window.exportTab           = function(tab){ console.warn("exportTab not ready yet"); };
+
 const ATS_VERSION = "NVR ATS v1.0 LOCKED";
 console.log(ATS_VERSION);
 
@@ -2259,6 +2266,13 @@ async function handleCeipalFile(input){
         cbr  && cbr  !== "N/A"      ? `Client Rate: ${cbr}`    : "",
       ].filter(Boolean).join(" | ");
 
+      /* ── FILTER: only import rows submitted by Varada Chari ── */
+      const submittedBy = g(cBy, r).trim();
+      if(submittedBy.toLowerCase() !== "varada chari"){ skipped++; continue; }
+
+      const srcVal = g(cSrc, r);
+      const fullNotes = [notes, srcVal ? `Source: ${srcVal}` : ""].filter(Boolean).join(" | ");
+
       inserts.push({
         submission_date: parseCDate(rawDate),
         name,
@@ -2268,8 +2282,7 @@ async function handleCeipalFile(input){
         client:      g(cClient, r),
         location:    g(cLoc,    r),
         visa:        "",
-        source:      g(cSrc,    r),
-        notes,
+        notes:       fullNotes,
       });
     }
 
@@ -2281,18 +2294,18 @@ async function handleCeipalFile(input){
     /* Preview confirm */
     const first = inserts[0];
     const ok = confirm(
-      `✅ Ceipal Report Ready to Import\n\n` +
-      `Records found:  ${inserts.length}\n` +
-      `Skipped (dividers/empty):  ${skipped}\n\n` +
+      `✅ Ceipal Report Ready to Import\n` +
+      `🔍 Filter: Submitted By = Varada Chari only\n\n` +
+      `Varada Chari records:  ${inserts.length}\n` +
+      `Skipped (other recruiters + empty):  ${skipped}\n\n` +
       `── First Record Preview ──\n` +
       `Name:    ${first.name}\n` +
       `Email:   ${first.email}\n` +
       `Phone:   ${first.phone}\n` +
       `NVR:     ${first.requirement}\n` +
       `Client:  ${first.client}\n` +
-      `Date:    ${first.submission_date}\n` +
-      `Source:  ${first.source}\n\n` +
-      `Click OK to import all into Submissions.`
+      `Date:    ${first.submission_date}\n\n` +
+      `Click OK to import into Submissions.`
     );
     if(!ok) return;
 
@@ -2326,3 +2339,163 @@ async function handleCeipalFile(input){
     if(btn){ btn.innerHTML = '<i class="ri-file-excel-2-line"></i> Import Ceipal Report'; btn.disabled = false; }
   }
 }
+
+
+/* ══════════════════════════════════════════
+   GENERIC IMPORT — all tabs (Excel or CSV)
+══════════════════════════════════════════ */
+function importGeneric(tab){
+  const input = document.getElementById(`importFile_${tab}`);
+  if(input) input.click();
+}
+
+async function handleGenericImport(input, tab){
+  const file = input.files[0];
+  if(!file) return;
+  input.value = "";
+
+  try {
+    const data = await file.arrayBuffer();
+    const wb   = XLSX.read(data, { type:"array", raw:false });
+    const ws   = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval:"" });
+
+    if(!rows.length){ alert("No data found in file."); return; }
+
+    const dateFieldMap = {
+      daily:      "entry_date",
+      submission: "submission_date",
+      proposal:   "proposal_date",
+      interview:  "interview_scheduled_on",
+      placement:  "placement_date",
+      start:      "start_date"
+    };
+    const dateField = dateFieldMap[tab] || "entry_date";
+
+    const norm = s => String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+
+    function findVal(row, ...keys){
+      for(const k of keys){
+        for(const rk of Object.keys(row)){
+          if(norm(rk).includes(norm(k))) return String(row[rk]||"").trim();
+        }
+      }
+      return "";
+    }
+
+    function parseDate(raw){
+      if(!raw) return today();
+      const m = String(raw).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if(m){ let y=parseInt(m[3]); if(y<100)y+=2000; return `${y}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`; }
+      if(/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.substring(0,10);
+      return today();
+    }
+
+    const inserts = rows.map(row => {
+      const rec = {
+        name:        findVal(row,"name","applicant","candidate","full"),
+        email:       findVal(row,"email"),
+        phone:       findVal(row,"phone","mobile","contact"),
+        requirement: findVal(row,"requirement","job","nvr","position","title"),
+        client:      findVal(row,"client","company","end client"),
+        location:    findVal(row,"location","city","address"),
+        visa:        findVal(row,"visa","work auth"),
+        notes:       findVal(row,"notes","comments","remark"),
+      };
+      rec[dateField] = parseDate(findVal(row,"date","submitted","start","placement","interview","proposal","entry"));
+      if(tab==="proposal"){
+        rec.program_name = findVal(row,"program");
+        rec.pw_name      = findVal(row,"pw");
+      }
+      return rec;
+    }).filter(r => r.name || r.email);
+
+    if(!inserts.length){ alert("No valid records found.\nFile needs at least a Name or Email column."); return; }
+
+    const ok = confirm(
+      `Import ${inserts.length} records into ${tab.charAt(0).toUpperCase()+tab.slice(1)}?\n\n` +
+      `First record:\nName: ${inserts[0].name}\nEmail: ${inserts[0].email}\nDate: ${inserts[0][dateField]}`
+    );
+    if(!ok) return;
+
+    const BATCH=50; let fails=0;
+    for(let b=0; b<inserts.length; b+=BATCH){
+      const { error } = await sb.from(tab).insert(inserts.slice(b,b+BATCH));
+      if(error){ fails+=Math.min(BATCH,inserts.length-b); console.error("Generic import error:",error.message); }
+    }
+
+    await fetchAllData();
+    if(tab==="daily") renderDaily();
+    else renderStage(tab, tab+"Body");
+    renderKPI();
+    switchSection(tab);
+    alert(`✅ Imported ${inserts.length - fails} records into ${tab}.\n${fails>0?`❌ Failed: ${fails}`:"All successful!"}`);
+
+  } catch(err){
+    console.error("Generic import error:", err);
+    alert("Import failed: " + err.message);
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   EXPORT — all tabs → Excel download
+══════════════════════════════════════════ */
+function exportTab(tab){
+  const data = DB[tab];
+  if(!data || !data.length){ alert("No data to export in this tab."); return; }
+
+  const dateFieldMap = {
+    daily:      "entry_date",
+    submission: "submission_date",
+    proposal:   "proposal_date",
+    interview:  "interview_scheduled_on",
+    placement:  "placement_date",
+    start:      "start_date"
+  };
+  const dateF = dateFieldMap[tab] || "entry_date";
+
+  const exportRows = data.map((r,i) => {
+    const row = {
+      "#":           i+1,
+      "Date":        r[dateF] || "",
+      "Name":        r.name || "",
+      "Email":       r.email || "",
+      "Phone":       r.phone || "",
+      "Requirement": r.requirement || "",
+      "Client":      r.client || "",
+      "Location":    r.location || "",
+      "Visa":        r.visa || "",
+      "Notes":       r.notes || "",
+    };
+    if(tab==="daily"){
+      row["AI Score"] = r.ai_score || "";
+      row["AI Notes"] = r.ai_notes || "";
+    }
+    if(tab==="proposal"){
+      row["Program"]  = r.program_name || "";
+      row["PW Name"]  = r.pw_name || "";
+    }
+    return row;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportRows);
+  ws["!cols"] = [
+    {wch:4},{wch:12},{wch:24},{wch:30},{wch:16},
+    {wch:26},{wch:22},{wch:22},{wch:12},{wch:40}
+  ];
+  const wbOut = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wbOut, ws, tab.charAt(0).toUpperCase()+tab.slice(1));
+  XLSX.writeFile(wbOut, `NVR_${tab}_${today()}.xlsx`);
+}
+
+
+/* ══════════════════════════════════════════
+   EXPOSE ALL IMPORT/EXPORT GLOBALS
+══════════════════════════════════════════ */
+window.importCeipal        = importCeipal;
+window.handleCeipalFile    = handleCeipalFile;
+window.importGeneric       = importGeneric;
+window.handleGenericImport = handleGenericImport;
+window.exportTab           = exportTab;
+
