@@ -1409,15 +1409,37 @@ document.addEventListener("DOMContentLoaded", async function(){
       const encoded = hash.replace("#candidate=", "");
       const data = JSON.parse(decodeURIComponent(encoded));
       window.history.replaceState(null, "", window.location.pathname);
+
+      /* ── CLEAN BAD NAMES FROM CEIPAL UI ARTIFACTS ── */
+      const CEIPAL_JUNK_NAMES = [
+        "switch account","profile migrated","sign out","log out",
+        "logout","sign in","login","candidate","applicant",
+        "full name","name","user","unknown","n/a","na",
+        "ceipal","ats","save to daily","parse page"
+      ];
+      function cleanCeipalName(raw) {
+        if (!raw || !raw.trim()) return "";
+        const lower = raw.trim().toLowerCase();
+        /* Reject known Ceipal UI labels */
+        if (CEIPAL_JUNK_NAMES.some(j => lower === j || lower.includes(j))) return "";
+        /* Reject if contains digits (not a real name) */
+        if (/\d/.test(raw)) return "";
+        /* Reject single-word strings that look like UI labels */
+        const words = raw.trim().split(/\s+/);
+        if (words.length === 1 && raw.length > 20) return "";
+        return raw.trim();
+      }
+      const cleanedName = cleanCeipalName(data.name);
+
       switchSection("resume");
       const resumeEl = document.getElementById("resumeText");
       if (resumeEl) resumeEl.value = data.resume_text || "";
       const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
-      set("resumeName",     data.name);
+      set("resumeName",     cleanedName);
       set("resumeEmail",    data.email);
       set("resumePhone",    data.phone);
       set("resumeLocation", data.location);
-      set("dailyName",      data.name);
+      set("dailyName",      cleanedName);
       set("dailyEmail",     data.email);
       set("dailyPhone",     data.phone);
       set("dailyLocation",  data.location);
@@ -1449,10 +1471,18 @@ document.addEventListener("DOMContentLoaded", async function(){
 
           /* Pre-fill the manual entry form from parsed resume data */
           const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-          setVal("dailyName",     document.getElementById("resumeName")?.value);
+          const parsedName = document.getElementById("resumeName")?.value || "";
+          setVal("dailyName",     parsedName);
           setVal("dailyEmail",    document.getElementById("resumeEmail")?.value);
           setVal("dailyPhone",    document.getElementById("resumePhone")?.value);
           setVal("dailyLocation", document.getElementById("resumeLocation")?.value);
+          /* If name is empty, focus the name field so user types it */
+          if (!parsedName) {
+            setTimeout(() => {
+              const nf = document.getElementById("dailyName");
+              if (nf) { nf.focus(); nf.placeholder = "⚠️ Enter candidate name manually"; }
+            }, 400);
+          }
 
           /* Set today's date if not already filled */
           const dateEl = document.getElementById("dailyDate");
@@ -1479,7 +1509,9 @@ document.addEventListener("DOMContentLoaded", async function(){
             const h = document.createElement("div");
             h.id = "dailyFormHint";
             h.style.cssText = "background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#93c5fd;font-size:13px;";
-            h.innerHTML = "ℹ️ Resume data pre-filled. Select <strong>Requirement</strong> &amp; review missing skills, then click <strong>Save Candidate</strong>.";
+            const nameVal2 = document.getElementById("dailyName")?.value || "";
+            const nameWarn = nameVal2 ? "" : ' <span style="color:#f87171;font-weight:600;">⚠️ Name not detected — type it manually.</span>';
+            h.innerHTML = "ℹ️ Resume data pre-filled." + nameWarn + " Select <strong>Requirement</strong>, then click <strong>Save Candidate</strong>.";
             const ep = document.querySelector("#daily .entry-panel");
             if (ep) ep.insertBefore(h, ep.firstChild);
             setTimeout(() => { if (h.parentNode) h.parentNode.removeChild(h); }, 8000);
