@@ -593,8 +593,9 @@ async function saveDaily(){
   visa: dailyVisa.value,
   source: dailySource.value,
   notes: dailyNotes.value,
-  resume_text: resumeText.value
+  resume_text: resumeText.value || window._parsedResumeText || ""
 };
+window._parsedResumeText = ""; /* clear after use */
 
   /* ✅ INSERT INTO DATABASE */
  await sb.from("daily").insert([record]);
@@ -660,7 +661,10 @@ function renderDaily(){
         </tr>
       `;
 
-      grouped[date].forEach((r,index)=>{
+      /* Newest entries at top within each day group */
+      const dayEntries = [...grouped[date]].reverse();
+
+      dayEntries.forEach((r,index)=>{
 
         dailyBody.innerHTML += `
           <tr>
@@ -1437,9 +1441,50 @@ document.addEventListener("DOMContentLoaded", async function(){
       if (!document.getElementById("extGoToDailyBtn")) {
         const btn = document.createElement("button");
         btn.id = "extGoToDailyBtn";
-        btn.textContent = "✅ Done — Save to Daily Tracker";
+        btn.textContent = "✅ Done — Fill Daily Entry Form";
         btn.style.cssText = "margin-top:16px;background:#3b82f6;color:#fff;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:inline-block;";
-        btn.addEventListener("click", () => switchSection("daily"));
+        btn.addEventListener("click", () => {
+          /* Switch to Daily tab */
+          switchSection("daily");
+
+          /* Pre-fill the manual entry form from parsed resume data */
+          const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+          setVal("dailyName",     document.getElementById("resumeName")?.value);
+          setVal("dailyEmail",    document.getElementById("resumeEmail")?.value);
+          setVal("dailyPhone",    document.getElementById("resumePhone")?.value);
+          setVal("dailyLocation", document.getElementById("resumeLocation")?.value);
+
+          /* Set today's date if not already filled */
+          const dateEl = document.getElementById("dailyDate");
+          if (dateEl && !dateEl.value) dateEl.value = today();
+
+          /* Copy visa status */
+          const rvEl = document.getElementById("resumeVisa");
+          const dvEl = document.getElementById("dailyVisa");
+          if (rvEl && dvEl && rvEl.value) {
+            const opt = Array.from(dvEl.options).find(o => o.value === rvEl.value);
+            if (opt) dvEl.value = opt.value;
+          }
+
+          /* Store resume text so AI scoring works after save */
+          const resumeEl2 = document.getElementById("resumeText");
+          if (resumeEl2) window._parsedResumeText = resumeEl2.value;
+
+          /* Scroll entry form into view */
+          const entryPanel = document.querySelector("#daily .entry-panel");
+          if (entryPanel) entryPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+
+          /* Show a blue info hint banner for 8 seconds */
+          if (!document.getElementById("dailyFormHint")) {
+            const h = document.createElement("div");
+            h.id = "dailyFormHint";
+            h.style.cssText = "background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#93c5fd;font-size:13px;";
+            h.innerHTML = "ℹ️ Resume data pre-filled. Select <strong>Requirement</strong> &amp; review missing skills, then click <strong>Save Candidate</strong>.";
+            const ep = document.querySelector("#daily .entry-panel");
+            if (ep) ep.insertBefore(h, ep.firstChild);
+            setTimeout(() => { if (h.parentNode) h.parentNode.removeChild(h); }, 8000);
+          }
+        });
         const sec = document.getElementById("resume");
         if (sec) sec.appendChild(btn);
       }
