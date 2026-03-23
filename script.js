@@ -2228,15 +2228,16 @@ async function handleCeipalFile(input){
       return null;
     }
 
-    const cName   = colOf("applicant name");   // K — full name
+    const cName   = colOf("applicant name");   // K — full name (fallback)
     const cFirst  = colOf("applicant first");   // W — first name
     const cLast   = colOf("applicant last");    // L — last name
     const cEmail  = colOf("email address","email");
     const cPhone  = colOf("mobile number","phone","mobile");
     const cNVR    = colOf("job code","id");     // C — NVR#
-    const cJob    = colOf("job applied");       // D — job title
+    const cJob    = colOf("job applied");       // D — job title / requirement
+    const cJobLoc = colOf("job location");      // E — job location (not used)
     const cClient = colOf("client");            // G
-    const cLoc    = colOf("location");          // O
+    const cLoc    = colOf("location");          // O — applicant's city
     const cSrc    = colOf("submission source","source");
     const cDate   = colOf("submitted on");      // T
     const cBy     = colOf("submitted by");      // U
@@ -2270,12 +2271,13 @@ async function handleCeipalFile(input){
     for(let r = headerRowNum + 1; r <= totalRows; r++){
       if(isSectionHeader(r)){ skipped++; continue; }
 
-      /* Build full name: prefer K (full), fallback W+L */
-      let name = g(cName, r).trim();
+      /* Build full name: always prefer First Name + Last Name (W + L) */
+      const first = g(cFirst, r).trim();
+      const last  = g(cLast,  r).trim();
+      let name = [first, last].filter(Boolean).join(" ");
       if(!name){
-        const first = g(cFirst, r).trim();
-        const last  = g(cLast,  r).trim();
-        name = [first, last].filter(Boolean).join(" ");
+        // fallback to full name column K
+        name = g(cName, r).trim();
       }
 
       const email = g(cEmail, r).trim();
@@ -2306,9 +2308,9 @@ async function handleCeipalFile(input){
         name,
         email,
         phone:       g(cPhone,  r),
-        requirement: g(cNVR,    r) || g(cJob, r),
+        requirement: g(cJob,    r),                  // Job Applied title only
         client:      g(cClient, r),
-        location:    g(cLoc,    r),
+        location:    g(cLoc,    r),                  // Applicant's city (Location column O)
         visa:        "",
         notes:       fullNotes,
       });
@@ -2319,7 +2321,6 @@ async function handleCeipalFile(input){
       return;
     }
 
-    /* Preview confirm */
     const first = inserts[0];
     const ok = confirm(
       `✅ Ceipal Report Ready to Import\n` +
@@ -2327,12 +2328,13 @@ async function handleCeipalFile(input){
       `Varada Chari records:  ${inserts.length}\n` +
       `Skipped (other recruiters + empty):  ${skipped}\n\n` +
       `── First Record Preview ──\n` +
-      `Name:    ${first.name}\n` +
-      `Email:   ${first.email}\n` +
-      `Phone:   ${first.phone}\n` +
-      `NVR:     ${first.requirement}\n` +
-      `Client:  ${first.client}\n` +
-      `Date:    ${first.submission_date}\n\n` +
+      `Name:      ${first.name}\n` +
+      `Email:     ${first.email}\n` +
+      `Phone:     ${first.phone}\n` +
+      `Job:       ${first.requirement}\n` +
+      `Client:    ${first.client}\n` +
+      `Location:  ${first.location}\n` +
+      `Date:      ${first.submission_date}\n\n` +
       `Click OK to import into Submissions.`
     );
     if(!ok) return;
@@ -2442,17 +2444,23 @@ async function handleGenericImport(input, tab){
       /* Build every possible field */
       const all = {
         entry_date:             pd(fv(row,"date","entry")),
-        submission_date:        pd(fv(row,"submission date","submitted on","sub date","date")),
+        submission_date:        pd(fv(row,"submitted on","submission date","sub date","date")),
         proposal_date:          pd(fv(row,"proposal date","date")),
         interview_scheduled_on: pd(fv(row,"interview date","interview","date")),
         placement_date:         pd(fv(row,"placement date","date")),
         start_date:             pd(fv(row,"start date","date")),
-        name:        fv(row,"name","applicant","candidate","full name"),
-        email:       fv(row,"email"),
-        phone:       fv(row,"phone","mobile","contact"),
-        requirement: fv(row,"requirement","job","nvr","position","title","job code"),
+        name:        (()=>{
+                       // Try First + Last combination first (Ceipal format)
+                       const fn = fv(row,"applicant first","first name");
+                       const ln = fv(row,"applicant last","last name");
+                       if(fn || ln) return [fn,ln].filter(Boolean).join(" ");
+                       return fv(row,"applicant name","name","candidate","full name");
+                     })(),
+        email:       fv(row,"email address","email"),
+        phone:       fv(row,"mobile number","phone","mobile","contact"),
+        requirement: fv(row,"job applied","requirement","job","nvr","position","title","job code"),
         client:      fv(row,"client","company","end client"),
-        location:    fv(row,"location","city","address"),
+        location:    fv(row,"job location","location","city","address"),
         visa:        fv(row,"visa","work auth","authorization"),
         source:      fv(row,"source"),
         notes:       fv(row,"notes","comments","remark"),
