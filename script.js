@@ -54,7 +54,7 @@ const TABLE_COLS = {
   submission: ['submission_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
   proposal: ['proposal_date', 'name', 'email', 'phone', 'requirement', 'client', 'program_name', 'pw_name', 'location', 'visa', 'notes'],
   interview: ['interview_scheduled_on', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'interview_round', 'interview_status', 'status_notes', 'notes'],
-  placement: ['placement_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
+  placement: ['placement_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'offer_status', 'notes'],
   start: ['start_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
 };
 
@@ -1209,6 +1209,18 @@ ${stage==="interview" ? `
     onchange="updateFieldById('interview','${r.id}','status_notes',this.value)">
 </td>` : ""}
 
+${stage==="placement" ? `
+<td>
+  <select style="background:#0f172a;border:1px solid #1f2a3a;border-radius:6px;padding:4px 6px;font-size:12px;width:130px;font-weight:500;
+    color:${r.offer_status==='Accepted'?'#10b981':r.offer_status==='Rejected'?'#ef4444':'#f59e0b'};"
+    onchange="updateFieldById('placement','${r.id}','offer_status',this.value);this.style.color=this.value==='Accepted'?'#10b981':this.value==='Rejected'?'#ef4444':'#f59e0b';">
+    <option value="">-- Offer --</option>
+    <option value="Accepted" ${r.offer_status==='Accepted'?'selected':''}>✅ Accepted</option>
+    <option value="Rejected" ${r.offer_status==='Rejected'?'selected':''}>❌ Rejected</option>
+    <option value="Pending"  ${r.offer_status==='Pending' ?'selected':''}>⏳ Pending</option>
+  </select>
+</td>` : ""}
+
 <td>
 <input value="${r.notes||''}"
   placeholder="Add notes..."
@@ -1235,8 +1247,10 @@ body.innerHTML += row;
 function renderKPI(){
   if(!kpiSub) return;
 
+  const firstRoundInterviews = DB.interview.filter(r => !r.interview_round || r.interview_round === '1st Round');
+
   kpiSub.innerText = DB.submission.length;
-  kpiInt.innerText = DB.interview.length;
+  kpiInt.innerText = firstRoundInterviews.length;
   kpiPlace.innerText = DB.placement.length;
   kpiStart.innerText = DB.start.length;
 
@@ -1244,8 +1258,8 @@ function renderKPI(){
   monthlyBody.innerHTML="";
 
   for(let m=0;m<12;m++){
-    const sub = countMonth(DB.submission,"submission_date",m);
-    const int = countMonth(DB.interview,"interview_scheduled_on",m);
+    const sub   = countMonth(DB.submission,"submission_date",m);
+    const int   = countMonthFiltered(firstRoundInterviews,"interview_scheduled_on",m);
     const place = countMonth(DB.placement,"placement_date",m);
     const start = countMonth(DB.start,"start_date",m);
 
@@ -1261,6 +1275,13 @@ function renderKPI(){
 }
 
 function countMonth(arr,field,month){
+  return arr.filter(r=>{
+    if(!r[field]) return false;
+    return new Date(r[field]).getMonth()===month;
+  }).length;
+}
+
+function countMonthFiltered(arr,field,month){
   return arr.filter(r=>{
     if(!r[field]) return false;
     return new Date(r[field]).getMonth()===month;
