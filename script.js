@@ -720,8 +720,22 @@ function renderDaily(){
                 style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:160px;"
                 onchange="updateNoteById('daily','${r.id}',this.value)">
             </td>
-            <td style="font-weight:bold;">${r.ai_score ?? ""}</td>
-            <td>${r.ai_notes || ""}</td>
+            <td>
+              ${r.ai_score != null && r.ai_score !== ""
+                ? `<span id="score_${r.id}" style="
+                    display:inline-block;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700;
+                    background:${r.ai_score>=80?'rgba(16,185,129,0.15)':r.ai_score>=60?'rgba(245,158,11,0.15)':'rgba(239,68,68,0.15)'};
+                    color:${r.ai_score>=80?'#10b981':r.ai_score>=60?'#f59e0b':'#ef4444'};
+                    border:1px solid ${r.ai_score>=80?'rgba(16,185,129,0.3)':r.ai_score>=60?'rgba(245,158,11,0.3)':'rgba(239,68,68,0.3)'};
+                  ">${r.ai_score}%</span>`
+                : `<button id="score_${r.id}" onclick="scoreCandidate('${r.id}')"
+                    style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);
+                      padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;">
+                    ✦ Score
+                  </button>`
+              }
+            </td>
+            <td style="max-width:200px;font-size:11.5px;color:#94a3b8;white-space:pre-wrap;">${r.ai_notes || ""}</td>
             <td>
               <button onclick="moveDailyToSubmission('${r.id}')">Sub</button>
               <button onclick="moveDailyToProposal('${r.id}')">Proposal</button>
@@ -2144,56 +2158,121 @@ await sb
    BASIC AI MATCH ENGINE (Temporary until ChatGPT API)
 ===================================================== */
 
-function analyzeMatch(resumeText, jdText){
+/* ══════════════════════════════════════════
+   AI SCORE — Claude API candidate matcher
+══════════════════════════════════════════ */
+async function scoreCandidate(id){
+  const record = DB.daily.find(r => r.id === id);
+  if(!record){ alert("Record not found."); return; }
 
-  if(!resumeText || !jdText){
-    return {
-      score: 0,
-      missing: "Resume or JD not available",
-      questions: ""
-    };
+  // Find the JD linked to this requirement
+  const jd = DB.jd.find(j => j.title === record.requirement);
+
+  if(!record.resume_text && !jd){
+    alert("No resume text and no Job Description found for this candidate.\n\nPlease:\n1. Add a JD in Job Requirements tab\n2. Make sure the requirement name matches");
+    return;
   }
 
-  const resume = resumeText.toLowerCase();
-  const jd = jdText.toLowerCase();
+  // Update button to loading state
+  const btn = document.getElementById("score_" + id);
+  if(btn){ btn.innerHTML = "⏳ Scoring..."; btn.disabled = true; }
 
-  const skills = [
-    "python","java","docker","kubernetes","aws","linux",
-    "terraform","jenkins","ci/cd","selenium",
-    "react","angular","node","sql","mongodb",
-    "c++","c#","azure","gcp"
-  ];
+  try {
+    const resumeSection = record.resume_text
+      ? `CANDIDATE RESUME:
+${record.resume_text.substring(0, 3000)}`
+      : `CANDIDATE INFO:
+Name: ${record.name}
+Requirement Applied: ${record.requirement}
+Location: ${record.location}
+Visa: ${record.visa}`;
 
-  let match = 0;
-  let missing = [];
+    const jdSection = jd?.jd_text
+      ? `JOB DESCRIPTION:
+${jd.jd_text.substring(0, 2000)}`
+      : `JOB TITLE: ${record.requirement}
+CLIENT: ${record.client}`;
 
-  skills.forEach(skill => {
+    const prompt = `You are a technical recruiting expert. Analyze how well this candidate matches the job requirement.
 
-    if(jd.includes(skill)){
+${jdSection}
 
-      if(resume.includes(skill)){
-        match++;
-      }
-      else{
-        missing.push(skill);
-      }
+${resumeSection}
 
+Respond ONLY with a valid JSON object in this exact format (no markdown, no explanation):
+{
+  "score": <number 0-100>,
+  "summary": "<2 sentence match summary>",
+  "strengths": "<key matching skills/experience, comma separated>",
+  "gaps": "<missing skills or concerns, comma separated>",
+  "recommendation": "<Strong Match | Good Match | Partial Match | Weak Match>"
+}`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 500,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const rawText = data.content?.[0]?.text || "";
+
+    // Parse JSON from response
+    let result;
+    try {
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      result = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+    } catch(e) {
+      throw new Error("Could not parse AI response: " + rawText.substring(0, 100));
     }
 
-  });
+    const score = Math.min(100, Math.max(0, parseInt(result.score) || 0));
+    const notes = `${result.recommendation} (${score}%)\nStrengths: ${result.strengths}\nGaps: ${result.gaps}\n${result.summary}`;
 
-  const score = Math.min(100, match * 15);
+    // Save to Supabase
+    await sb.from("daily").update({ ai_score: score, ai_notes: notes }).eq("id", id);
 
-  const questions = missing
-    .map(skill => `Do you have hands-on experience with ${skill}?`)
-    .join("<br>");
+    // Update local DB
+    record.ai_score = score;
+    record.ai_notes = notes;
 
-  return {
-    score,
-    missing: missing.join(", "),
-    questions
-  };
+    // Re-render just this row's score cell
+    const scoreCell = document.getElementById("score_" + id);
+    if(scoreCell){
+      const color = score>=80 ? "#10b981" : score>=60 ? "#f59e0b" : "#ef4444";
+      const bg    = score>=80 ? "rgba(16,185,129,0.15)" : score>=60 ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)";
+      const bdr   = score>=80 ? "rgba(16,185,129,0.3)"  : score>=60 ? "rgba(245,158,11,0.3)"  : "rgba(239,68,68,0.3)";
+      scoreCell.outerHTML = `<span id="score_${id}" style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700;
+        background:${bg};color:${color};border:1px solid ${bdr};">${score}%</span>`;
+    }
+    // Update notes cell
+    const row = document.getElementById("score_" + id)?.closest("tr");
+    if(row){
+      const notesCell = row.querySelectorAll("td")[12];
+      if(notesCell) notesCell.innerText = notes;
+    }
 
+  } catch(err) {
+    console.error("AI Score error:", err);
+    if(btn){ btn.innerHTML = "✦ Score"; btn.disabled = false; }
+    alert("AI scoring failed: " + err.message);
+  }
+}
+
+// Keep analyzeMatch as fallback (used by viewResume)
+function analyzeMatch(resumeText, jdText){
+  if(!resumeText || !jdText) return { score: 0, missing: "Resume or JD not available", questions: "" };
+  const resume = resumeText.toLowerCase();
+  const jd = jdText.toLowerCase();
+  const skills = ["python","java","docker","kubernetes","aws","linux","terraform","jenkins","ci/cd","selenium","react","angular","node","sql","mongodb","c++","c#","azure","gcp","oracle","sap","salesforce","tableau","power bi"];
+  let match = 0, missing = [];
+  skills.forEach(s => { if(jd.includes(s)){ if(resume.includes(s)) match++; else missing.push(s); } });
+  const score = Math.min(100, match * 12);
+  return { score, missing: missing.join(", "), questions: missing.map(s=>`Experience with ${s}?`).join("<br>") };
 }
 
 
@@ -2722,6 +2801,7 @@ async function handleGenericImport(input, tab){
 window.changeStage         = changeStage;
 window.changeDailyPage     = changeDailyPage;
 window.handleCeipalFile    = handleCeipalFile;
+window.scoreCandidate      = scoreCandidate;
 window.handleGenericImport = handleGenericImport;
 window.updateFieldById     = updateFieldById;
 window.exportTab           = function(tab){ console.warn("Export coming soon for:", tab); };
