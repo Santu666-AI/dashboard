@@ -562,8 +562,7 @@ async function updateNoteById(stage, id, value){
 
 async function updateFieldById(stage, id, field, value){
   if(!id) return;
-  const update = {};
-  update[field] = value;
+  const update = {}; update[field] = value;
   const { error } = await sb.from(stage).update(update).eq("id", id);
   if(error){ console.error(`Field save failed (${field}):`, error.message); return; }
   const record = DB[stage] ? DB[stage].find(r => r.id === id) : null;
@@ -1131,6 +1130,10 @@ function renderStage(stage, bodyId){
 
   });
 
+  // Use DocumentFragment to avoid repeated reflows
+  const _frag = document.createDocumentFragment();
+  const _tmp  = document.createElement("tbody");
+
   sorted.forEach((r,index)=>{
 
     let actionButtons = "";
@@ -1180,112 +1183,161 @@ row += `
 
 row += `
 <td>${r.location||""}</td>
-
 <td>${r.visa||""}</td>
-
 ${stage==="interview" ? `
 <td>
   <select style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 6px;font-size:12px;width:100px;"
     onchange="updateFieldById('interview','${r.id}','interview_round',this.value)">
     <option value="">-- Round --</option>
-    <option value="1st Round" ${r.interview_round==='1st Round'?'selected':''}>1st Round</option>
-    <option value="2nd Round" ${r.interview_round==='2nd Round'?'selected':''}>2nd Round</option>
-    <option value="3rd Round" ${r.interview_round==='3rd Round'?'selected':''}>3rd Round</option>
+    <option value="1st Round" ${r.interview_round==="1st Round"?"selected":""}>1st Round</option>
+    <option value="2nd Round" ${r.interview_round==="2nd Round"?"selected":""}>2nd Round</option>
+    <option value="3rd Round" ${r.interview_round==="3rd Round"?"selected":""}>3rd Round</option>
   </select>
 </td>
 <td>
-  <select style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 6px;font-size:12px;width:110px;"
-    onchange="updateFieldById('interview','${r.id}','interview_status',this.value)">
+  <select style="background:#0f172a;border:1px solid #1f2a3a;color:${r.interview_status==="Accepted"?"#10b981":r.interview_status==="Declined"?"#ef4444":"#f59e0b"};border-radius:6px;padding:4px 6px;font-size:12px;width:110px;"
+    onchange="updateFieldById('interview','${r.id}','interview_status',this.value);this.style.color=this.value==='Accepted'?'#10b981':this.value==='Declined'?'#ef4444':'#f59e0b';">
     <option value="">-- Status --</option>
-    <option value="Accepted" ${r.interview_status==='Accepted'?'selected':''} style="color:#10b981;">Accepted</option>
-    <option value="Declined" ${r.interview_status==='Declined'?'selected':''} style="color:#ef4444;">Declined</option>
-    <option value="Pending" ${r.interview_status==='Pending'?'selected':''} style="color:#f59e0b;">Pending</option>
+    <option value="Accepted" ${r.interview_status==="Accepted"?"selected":""}>✅ Accepted</option>
+    <option value="Declined" ${r.interview_status==="Declined"?"selected":""}>❌ Declined</option>
+    <option value="Pending"  ${r.interview_status==="Pending" ?"selected":""}>⏳ Pending</option>
   </select>
 </td>
 <td>
-  <input value="${r.status_notes||''}"
+  <input value="${(r.status_notes||"").replace(/"/g,"&quot;")}"
     placeholder="Status notes..."
     style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:150px;"
     onchange="updateFieldById('interview','${r.id}','status_notes',this.value)">
 </td>` : ""}
-
 ${stage==="placement" ? `
 <td>
-  <select style="background:#0f172a;border:1px solid #1f2a3a;border-radius:6px;padding:4px 6px;font-size:12px;width:130px;font-weight:500;
-    color:${r.offer_status==='Accepted'?'#10b981':r.offer_status==='Rejected'?'#ef4444':'#f59e0b'};"
+  <select style="background:#0f172a;border:1px solid #1f2a3a;color:${r.offer_status==="Accepted"?"#10b981":r.offer_status==="Rejected"?"#ef4444":"#f59e0b"};border-radius:6px;padding:4px 6px;font-size:12px;width:130px;"
     onchange="updateFieldById('placement','${r.id}','offer_status',this.value);this.style.color=this.value==='Accepted'?'#10b981':this.value==='Rejected'?'#ef4444':'#f59e0b';">
     <option value="">-- Offer --</option>
-    <option value="Accepted" ${r.offer_status==='Accepted'?'selected':''}>✅ Accepted</option>
-    <option value="Rejected" ${r.offer_status==='Rejected'?'selected':''}>❌ Rejected</option>
-    <option value="Pending"  ${r.offer_status==='Pending' ?'selected':''}>⏳ Pending</option>
+    <option value="Accepted" ${r.offer_status==="Accepted"?"selected":""}>✅ Accepted</option>
+    <option value="Rejected" ${r.offer_status==="Rejected"?"selected":""}>❌ Rejected</option>
+    <option value="Pending"  ${r.offer_status==="Pending" ?"selected":""}>⏳ Pending</option>
   </select>
 </td>` : ""}
-
 <td>
-<input value="${r.notes||''}"
+<input value="${(r.notes||"").replace(/"/g,"&quot;")}"
   placeholder="Add notes..."
   style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:160px;"
   onchange="updateNoteById('${stage}','${r.id}',this.value)">
 </td>
-
 <td>
 ${actionButtons}
 <button onclick="deleteRowById('${stage}','${r.id}')">Del</button>
 </td>
-
 </tr>
 `;
 
-body.innerHTML += row;
+    _tmp.innerHTML = row;
+    const _tr = _tmp.firstElementChild;
+    if(_tr) _frag.appendChild(_tr);
   });
-
+  body.appendChild(_frag);
 }
 
 
 /* ================= KPI ================= */
 
-function renderKPI(){
-  if(!kpiSub) return;
+/* ── Year selector state ── */
+let kpiYear = new Date().getFullYear();
 
-  const firstRoundInterviews = DB.interview.filter(r => !r.interview_round || r.interview_round === '1st Round');
+function buildYearSelector(){
+  const existing = document.getElementById("kpiYearSelector");
+  if(existing) return; // already built
 
-  kpiSub.innerText = DB.submission.length;
-  kpiInt.innerText = firstRoundInterviews.length;
-  kpiPlace.innerText = DB.placement.length;
-  kpiStart.innerText = DB.start.length;
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for(let y = 2023; y <= currentYear + 2; y++) years.push(y);
 
-  if(!monthlyBody) return;
-  monthlyBody.innerHTML="";
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;";
 
-  for(let m=0;m<12;m++){
-    const sub   = countMonth(DB.submission,"submission_date",m);
-    const int   = countMonthFiltered(firstRoundInterviews,"interview_scheduled_on",m);
-    const place = countMonth(DB.placement,"placement_date",m);
-    const start = countMonth(DB.start,"start_date",m);
+  const label = document.createElement("span");
+  label.style.cssText = "font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;";
+  label.textContent = "YEAR";
+  wrapper.appendChild(label);
 
-    monthlyBody.innerHTML+=`
-      <tr>
-        <td>${MONTHS[m]}</td>
-        <td>${sub}</td>
-        <td>${int}</td>
-        <td>${place}</td>
-        <td>${start}</td>
-      </tr>`;
+  years.forEach(y => {
+    const btn = document.createElement("button");
+    btn.textContent = y;
+    btn.id = "kpiYearBtn_" + y;
+    btn.style.cssText = `padding:5px 14px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid;transition:all 0.15s;`;
+    applyYearBtnStyle(btn, y === kpiYear);
+    btn.onclick = () => {
+      kpiYear = y;
+      document.querySelectorAll("[id^='kpiYearBtn_']").forEach(b => {
+        applyYearBtnStyle(b, b.id === "kpiYearBtn_" + y);
+      });
+      renderKPI();
+    };
+    wrapper.appendChild(btn);
+  });
+
+  // Insert before the KPI table
+  const dashSection = document.getElementById("dashboard");
+  if(dashSection){
+    const tableContainer = dashSection.querySelector(".table-container");
+    if(tableContainer) dashSection.insertBefore(wrapper, tableContainer);
   }
 }
 
-function countMonth(arr,field,month){
-  return arr.filter(r=>{
-    if(!r[field]) return false;
-    return new Date(r[field]).getMonth()===month;
-  }).length;
+function applyYearBtnStyle(btn, active){
+  if(active){
+    btn.style.background = "rgba(59,130,246,0.2)";
+    btn.style.color = "#93c5fd";
+    btn.style.borderColor = "rgba(59,130,246,0.5)";
+  } else {
+    btn.style.background = "rgba(255,255,255,0.03)";
+    btn.style.color = "#64748b";
+    btn.style.borderColor = "rgba(255,255,255,0.06)";
+  }
 }
 
-function countMonthFiltered(arr,field,month){
-  return arr.filter(r=>{
-    if(!r[field]) return false;
-    return new Date(r[field]).getMonth()===month;
-  }).length;
+function renderKPI(){
+  if(!kpiSub) return;
+
+  buildYearSelector();
+
+  const yr = kpiYear;
+
+  // Filter each dataset to selected year
+  const subY   = DB.submission.filter(r => r.submission_date        && new Date(r.submission_date).getFullYear()        === yr);
+  const intY   = DB.interview.filter(r  => r.interview_scheduled_on && new Date(r.interview_scheduled_on).getFullYear() === yr && (!r.interview_round || r.interview_round === "1st Round"));
+  const placeY = DB.placement.filter(r  => r.placement_date         && new Date(r.placement_date).getFullYear()         === yr);
+  const startY = DB.start.filter(r      => r.start_date             && new Date(r.start_date).getFullYear()             === yr);
+
+  kpiSub.innerText   = subY.length;
+  kpiInt.innerText   = intY.length;
+  kpiPlace.innerText = placeY.length;
+  kpiStart.innerText = startY.length;
+
+  if(!monthlyBody) return;
+
+  // Use DocumentFragment for fast DOM insertion
+  const frag = document.createDocumentFragment();
+  for(let m = 0; m < 12; m++){
+    const sub   = countMonthArr(subY,   "submission_date",        m);
+    const intC  = countMonthArr(intY,   "interview_scheduled_on", m);
+    const place = countMonthArr(placeY, "placement_date",         m);
+    const start = countMonthArr(startY, "start_date",             m);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${MONTHS[m]}</td><td>${sub}</td><td>${intC}</td><td>${place}</td><td>${start}</td>`;
+    frag.appendChild(tr);
+  }
+  monthlyBody.innerHTML = "";
+  monthlyBody.appendChild(frag);
+}
+
+function countMonth(arr,field,month){
+  return arr.filter(r=>{ if(!r[field]) return false; return new Date(r[field]).getMonth()===month; }).length;
+}
+
+function countMonthArr(arr,field,month){
+  return arr.filter(r=>{ if(!r[field]) return false; return new Date(r[field]).getMonth()===month; }).length;
 }
 
 /* ================= TASK SYSTEM ================= */
@@ -1405,44 +1457,34 @@ function startHourlyReminder(){
 /* ================= AUTH + DASHBOARD LOAD ================= */
 
 async function fetchAllData(){
-
   try{
+    // ── Fetch all tables in parallel for speed ──
+    const [jd, daily, submission, proposal, interview, placement, start, tasks, meetings] = await Promise.all([
+      sb.from("jd").select("*"),
+      sb.from("daily").select("id,entry_date,name,email,phone,requirement,client,location,visa,source,notes,program_name,pw_name,resume_text,ai_score,ai_notes"),
+      sb.from("submission").select("id,submission_date,name,email,phone,requirement,client,location,visa,notes"),
+      sb.from("proposal").select("*"),
+      sb.from("interview").select("id,interview_scheduled_on,name,email,phone,requirement,client,location,visa,interview_round,interview_status,status_notes,notes"),
+      sb.from("placement").select("id,placement_date,name,email,phone,requirement,client,location,visa,offer_status,notes"),
+      sb.from("start").select("id,start_date,name,email,phone,requirement,client,location,visa,notes"),
+      sb.from("tasks").select("*"),
+      sb.from("meetings").select("*"),
+    ]);
 
-    let { data: jd } = await sb.from("jd").select("*");
-    DB.jd = jd || [];
-
-    let { data: daily } = await sb.from("daily").select("*");
-    DB.daily = daily || [];
-
-    let { data: submission } = await sb.from("submission").select("*");
-    DB.submission = submission || [];
-
-    let { data: proposal } = await sb.from("proposal").select("*");
-    DB.proposal = proposal || [];
-
-    let { data: interview } = await sb.from("interview").select("*");
-    DB.interview = interview || [];
-
-    let { data: placement } = await sb.from("placement").select("*");
-    DB.placement = placement || [];
-
-    let { data: start } = await sb.from("start").select("*");
-    DB.start = start || [];
-
-    let { data: tasks } = await sb.from("tasks").select("*");
-    DB.tasks = tasks || [];
-
-    let { data: meetings } = await sb.from("meetings").select("*");
-    DB.meetings = meetings || [];
+    DB.jd         = jd.data         || [];
+    DB.daily      = daily.data      || [];
+    DB.submission = submission.data || [];
+    DB.proposal   = proposal.data   || [];
+    DB.interview  = interview.data  || [];
+    DB.placement  = placement.data  || [];
+    DB.start      = start.data      || [];
+    DB.tasks      = tasks.data      || [];
+    DB.meetings   = meetings.data   || [];
 
     console.log("All data loaded successfully", DB);
-
   }catch(err){
-
     console.error("Database error:", err);
-
   }
-
 }
 
 
@@ -2182,7 +2224,6 @@ window.deleteRowById = deleteRowById;
 window.updateNote = updateNote;
 window.updateDate = updateDate;
 window.updateNoteById = updateNoteById;
-window.updateFieldById = updateFieldById;
 window.deleteRow = deleteRow;
 window.changeDailyPage = changeDailyPage;
 window.renderDailyPagination = renderDailyPagination;
@@ -2289,10 +2330,9 @@ async function handleCeipalFile(input){
     const cEmail  = colOf("email address","email");
     const cPhone  = colOf("mobile number","phone","mobile");
     const cNVR    = colOf("job code","id");     // C — NVR#
-    const cJob    = colOf("job applied");       // D — job title / requirement
-    const cJobLoc = colOf("job location");      // E — job location (not used)
+    const cJob    = colOf("job applied");       // D — job title
     const cClient = colOf("client");            // G
-    const cLoc    = colOf("location");          // O — applicant's city
+    const cLoc    = colOf("location");          // O — applicant city
     const cSrc    = colOf("submission source","source");
     const cDate   = colOf("submitted on");      // T
     const cBy     = colOf("submitted by");      // U
@@ -2326,14 +2366,11 @@ async function handleCeipalFile(input){
     for(let r = headerRowNum + 1; r <= totalRows; r++){
       if(isSectionHeader(r)){ skipped++; continue; }
 
-      /* Build full name: always prefer First Name + Last Name (W + L) */
-      const first = g(cFirst, r).trim();
-      const last  = g(cLast,  r).trim();
-      let name = [first, last].filter(Boolean).join(" ");
-      if(!name){
-        // fallback to full name column K
-        name = g(cName, r).trim();
-      }
+      /* Build full name: First Name + Last Name (W+L), fallback to full name K */
+      const firstName = g(cFirst, r).trim();
+      const lastName  = g(cLast,  r).trim();
+      let name = [firstName, lastName].filter(Boolean).join(" ");
+      if(!name) name = g(cName, r).trim();
 
       const email = g(cEmail, r).trim();
       if(!name && !email){ skipped++; continue; }
@@ -2363,9 +2400,9 @@ async function handleCeipalFile(input){
         name,
         email,
         phone:       g(cPhone,  r),
-        requirement: g(cJob,    r),                  // Job Applied title only
+        requirement: g(cJob,    r),
         client:      g(cClient, r),
-        location:    g(cLoc,    r),                  // Applicant's city (Location column O)
+        location:    g(cLoc,    r),
         visa:        "",
         notes:       fullNotes,
       });
@@ -2376,6 +2413,7 @@ async function handleCeipalFile(input){
       return;
     }
 
+    /* Preview confirm */
     const first = inserts[0];
     const ok = confirm(
       `✅ Ceipal Report Ready to Import\n` +
@@ -2383,13 +2421,12 @@ async function handleCeipalFile(input){
       `Varada Chari records:  ${inserts.length}\n` +
       `Skipped (other recruiters + empty):  ${skipped}\n\n` +
       `── First Record Preview ──\n` +
-      `Name:      ${first.name}\n` +
-      `Email:     ${first.email}\n` +
-      `Phone:     ${first.phone}\n` +
-      `Job:       ${first.requirement}\n` +
-      `Client:    ${first.client}\n` +
-      `Location:  ${first.location}\n` +
-      `Date:      ${first.submission_date}\n\n` +
+      `Name:    ${first.name}\n` +
+      `Email:   ${first.email}\n` +
+      `Phone:   ${first.phone}\n` +
+      `NVR:     ${first.requirement}\n` +
+      `Client:  ${first.client}\n` +
+      `Date:    ${first.submission_date}\n\n` +
       `Click OK to import into Submissions.`
     );
     if(!ok) return;
@@ -2457,22 +2494,18 @@ async function handleGenericImport(input, tab){
     const wb = XLSX.read(arrayBuf, { type:"array", raw:true, cellDates:false });
     const ws = wb.Sheets[wb.SheetNames[0]];
 
-    /* ── Find real header row: Ceipal files have a "Period:" title in row 1.
-       Scan first 10 rows for the one with the most filled cells. ── */
+    /* Auto-detect real header row (Ceipal has "Period:" title in row 1) */
     const rawRows = XLSX.utils.sheet_to_json(ws, { header:1, defval:"", raw:false });
-    let headerIdx = 0;
-    let maxFilled = 0;
-    for(let i = 0; i < Math.min(rawRows.length, 10); i++){
-      const filled = rawRows[i].filter(c => String(c).trim()).length;
+    let headerIdx = 0, maxFilled = 0;
+    for(let i=0; i<Math.min(rawRows.length,10); i++){
+      const filled = rawRows[i].filter(c=>String(c).trim()).length;
       if(filled > maxFilled){ maxFilled = filled; headerIdx = i; }
     }
-    /* Build rows using detected header row */
-    const headers = rawRows[headerIdx].map(h => String(h).trim());
+    const headers = rawRows[headerIdx].map(h=>String(h).trim());
     const rows = [];
-    for(let i = headerIdx + 1; i < rawRows.length; i++){
-      const rowArr = rawRows[i];
+    for(let i=headerIdx+1; i<rawRows.length; i++){
       const obj = {};
-      headers.forEach((h, ci) => { if(h) obj[h] = String(rowArr[ci] || "").trim(); });
+      headers.forEach((h,ci)=>{ if(h) obj[h] = String(rawRows[i][ci]||"").trim(); });
       rows.push(obj);
     }
 
@@ -2521,15 +2554,14 @@ async function handleGenericImport(input, tab){
         placement_date:         pd(fv(row,"placement date","date")),
         start_date:             pd(fv(row,"start date","date")),
         name:        (()=>{
-                       // Try First + Last combination first (Ceipal format)
                        const fn = fv(row,"applicant first","first name");
                        const ln = fv(row,"applicant last","last name");
-                       if(fn || ln) return [fn,ln].filter(Boolean).join(" ");
+                       if(fn||ln) return [fn,ln].filter(Boolean).join(" ");
                        return fv(row,"applicant name","name","candidate","full name");
                      })(),
         email:       fv(row,"email address","email"),
         phone:       fv(row,"mobile number","phone","mobile","contact"),
-        requirement: fv(row,"job applied","requirement","job","nvr","position","title","job code"),
+        requirement: fv(row,"job applied","requirement","job","nvr","position","title"),
         client:      fv(row,"client","company","end client"),
         location:    fv(row,"location","city","address"),
         visa:        fv(row,"visa","work auth","authorization"),
@@ -2545,7 +2577,7 @@ async function handleGenericImport(input, tab){
       /* Skip rows with no name AND no email */
       if(!all.name && !all.email) return;
 
-      /* For submission tab: only import Varada Chari's records */
+      /* Submission tab: only Varada Chari's records */
       if(tab === "submission"){
         const subBy = fv(row,"submitted by").toLowerCase();
         if(subBy && subBy !== "varada chari") return;
@@ -2612,4 +2644,5 @@ async function handleGenericImport(input, tab){
 /* ── Expose functions to window so HTML onchange/onclick can reach them ── */
 window.handleCeipalFile    = handleCeipalFile;
 window.handleGenericImport = handleGenericImport;
+window.updateFieldById     = updateFieldById;
 window.exportTab           = function(tab){ console.warn("Export coming soon for:", tab); };
