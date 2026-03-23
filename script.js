@@ -1111,77 +1111,68 @@ async function moveToStartById(id){
 /* ================= STAGE RENDER ================= */
 
 function renderStage(stage, bodyId){
-
   const body = document.getElementById(bodyId);
   if(!body) return;
 
+  const dateField =
+    stage === "submission"  ? "submission_date" :
+    stage === "proposal"    ? "proposal_date" :
+    stage === "interview"   ? "interview_scheduled_on" :
+    stage === "placement"   ? "placement_date" :
+    stage === "start"       ? "start_date" : "";
+
+  const sorted = [...DB[stage]].sort((a,b)=>
+    new Date(b[dateField]||0) - new Date(a[dateField]||0)
+  );
+
+  const totalRecords = sorted.length;
+  const totalPages   = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
+  const rawPage      = paginationState[stage] || 1;
+  const currentPage  = Math.min(rawPage, totalPages);
+  paginationState[stage] = currentPage;
+
+  const pageData = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   body.innerHTML = "";
-
-  const sorted = [...DB[stage]].sort((a,b)=>{
-
-    const dateField =
-      stage === "submission" ? "submission_date" :
-      stage === "proposal" ? "proposal_date" :
-      stage === "interview" ? "interview_scheduled_on" :
-      stage === "placement" ? "placement_date" :
-      stage === "start" ? "start_date" : "";
-
-    return new Date(b[dateField]) - new Date(a[dateField]);
-
-  });
-
-  // Use DocumentFragment to avoid repeated reflows
   const _frag = document.createDocumentFragment();
   const _tmp  = document.createElement("tbody");
+  const globalOffset = (currentPage - 1) * PAGE_SIZE;
 
-  sorted.forEach((r,index)=>{
+  pageData.forEach((r, index) => {
+    const absIndex = globalOffset + index;
 
     let actionButtons = "";
-
     if(stage==="submission"){
       actionButtons = `<button onclick="moveToInterviewById('${r.id}')">Interview</button>`;
     }
-
     if(stage==="interview"){
       actionButtons = `<button onclick="moveToPlacementById('${r.id}')">Placement</button>`;
     }
-
     if(stage==="placement"){
       actionButtons = `<button onclick="moveToStartById('${r.id}')">Start</button>`;
     }
 
-    
-   let row = `
+    let row = `
 <tr>
-
-<td>${index+1}</td>
-
+<td>${absIndex + 1}</td>
 <td>
   <input type="date"
-    value="${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ''}"
+    value="${r.submission_date || r.proposal_date || r.interview_scheduled_on || r.placement_date || r.start_date || ""}"
     style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 6px;font-size:12px;width:130px;"
     onchange="updateDate('${stage}','${r.id}',this.value)">
 </td>
-
 <td>${r.name||""}</td>
-
 <td>${r.email||""}</td>
-
 <td>${r.phone||""}</td>
-
 <td>${r.requirement||""}</td>
-
 <td>${r.client||""}</td>
 `;
 
-if(stage === "proposal"){
-row += `
-<td>${r.program_name||""}</td>
-<td>${r.pw_name||""}</td>
-`;
-}
+    if(stage === "proposal"){
+      row += `<td>${r.program_name||""}</td><td>${r.pw_name||""}</td>`;
+    }
 
-row += `
+    row += `
 <td>${r.location||""}</td>
 <td>${r.visa||""}</td>
 ${stage==="interview" ? `
@@ -1220,23 +1211,100 @@ ${stage==="placement" ? `
   </select>
 </td>` : ""}
 <td>
-<input value="${(r.notes||"").replace(/"/g,"&quot;")}"
-  placeholder="Add notes..."
-  style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:160px;"
-  onchange="updateNoteById('${stage}','${r.id}',this.value)">
+  <input value="${(r.notes||"").replace(/"/g,"&quot;")}"
+    placeholder="Add notes..."
+    style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:160px;"
+    onchange="updateNoteById('${stage}','${r.id}',this.value)">
 </td>
 <td>
 ${actionButtons}
 <button onclick="deleteRowById('${stage}','${r.id}')">Del</button>
 </td>
-</tr>
-`;
+</tr>`;
 
     _tmp.innerHTML = row;
     const _tr = _tmp.firstElementChild;
     if(_tr) _frag.appendChild(_tr);
   });
   body.appendChild(_frag);
+
+  // Pagination bar
+  renderStagePagination(stage, currentPage, totalPages, totalRecords);
+
+  // Horizontal scroll sync
+  syncStageScrollBar(stage);
+}
+
+/* ── Unified pagination bar for all stages ── */
+function renderStagePagination(stage, currentPage, totalPages, totalRecords){
+  const bar = document.getElementById(stage + "PagBar");
+  if(!bar) return;
+
+  const from = totalRecords === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const to   = Math.min(currentPage * PAGE_SIZE, totalRecords);
+
+  let html = `<span style="font-size:12px;color:#64748b;margin-right:6px;">
+    Showing <strong style="color:#93c5fd;">${from}–${to}</strong> of
+    <strong style="color:#93c5fd;">${totalRecords}</strong>
+  </span>`;
+
+  const btnBase = "padding:5px 11px;border-radius:7px;font-size:12px;border:1px solid;";
+  const btnOn   = btnBase + "background:#1e293b;color:#94a3b8;border-color:#334155;cursor:pointer;";
+  const btnOff  = btnBase + "background:#0f172a;color:#334155;border-color:#1e293b;cursor:default;";
+
+  html += `<button onclick="changeStage('${stage}',${currentPage-1})"
+    ${currentPage===1?"disabled":""} style="${currentPage===1?btnOff:btnOn}">‹ Prev</button>`;
+
+  const delta = 2;
+  let prev = null;
+  for(let p=1; p<=totalPages; p++){
+    if(p===1 || p===totalPages || (p>=currentPage-delta && p<=currentPage+delta)){
+      if(prev!==null && p-prev>1){
+        html += `<span style="color:#334155;font-size:13px;padding:0 3px;">…</span>`;
+      }
+      const active = p===currentPage;
+      html += `<button onclick="changeStage('${stage}',${p})"
+        style="min-width:32px;padding:5px 9px;border-radius:7px;font-size:12px;font-weight:${active?"700":"400"};
+          border:1px solid ${active?"#3b82f6":"#334155"};
+          background:${active?"#3b82f6":"#1e293b"};
+          color:${active?"#fff":"#94a3b8"};cursor:pointer;">${p}</button>`;
+      prev = p;
+    }
+  }
+
+  html += `<button onclick="changeStage('${stage}',${currentPage+1})"
+    ${currentPage===totalPages?"disabled":""} style="${currentPage===totalPages?btnOff:btnOn}">Next ›</button>`;
+
+  bar.innerHTML = html;
+}
+
+function changeStage(stage, page){
+  const total = Math.max(1, Math.ceil(DB[stage].length / PAGE_SIZE));
+  if(page < 1 || page > total) return;
+  paginationState[stage] = page;
+  renderStage(stage, stage + "Body");
+  // Scroll section back to top
+  const tc = document.querySelector(`#${stage} .table-container`);
+  if(tc) tc.scrollTop = 0;
+}
+
+/* ── Horizontal scroll sync for all stages ── */
+function syncStageScrollBar(stage){
+  const wrapper = document.getElementById(stage + "ScrollWrapper");
+  if(!wrapper) return;
+  const tc    = wrapper.querySelector(".table-container");
+  const tbl   = wrapper.querySelector("table");
+  const topSc = wrapper.querySelector(".table-scroll-top");
+  if(!tc || !tbl || !topSc) return;
+  const inner = topSc.querySelector("div");
+  // Update width on every render
+  if(inner) inner.style.width = tbl.scrollWidth + "px";
+  // Attach listeners only once
+  if(!tc._scrollSynced){
+    tc._scrollSynced = true;
+    topSc.onscroll = () => { tc.scrollLeft = topSc.scrollLeft; };
+    tc.onscroll    = () => { topSc.scrollLeft = tc.scrollLeft; };
+  }
 }
 
 
@@ -1801,10 +1869,7 @@ function switchSection(tab){
     
 /* ================= MASTER SAVE + REFRESH ================= */
 
-function changePage(stage,page){
-  paginationState[stage] = page;
-  renderStage(stage, stage + "Body");
-}
+// changePage replaced by changeStage
 
 function saveAndRender(){
   saveDB();
@@ -2643,6 +2708,8 @@ async function handleGenericImport(input, tab){
 }
 
 /* ── Expose functions to window so HTML onchange/onclick can reach them ── */
+window.changeStage         = changeStage;
+window.changeDailyPage     = changeDailyPage;
 window.handleCeipalFile    = handleCeipalFile;
 window.handleGenericImport = handleGenericImport;
 window.updateFieldById     = updateFieldById;
