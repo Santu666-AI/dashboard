@@ -1254,6 +1254,7 @@ function buildYearSelector(){
   for(let y = 2023; y <= currentYear + 2; y++) years.push(y);
 
   const wrapper = document.createElement("div");
+  wrapper.id = "kpiYearSelector";
   wrapper.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;";
 
   const label = document.createElement("span");
