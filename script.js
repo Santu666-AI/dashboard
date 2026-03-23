@@ -752,63 +752,64 @@ function renderDaily(){
   setTimeout(syncDailyScrollBar, 50);
 }
 
-function renderDailyPagination(currentPage, totalPages, totalRecords){
-  let bar = document.getElementById("dailyPagBar");
-  if(!bar){
-    bar = document.createElement("div");
-    bar.id = "dailyPagBar";
-    bar.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:14px 4px 4px;";
-    const wrapper = document.querySelector("#daily .table-scroll-wrapper") ||
-                    document.querySelector("#daily .table-container");
-    if(wrapper) wrapper.parentNode.insertBefore(bar, wrapper.nextSibling);
+function buildDailyPagBars(){
+  // Top bar — above the scroll wrapper
+  if(!document.getElementById("dailyPagBarTop")){
+    const barTop = document.createElement("div");
+    barTop.id = "dailyPagBarTop";
+    barTop.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0 0 12px;";
+    const wrapper = document.querySelector("#daily .table-scroll-wrapper");
+    if(wrapper) wrapper.parentNode.insertBefore(barTop, wrapper);
   }
+  // Bottom bar — below the scroll wrapper
+  if(!document.getElementById("dailyPagBar")){
+    const barBot = document.createElement("div");
+    barBot.id = "dailyPagBar";
+    barBot.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:14px 0 4px;";
+    const wrapper = document.querySelector("#daily .table-scroll-wrapper");
+    if(wrapper) wrapper.parentNode.insertBefore(barBot, wrapper.nextSibling);
+  }
+}
 
-  const from = (currentPage - 1) * PAGE_SIZE + 1;
+function renderDailyPagination(currentPage, totalPages, totalRecords){
+  buildDailyPagBars();
+
+  const from = totalRecords === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to   = Math.min(currentPage * PAGE_SIZE, totalRecords);
 
-  let html = `<span style="font-size:12px;color:#64748b;margin-right:6px;">
+  const btnOn  = "padding:5px 11px;border-radius:7px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:12px;cursor:pointer;";
+  const btnOff = "padding:5px 11px;border-radius:7px;border:1px solid #1e293b;background:#0f172a;color:#334155;font-size:12px;cursor:default;";
+
+  let html = `<span style="font-size:12px;color:#64748b;margin-right:4px;">
     Showing <strong style="color:#93c5fd;">${from}–${to}</strong> of
     <strong style="color:#93c5fd;">${totalRecords}</strong>
   </span>`;
 
-  /* Prev */
-  html += `<button onclick="changeDailyPage(${currentPage - 1})"
-    ${currentPage === 1 ? "disabled" : ""}
-    style="padding:5px 11px;border-radius:7px;border:1px solid ${currentPage===1?"#1e293b":"#334155"};
-      background:${currentPage===1?"#0f172a":"#1e293b"};color:${currentPage===1?"#334155":"#94a3b8"};
-      font-size:12px;cursor:${currentPage===1?"default":"pointer"};">‹ Prev</button>`;
+  html += `<button onclick="changeDailyPage(${currentPage-1})"
+    ${currentPage===1?"disabled":""} style="${currentPage===1?btnOff:btnOn}">‹ Prev</button>`;
 
-  /* Page number buttons — show max 7 around current */
-  const delta = 3;
-  const pages = [];
-  for(let p = 1; p <= totalPages; p++){
-    if(p === 1 || p === totalPages || (p >= currentPage - delta && p <= currentPage + delta)){
-      pages.push(p);
+  const delta = 2;
+  let prev = null;
+  for(let p=1; p<=totalPages; p++){
+    if(p===1 || p===totalPages || (p>=currentPage-delta && p<=currentPage+delta)){
+      if(prev!==null && p-prev>1) html+=`<span style="color:#334155;padding:0 3px;">…</span>`;
+      const active = p===currentPage;
+      html += `<button onclick="changeDailyPage(${p})"
+        style="min-width:32px;padding:5px 9px;border-radius:7px;font-size:12px;font-weight:${active?"700":"400"};
+          border:1px solid ${active?"#3b82f6":"#334155"};
+          background:${active?"#3b82f6":"#1e293b"};
+          color:${active?"#fff":"#94a3b8"};cursor:pointer;">${p}</button>`;
+      prev = p;
     }
   }
-  let prev = null;
-  pages.forEach(p => {
-    if(prev !== null && p - prev > 1){
-      html += `<span style="color:#334155;font-size:13px;padding:0 2px;">…</span>`;
-    }
-    const isActive = p === currentPage;
-    html += `<button onclick="changeDailyPage(${p})"
-      style="min-width:32px;padding:5px 9px;border-radius:7px;
-        border:1px solid ${isActive?"#3b82f6":"#334155"};
-        background:${isActive?"#3b82f6":"#1e293b"};
-        color:${isActive?"#fff":"#94a3b8"};
-        font-size:12px;font-weight:${isActive?"700":"400"};cursor:pointer;">${p}</button>`;
-    prev = p;
-  });
 
-  /* Next */
-  html += `<button onclick="changeDailyPage(${currentPage + 1})"
-    ${currentPage === totalPages ? "disabled" : ""}
-    style="padding:5px 11px;border-radius:7px;border:1px solid ${currentPage===totalPages?"#1e293b":"#334155"};
-      background:${currentPage===totalPages?"#0f172a":"#1e293b"};color:${currentPage===totalPages?"#334155":"#94a3b8"};
-      font-size:12px;cursor:${currentPage===totalPages?"default":"pointer"};">Next ›</button>`;
+  html += `<button onclick="changeDailyPage(${currentPage+1})"
+    ${currentPage===totalPages?"disabled":""} style="${currentPage===totalPages?btnOff:btnOn}">Next ›</button>`;
 
-  bar.innerHTML = html;
+  const barTop = document.getElementById("dailyPagBarTop");
+  const barBot = document.getElementById("dailyPagBar");
+  if(barTop) barTop.innerHTML = html;
+  if(barBot) barBot.innerHTML = html;
 }
 
 function changeDailyPage(page){
@@ -1249,22 +1250,28 @@ ${actionButtons}
   syncStageScrollBar(stage);
 }
 
-/* ── Unified pagination bar for all stages ── */
+/* ── Unified pagination bar for all stages — top + bottom ── */
 function renderStagePagination(stage, currentPage, totalPages, totalRecords){
-  const bar = document.getElementById(stage + "PagBar");
-  if(!bar) return;
+  // Ensure top bar exists (above scroll wrapper)
+  const wrapperId = stage + "ScrollWrapper";
+  const wrapper   = document.getElementById(wrapperId);
+  if(wrapper && !document.getElementById(stage + "PagBarTop")){
+    const barTop = document.createElement("div");
+    barTop.id    = stage + "PagBarTop";
+    barTop.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0 0 12px;";
+    wrapper.parentNode.insertBefore(barTop, wrapper);
+  }
 
   const from = totalRecords === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to   = Math.min(currentPage * PAGE_SIZE, totalRecords);
 
-  let html = `<span style="font-size:12px;color:#64748b;margin-right:6px;">
+  const btnOn  = "padding:5px 11px;border-radius:7px;font-size:12px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;";
+  const btnOff = "padding:5px 11px;border-radius:7px;font-size:12px;border:1px solid #1e293b;background:#0f172a;color:#334155;cursor:default;";
+
+  let html = `<span style="font-size:12px;color:#64748b;margin-right:4px;">
     Showing <strong style="color:#93c5fd;">${from}–${to}</strong> of
     <strong style="color:#93c5fd;">${totalRecords}</strong>
   </span>`;
-
-  const btnBase = "padding:5px 11px;border-radius:7px;font-size:12px;border:1px solid;";
-  const btnOn   = btnBase + "background:#1e293b;color:#94a3b8;border-color:#334155;cursor:pointer;";
-  const btnOff  = btnBase + "background:#0f172a;color:#334155;border-color:#1e293b;cursor:default;";
 
   html += `<button onclick="changeStage('${stage}',${currentPage-1})"
     ${currentPage===1?"disabled":""} style="${currentPage===1?btnOff:btnOn}">‹ Prev</button>`;
@@ -1273,9 +1280,7 @@ function renderStagePagination(stage, currentPage, totalPages, totalRecords){
   let prev = null;
   for(let p=1; p<=totalPages; p++){
     if(p===1 || p===totalPages || (p>=currentPage-delta && p<=currentPage+delta)){
-      if(prev!==null && p-prev>1){
-        html += `<span style="color:#334155;font-size:13px;padding:0 3px;">…</span>`;
-      }
+      if(prev!==null && p-prev>1) html+=`<span style="color:#334155;padding:0 3px;">…</span>`;
       const active = p===currentPage;
       html += `<button onclick="changeStage('${stage}',${p})"
         style="min-width:32px;padding:5px 9px;border-radius:7px;font-size:12px;font-weight:${active?"700":"400"};
@@ -1289,7 +1294,10 @@ function renderStagePagination(stage, currentPage, totalPages, totalRecords){
   html += `<button onclick="changeStage('${stage}',${currentPage+1})"
     ${currentPage===totalPages?"disabled":""} style="${currentPage===totalPages?btnOff:btnOn}">Next ›</button>`;
 
-  bar.innerHTML = html;
+  const barTop = document.getElementById(stage + "PagBarTop");
+  const barBot = document.getElementById(stage + "PagBar");
+  if(barTop) barTop.innerHTML = html;
+  if(barBot) barBot.innerHTML = html;
 }
 
 function changeStage(stage, page){

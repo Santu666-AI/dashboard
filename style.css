@@ -304,10 +304,18 @@ td:last-child button{margin-right:4px;}
 
 /* TOP ghost bar (hidden — kept for JS compat) */
 .table-scroll-top{
-  overflow-x:auto;height:0px;margin-bottom:0;
-  scrollbar-width:none;pointer-events:none;
+  overflow-x:auto;
+  height:12px;
+  margin-bottom:6px;
+  scrollbar-width:thin;
+  scrollbar-color:#3b82f6 #0c1628;
+  pointer-events:auto;
+  background:var(--bg-card);
+  border-radius:8px;
+  position:sticky;
+  top:0;
+  z-index:10;
 }
-.table-scroll-top::-webkit-scrollbar{display:none;}
 .table-scroll-top div{height:1px;}
 
 /* BOTTOM scroll bar — visible, styled */
@@ -439,36 +447,7 @@ td:last-child button{margin-right:4px;}
   text-align: left;
 }
 
-/* ── HORIZONTAL SCROLL BAR — visible, full width, all tabs ── */
-.table-scroll-wrapper {
-  position: relative;
-}
 
-.table-scroll-top {
-  overflow-x: auto;
-  overflow-y: hidden;
-  height: 10px !important;
-  margin-bottom: 4px;
-  pointer-events: auto !important;
-  scrollbar-width: thin;
-  scrollbar-color: #3b82f6 #0c1628;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--bg-card);
-  border-radius: 8px;
-}
-
-.table-scroll-top::-webkit-scrollbar        { height: 8px; }
-.table-scroll-top::-webkit-scrollbar-track  { background: #0c1628; border-radius: 8px; }
-.table-scroll-top::-webkit-scrollbar-thumb  {
-  background: linear-gradient(90deg, #3b82f6, #06b6d4);
-  border-radius: 8px;
-  border: 1px solid #1e293b;
-}
-.table-scroll-top::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(90deg, #60a5fa, #22d3ee);
-}
 
 /* ── PAGINATION BAR ── */
 #submissionPagBar,
