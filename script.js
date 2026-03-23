@@ -53,7 +53,7 @@ const TABLE_COLS = {
   daily: ['entry_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'source', 'notes', 'resume_text', 'ai_score', 'ai_notes'],
   submission: ['submission_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
   proposal: ['proposal_date', 'name', 'email', 'phone', 'requirement', 'client', 'program_name', 'pw_name', 'location', 'visa', 'notes'],
-  interview: ['interview_scheduled_on', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
+  interview: ['interview_scheduled_on', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'interview_round', 'interview_status', 'status_notes', 'notes'],
   placement: ['placement_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
   start: ['start_date', 'name', 'email', 'phone', 'requirement', 'client', 'location', 'visa', 'notes'],
 };
@@ -558,6 +558,16 @@ async function updateNoteById(stage, id, value){
   if(error){ console.error("Note save failed:", error.message); return; }
   const record = DB[stage] ? DB[stage].find(r => r.id === id) : null;
   if(record) record.notes = value;
+}
+
+async function updateFieldById(stage, id, field, value){
+  if(!id) return;
+  const update = {};
+  update[field] = value;
+  const { error } = await sb.from(stage).update(update).eq("id", id);
+  if(error){ console.error(`Field save failed (${field}):`, error.message); return; }
+  const record = DB[stage] ? DB[stage].find(r => r.id === id) : null;
+  if(record) record[field] = value;
 }
 
 /* ================= DAILY ================= */
@@ -1172,6 +1182,32 @@ row += `
 <td>${r.location||""}</td>
 
 <td>${r.visa||""}</td>
+
+${stage==="interview" ? `
+<td>
+  <select style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 6px;font-size:12px;width:100px;"
+    onchange="updateFieldById('interview','${r.id}','interview_round',this.value)">
+    <option value="">-- Round --</option>
+    <option value="1st Round" ${r.interview_round==='1st Round'?'selected':''}>1st Round</option>
+    <option value="2nd Round" ${r.interview_round==='2nd Round'?'selected':''}>2nd Round</option>
+    <option value="3rd Round" ${r.interview_round==='3rd Round'?'selected':''}>3rd Round</option>
+  </select>
+</td>
+<td>
+  <select style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 6px;font-size:12px;width:110px;"
+    onchange="updateFieldById('interview','${r.id}','interview_status',this.value)">
+    <option value="">-- Status --</option>
+    <option value="Accepted" ${r.interview_status==='Accepted'?'selected':''} style="color:#10b981;">Accepted</option>
+    <option value="Declined" ${r.interview_status==='Declined'?'selected':''} style="color:#ef4444;">Declined</option>
+    <option value="Pending" ${r.interview_status==='Pending'?'selected':''} style="color:#f59e0b;">Pending</option>
+  </select>
+</td>
+<td>
+  <input value="${r.status_notes||''}"
+    placeholder="Status notes..."
+    style="background:#0f172a;border:1px solid #1f2a3a;color:#f1f5f9;border-radius:6px;padding:4px 8px;font-size:12px;width:150px;"
+    onchange="updateFieldById('interview','${r.id}','status_notes',this.value)">
+</td>` : ""}
 
 <td>
 <input value="${r.notes||''}"
@@ -2125,6 +2161,7 @@ window.deleteRowById = deleteRowById;
 window.updateNote = updateNote;
 window.updateDate = updateDate;
 window.updateNoteById = updateNoteById;
+window.updateFieldById = updateFieldById;
 window.deleteRow = deleteRow;
 window.changeDailyPage = changeDailyPage;
 window.renderDailyPagination = renderDailyPagination;
@@ -2399,8 +2436,24 @@ async function handleGenericImport(input, tab){
     const wb = XLSX.read(arrayBuf, { type:"array", raw:true, cellDates:false });
     const ws = wb.Sheets[wb.SheetNames[0]];
 
-    /* sheet_to_json with header:1 gives us arrays; use object mode with defval */
-    const rows = XLSX.utils.sheet_to_json(ws, { defval:"", raw:false });
+    /* ── Find real header row: Ceipal files have a "Period:" title in row 1.
+       Scan first 10 rows for the one with the most filled cells. ── */
+    const rawRows = XLSX.utils.sheet_to_json(ws, { header:1, defval:"", raw:false });
+    let headerIdx = 0;
+    let maxFilled = 0;
+    for(let i = 0; i < Math.min(rawRows.length, 10); i++){
+      const filled = rawRows[i].filter(c => String(c).trim()).length;
+      if(filled > maxFilled){ maxFilled = filled; headerIdx = i; }
+    }
+    /* Build rows using detected header row */
+    const headers = rawRows[headerIdx].map(h => String(h).trim());
+    const rows = [];
+    for(let i = headerIdx + 1; i < rawRows.length; i++){
+      const rowArr = rawRows[i];
+      const obj = {};
+      headers.forEach((h, ci) => { if(h) obj[h] = String(rowArr[ci] || "").trim(); });
+      rows.push(obj);
+    }
 
     if(!rows.length){ alert("No data found in file."); return; }
 
@@ -2457,7 +2510,7 @@ async function handleGenericImport(input, tab){
         phone:       fv(row,"mobile number","phone","mobile","contact"),
         requirement: fv(row,"job applied","requirement","job","nvr","position","title","job code"),
         client:      fv(row,"client","company","end client"),
-        location:    fv(row,"job location","location","city","address"),
+        location:    fv(row,"location","city","address"),
         visa:        fv(row,"visa","work auth","authorization"),
         source:      fv(row,"source"),
         notes:       fv(row,"notes","comments","remark"),
@@ -2470,6 +2523,12 @@ async function handleGenericImport(input, tab){
 
       /* Skip rows with no name AND no email */
       if(!all.name && !all.email) return;
+
+      /* For submission tab: only import Varada Chari's records */
+      if(tab === "submission"){
+        const subBy = fv(row,"submitted by").toLowerCase();
+        if(subBy && subBy !== "varada chari") return;
+      }
 
       /* Build safe record — ONLY columns that exist in this table */
       const rec = {};
