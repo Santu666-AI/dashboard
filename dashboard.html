@@ -59,13 +59,23 @@
     </a>
 
     <div class="sidebar-footer">
-      <div class="sidebar-user">
-        <div class="sidebar-avatar">NR</div>
+      <div class="sidebar-user" id="sidebarUserInfo">
+        <div class="sidebar-avatar" id="sidebarAvatar">NR</div>
         <div class="sidebar-user-info">
-          <div class="sidebar-user-name">NetVision</div>
-          <div class="sidebar-user-role">Recruiter</div>
+          <div class="sidebar-user-name" id="sidebarUserName">NetVision</div>
+          <div class="sidebar-user-role" id="sidebarUserRole">Recruiter</div>
         </div>
       </div>
+      <button onclick="logoutUser()" style="
+        margin-top:10px;width:100%;
+        display:flex;align-items:center;justify-content:center;gap:7px;
+        padding:9px 12px;border-radius:9px;border:1px solid rgba(239,68,68,0.2);
+        background:rgba(239,68,68,0.07);color:#f87171;
+        font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;
+      " onmouseover="this.style.background='rgba(239,68,68,0.15)'"
+         onmouseout="this.style.background='rgba(239,68,68,0.07)'">
+        <i class="ri-logout-box-r-line" style="font-size:15px;"></i> Logout
+      </button>
     </div>
 
   </div>
@@ -504,7 +514,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="script.js?v=1774293579"></script>
+<script src="script.js?v=1774294331"></script>
 
 
 </body>

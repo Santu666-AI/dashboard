@@ -1678,12 +1678,22 @@ async function login(){
 /* ================= CHECK SESSION ================= */
 
 async function checkUser(){
-
   try{
-
     const { data } = await sb.auth.getSession();
 
     if(data.session){
+      // Show user email in sidebar
+      const user  = data.session.user;
+      const email = user.email || "";
+      const name  = email.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+      const initials = name.split(" ").map(w=>w[0]).join("").substring(0,2).toUpperCase();
+
+      const elName   = document.getElementById("sidebarUserName");
+      const elRole   = document.getElementById("sidebarUserRole");
+      const elAvatar = document.getElementById("sidebarAvatar");
+      if(elName)   elName.textContent   = name;
+      if(elRole)   elRole.textContent   = email;
+      if(elAvatar) elAvatar.textContent = initials;
 
       const app = document.getElementById("app");
       if(app) app.style.display = "block";
@@ -1691,20 +1701,21 @@ async function checkUser(){
       await loadDashboard();
 
     } else {
-
-      console.log("No active session");
-      const app = document.getElementById("app");
-      if(app) app.style.display = "block";
-
-      await loadDashboard();  // allow dashboard load anyway
-
+      // No session — redirect to login
+      window.location = "index.html";
     }
 
   } catch(e){
-
     console.log("Session error:", e);
-
+    window.location = "index.html";
   }
+}
+
+async function logoutUser(){
+  const ok = confirm("Are you sure you want to logout?");
+  if(!ok) return;
+  await sb.auth.signOut();
+  window.location = "index.html";
 }
 
 /* ================= PAGE LOAD ================= */
@@ -2810,6 +2821,7 @@ window.changeStage         = changeStage;
 window.changeDailyPage     = changeDailyPage;
 window.handleCeipalFile    = handleCeipalFile;
 window.scoreCandidate      = scoreCandidate;
+window.logoutUser          = logoutUser;
 window.handleGenericImport = handleGenericImport;
 window.updateFieldById     = updateFieldById;
 window.exportTab           = function(tab){ console.warn("Export coming soon for:", tab); };

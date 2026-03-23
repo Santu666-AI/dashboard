@@ -1,187 +1,404 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>NetVision Resources | ATS Login</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+<link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
 <style>
 
-/* ===== BACKGROUND ===== */
+*{ box-sizing:border-box; margin:0; padding:0; }
 
 body{
-  margin:0;
   height:100vh;
-  font-family:'Segoe UI',sans-serif;
-  background:linear-gradient(135deg,#0f172a,#1e3a8a);
+  font-family:'Segoe UI', sans-serif;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  background:#0f172a;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ── BACKGROUND IMAGE ── */
+.bg{
+  position:absolute;
+  inset:0;
+  background:url('login_bg_png.png') center/cover no-repeat;
+  z-index:0;
+}
+.bg::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(to right, transparent 30%, rgba(10,18,40,0.72) 65%, rgba(10,18,40,0.96) 100%);
+}
+
+/* ── RIGHT PANEL ── */
+.panel{
+  position:relative;
+  z-index:1;
+  width:460px;
+  min-height:100vh;
   display:flex;
   align-items:center;
   justify-content:center;
+  padding:40px 48px;
 }
 
-/* ===== LOGIN CARD ===== */
-
-.login-card{
-  width:420px;
-  background:#ffffff;
-  padding:40px;
-  border-radius:18px;
-  box-shadow:0 30px 60px rgba(0,0,0,.35);
+/* ── CARD ── */
+.card{
+  width:100%;
+  background:rgba(255,255,255,0.97);
+  border-radius:20px;
+  padding:42px 40px 36px;
+  box-shadow:0 32px 80px rgba(0,0,0,0.45);
 }
 
-.logo{
-  text-align:center;
-  margin-bottom:15px;
+/* ── LOGO / TITLE ── */
+.logo{ text-align:center; margin-bottom:6px; }
+.logo img{ width:200px; }
+
+.welcome{ text-align:center; margin-bottom:28px; }
+.welcome h2{ font-size:22px; font-weight:800; color:#1d4ed8; margin-bottom:2px; }
+.welcome p{ font-size:13px; color:#6b7280; }
+
+/* ── VIEWS ── */
+.view{ display:none; }
+.view.active{ display:block; }
+
+/* ── INPUTS ── */
+.field{
+  position:relative;
+  margin-bottom:16px;
+}
+.field i{
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#9ca3af;
+  font-size:17px;
+}
+.field input{
+  width:100%;
+  height:50px;
+  padding:0 44px 0 42px;
+  border:1.5px solid #e5e7eb;
+  border-radius:12px;
+  font-size:14px;
+  color:#111827;
+  outline:none;
+  transition:border-color 0.15s, box-shadow 0.15s;
+  background:#f9fafb;
+}
+.field input:focus{
+  border-color:#2563eb;
+  box-shadow:0 0 0 3px rgba(37,99,235,0.12);
+  background:#fff;
+}
+.field .eye{
+  position:absolute;
+  right:14px;
+  top:50%;
+  transform:translateY(-50%);
+  cursor:pointer;
+  color:#9ca3af;
+  font-size:17px;
+  left:auto;
 }
 
-.logo img{
-  width:220px;
+/* ── REMEMBER + FORGOT ROW ── */
+.row-rf{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:20px;
+  font-size:13px;
 }
-
-/* ===== TEXT ===== */
-
-.title{
-  text-align:center;
-  margin-bottom:25px;
+.row-rf label{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:#374151;
+  cursor:pointer;
 }
-
-.title h4{
-  margin:0;
-  color:#1d4ed8;
-  font-weight:700;
+.row-rf input[type="checkbox"]{
+  width:15px; height:15px;
+  accent-color:#2563eb;
+  cursor:pointer;
 }
-
-.title span{
-  color:#6b7280;
+.forgot-link{
+  color:#2563eb;
+  text-decoration:none;
+  font-weight:500;
+  cursor:pointer;
 }
+.forgot-link:hover{ text-decoration:underline; }
 
-/* ===== INPUT ===== */
-
-.form-control{
-  height:48px;
-  border-radius:10px;
-}
-
-/* ===== BUTTON ===== */
-
-.login-btn{
-  height:48px;
+/* ── BUTTONS ── */
+.btn-primary{
+  width:100%;
+  height:50px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
   background:linear-gradient(90deg,#2563eb,#1d4ed8);
-  color:white;
-  font-weight:600;
+  color:#fff;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+  transition:opacity 0.15s, transform 0.1s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+.btn-primary:hover{ opacity:0.9; transform:translateY(-1px); }
+.btn-primary:active{ transform:translateY(0); }
+.btn-primary:disabled{ opacity:0.6; cursor:default; transform:none; }
+
+.btn-back{
+  background:none;
+  border:none;
+  color:#6b7280;
+  font-size:13px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:0;
+  margin-bottom:18px;
+}
+.btn-back:hover{ color:#1d4ed8; }
+
+/* ── MESSAGE ── */
+.msg{
+  text-align:center;
+  font-size:13px;
+  margin-top:14px;
+  min-height:18px;
+  border-radius:8px;
+  padding:8px 12px;
+  display:none;
+}
+.msg.error{ display:block; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+.msg.success{ display:block; background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+
+/* ── DIVIDER ── */
+.divider{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:20px 0;
+  color:#d1d5db;
+  font-size:12px;
+}
+.divider::before,.divider::after{
+  content:''; flex:1;
+  height:1px; background:#e5e7eb;
 }
 
-.login-btn:hover{
-  background:#1e40af;
-}
-
+/* ── FOOTER ── */
 .footer{
   text-align:center;
-  margin-top:20px;
-  font-size:13px;
-  color:#6b7280;
+  margin-top:22px;
+  font-size:12px;
+  color:#9ca3af;
+}
+
+/* ── SPINNER ── */
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.spinner{
+  width:18px; height:18px;
+  border:2px solid rgba(255,255,255,0.4);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
 }
 
 </style>
-
 </head>
-
 <body>
 
-<div class="login-card">
+<div class="bg"></div>
 
-<div class="logo">
-<img src="logo.png">
+<div class="panel">
+<div class="card">
+
+  <div class="logo">
+    <img src="logo.png" alt="NetVision Resources">
+  </div>
+
+  <div class="welcome">
+    <h2>NetVision Resources</h2>
+    <p>Your Recruiting Dashboard</p>
+  </div>
+
+  <!-- ══ LOGIN VIEW ══ -->
+  <div class="view active" id="viewLogin">
+
+    <form onsubmit="doLogin(event)">
+
+      <div class="field">
+        <i class="ri-user-line"></i>
+        <input type="email" id="loginEmail" placeholder="Email address" required autocomplete="email">
+      </div>
+
+      <div class="field">
+        <i class="ri-lock-line"></i>
+        <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+        <i class="ri-eye-off-line eye" onclick="togglePwd('loginPassword',this)"></i>
+      </div>
+
+      <div class="row-rf">
+        <label>
+          <input type="checkbox" id="rememberMe"> Remember me
+        </label>
+        <span class="forgot-link" onclick="showView('viewForgot')">Forgot password?</span>
+      </div>
+
+      <button class="btn-primary" id="loginBtn" type="submit">
+        <i class="ri-login-circle-line"></i> Login
+      </button>
+
+    </form>
+
+    <div class="msg" id="loginMsg"></div>
+    <div class="footer">© 2026 NetVision Resources Inc.</div>
+
+  </div>
+
+  <!-- ══ FORGOT PASSWORD VIEW ══ -->
+  <div class="view" id="viewForgot">
+
+    <button class="btn-back" onclick="showView('viewLogin')">
+      <i class="ri-arrow-left-line"></i> Back to Login
+    </button>
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:6px;">Reset Password</div>
+      <div style="font-size:13px;color:#6b7280;">Enter your email and we'll send you a reset link.</div>
+    </div>
+
+    <div class="field">
+      <i class="ri-mail-line"></i>
+      <input type="email" id="forgotEmail" placeholder="Email address" required autocomplete="email">
+    </div>
+
+    <button class="btn-primary" id="resetBtn" onclick="doForgot()">
+      <i class="ri-send-plane-line"></i> Send Reset Link
+    </button>
+
+    <div class="msg" id="forgotMsg"></div>
+    <div class="footer">© 2026 NetVision Resources Inc.</div>
+
+  </div>
+
+</div>
 </div>
 
-<div class="title">
-<h4>NetVision Resources Inc</h4>
-<span>Recruiting Dashboard Login</span>
-</div>
-
-<form onsubmit="loginUser(event)">
-
-<div class="mb-3">
-<input
-type="email"
-id="email"
-class="form-control"
-placeholder="Email"
-required>
-</div>
-
-<div class="mb-3">
-<input
-type="password"
-id="password"
-class="form-control"
-placeholder="Password"
-required>
-</div>
-
-<button class="login-btn w-100">
-Login
-</button>
-
-</form>
-
-<div class="footer">
-© 2026 NetVision Resources
-</div>
-
-</div>
-
-<!-- ================= SUPABASE ================= -->
-
+<!-- ══ SUPABASE ══ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
-
-/* ✅ SAME SUPABASE YOU USE IN DASHBOARD */
 
 const SUPABASE_URL = "https://ftxrrgdmkpnghxilnpsk.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eHJyZ2Rta3BuZ2h4aWxucHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDY0MzYsImV4cCI6MjA4NzE4MjQzNn0.KcqIN2ynBQWmglQ_-6eaFi3TGPSclB0TgeJ83XU_OWI";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const sb =
-supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+/* ── Auto-login if session exists ── */
+(async()=>{
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) window.location = "dashboard.html";
+})();
 
-/* ================= LOGIN ================= */
+/* ── Switch views ── */
+function showView(id){
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  // Clear messages
+  document.querySelectorAll(".msg").forEach(m => { m.className="msg"; m.textContent=""; });
+}
 
-async function loginUser(e){
+/* ── Toggle password visibility ── */
+function togglePwd(inputId, icon){
+  const inp = document.getElementById(inputId);
+  if(inp.type === "password"){
+    inp.type = "text";
+    icon.className = "ri-eye-line eye";
+  } else {
+    inp.type = "password";
+    icon.className = "ri-eye-off-line eye";
+  }
+}
 
+/* ── Show message helper ── */
+function showMsg(elId, text, type="error"){
+  const el = document.getElementById(elId);
+  el.textContent = text;
+  el.className = "msg " + type;
+}
+
+/* ── LOGIN ── */
+async function doLogin(e){
   e.preventDefault();
+  const email    = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const btn      = document.getElementById("loginBtn");
+  const remember = document.getElementById("rememberMe").checked;
 
-  const email =
-    document.getElementById("email").value;
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Logging in...`;
 
-  const password =
-    document.getElementById("password").value;
-
-  const { error } =
-    await sb.auth.signInWithPassword({
-      email,
-      password
-    });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
 
   if(error){
-    alert(error.message);
+    showMsg("loginMsg", error.message);
+    btn.disabled = false;
+    btn.innerHTML = `<i class="ri-login-circle-line"></i> Login`;
     return;
   }
 
-  /* ✅ SUCCESS */
-  window.location="dashboard.html";
+  if(remember) localStorage.setItem("nvr_remember_email", email);
+  else         localStorage.removeItem("nvr_remember_email");
+
+  btn.innerHTML = `<i class="ri-check-line"></i> Success! Redirecting...`;
+  setTimeout(()=>{ window.location = "dashboard.html"; }, 600);
 }
 
-</script>
+/* ── FORGOT PASSWORD ── */
+async function doForgot(){
+  const email = document.getElementById("forgotEmail").value.trim();
+  const btn   = document.getElementById("resetBtn");
 
+  if(!email){ showMsg("forgotMsg","Please enter your email address."); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Sending...`;
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + "/reset.html"
+  });
+
+  if(error){
+    showMsg("forgotMsg", error.message);
+    btn.disabled = false;
+    btn.innerHTML = `<i class="ri-send-plane-line"></i> Send Reset Link`;
+    return;
+  }
+
+  showMsg("forgotMsg", "✅ Reset link sent! Check your inbox.", "success");
+  btn.innerHTML = `<i class="ri-mail-check-line"></i> Email Sent`;
+}
+
+/* ── Pre-fill remembered email ── */
+window.addEventListener("load", ()=>{
+  const saved = localStorage.getItem("nvr_remember_email");
+  if(saved){
+    document.getElementById("loginEmail").value = saved;
+    document.getElementById("rememberMe").checked = true;
+  }
+});
+
+</script>
 </body>
 </html>
