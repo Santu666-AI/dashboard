@@ -1527,28 +1527,39 @@ function startHourlyReminder(){
 
 async function fetchAllData(){
   try{
-    // ── Fetch all tables in parallel for speed ──
+    // ── Fetch all tables in parallel — each handles its own error ──
+    const safeSelect = async (table, cols="*") => {
+      try {
+        const { data, error } = await sb.from(table).select(cols);
+        if(error){ console.warn(`[${table}] fetch warning:`, error.message); return []; }
+        return data || [];
+      } catch(e) {
+        console.warn(`[${table}] fetch failed:`, e.message);
+        return [];
+      }
+    };
+
     const [jd, daily, submission, proposal, interview, placement, start, tasks, meetings] = await Promise.all([
-      sb.from("jd").select("*"),
-      sb.from("daily").select("id,entry_date,name,email,phone,requirement,client,location,visa,source,notes,program_name,pw_name,resume_text,ai_score,ai_notes"),
-      sb.from("submission").select("id,submission_date,name,email,phone,requirement,client,location,visa,notes"),
-      sb.from("proposal").select("*"),
-      sb.from("interview").select("id,interview_scheduled_on,name,email,phone,requirement,client,location,visa,interview_round,interview_status,status_notes,notes"),
-      sb.from("placement").select("id,placement_date,name,email,phone,requirement,client,location,visa,offer_status,notes"),
-      sb.from("start").select("id,start_date,name,email,phone,requirement,client,location,visa,notes"),
-      sb.from("tasks").select("*"),
-      sb.from("meetings").select("*"),
+      safeSelect("jd"),
+      safeSelect("daily"),
+      safeSelect("submission"),
+      safeSelect("proposal"),
+      safeSelect("interview"),
+      safeSelect("placement"),
+      safeSelect("start"),
+      safeSelect("tasks"),
+      safeSelect("meetings"),
     ]);
 
-    DB.jd         = jd.data         || [];
-    DB.daily      = daily.data      || [];
-    DB.submission = submission.data || [];
-    DB.proposal   = proposal.data   || [];
-    DB.interview  = interview.data  || [];
-    DB.placement  = placement.data  || [];
-    DB.start      = start.data      || [];
-    DB.tasks      = tasks.data      || [];
-    DB.meetings   = meetings.data   || [];
+    DB.jd         = jd;
+    DB.daily      = daily;
+    DB.submission = submission;
+    DB.proposal   = proposal;
+    DB.interview  = interview;
+    DB.placement  = placement;
+    DB.start      = start;
+    DB.tasks      = tasks;
+    DB.meetings   = meetings;
 
     console.log("All data loaded successfully", DB);
   }catch(err){
