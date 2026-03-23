@@ -47,9 +47,6 @@ console.log("Supabase Connected Successfully");
 /* ── EARLY STUBS: prevent "not defined" if buttons clicked before script fully loads ── */
 window.importCeipal        = function(){ document.getElementById("ceipalFileInput")?.click(); };
 window.importGeneric       = function(tab){ document.getElementById("importFile_"+tab)?.click(); };
-window.handleCeipalFile    = function(){ console.warn("handleCeipalFile not ready yet"); };
-window.handleGenericImport = function(){ console.warn("handleGenericImport not ready yet"); };
-window.exportTab           = function(tab){ console.warn("exportTab not ready yet"); };
 
 /* ── EXACT columns per table — only these are sent to Supabase ── */
 const TABLE_COLS = {
@@ -2531,3 +2528,8 @@ async function handleGenericImport(input, tab){
     alert("Import failed: " + err.message);
   }
 }
+
+/* ── Expose functions to window so HTML onchange/onclick can reach them ── */
+window.handleCeipalFile    = handleCeipalFile;
+window.handleGenericImport = handleGenericImport;
+window.exportTab           = function(tab){ console.warn("Export coming soon for:", tab); };
