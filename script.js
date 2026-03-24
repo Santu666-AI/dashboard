@@ -1737,56 +1737,72 @@ document.addEventListener("DOMContentLoaded", async function(){
       const data = JSON.parse(decodeURIComponent(encoded));
       window.history.replaceState(null, "", window.location.pathname);
 
-      /* ── CLEAN BAD NAMES FROM CEIPAL UI ARTIFACTS ── */
-      const CEIPAL_JUNK_NAMES = [
-        "switch account","profile migrated","sign out","log out",
-        "logout","sign in","login","candidate","applicant",
-        "full name","name","user","unknown","n/a","na",
-        "ceipal","ats","save to daily","parse page"
+      /* ── NAME VALIDATOR: strict real-person name check ── */
+      const _NAME_JUNK_WORDS = [
+        "resume","profile","summary","engineer","developer","consultant","architect",
+        "manager","analyst","bachelor","master","university","college","curriculum",
+        "vitae","email","phone","address","experience","skills","objective",
+        "technologies","solutions","systems","services","software","hardware",
+        "migration","migrated","account","cloud","security","network","data",
+        "infrastructure","devops","project","technical","senior","junior","lead",
+        "principal","staff","ceipal","ats","applicant","candidate","switch",
+        "sign","logout","login","parse","page","save","daily","agreement",
+        "subscription","contract","master","amendment","addendum","invoice",
+        "statement","policy","terms","conditions","service","support","license",
+        "indeed","linkedin","dice","monster","internal","database","active",
+        "status","clearance","staffing","recruitment","certification"
+      ];
+      const _NAME_JUNK_RE = [
+        /[@#\/\\|*<>]/, /\d/,
+        /\b(inc|llc|ltd|corp|co\.?)\b/i,
+        /profile\s+migrated/i, /switch\s+account/i
       ];
       function cleanCeipalName(raw) {
         if (!raw || !raw.trim()) return "";
-        const lower = raw.trim().toLowerCase();
-        /* Reject known Ceipal UI labels */
-        if (CEIPAL_JUNK_NAMES.some(j => lower === j || lower.includes(j))) return "";
-        /* Reject if contains digits (not a real name) */
-        if (/\d/.test(raw)) return "";
-        /* Reject single-word strings that look like UI labels */
-        const words = raw.trim().split(/\s+/);
-        if (words.length === 1 && raw.length > 20) return "";
-        return raw.trim();
+        const s = raw.trim();
+        const words = s.split(/\s+/);
+        /* Must be 2–4 words */
+        if (words.length < 2 || words.length > 4) return "";
+        /* Every word must start with uppercase and NOT be ALL-CAPS (length > 2)
+           Real names: "John", "McDonald", "O'Brien" — NOT "MASTER", "AGREEMENT" */
+        for (const w of words) {
+          if (!/^[A-Z]/.test(w)) return "";            // must start capital
+          if (w.length > 2 && w === w.toUpperCase()) return ""; // all-caps word = not a name
+        }
+        /* No junk regex patterns */
+        if (_NAME_JUNK_RE.some(p => p.test(s))) return "";
+        /* No junk keywords */
+        const lower = s.toLowerCase();
+        if (_NAME_JUNK_WORDS.some(w => lower.includes(w))) return "";
+        return s;
       }
       const cleanedName = cleanCeipalName(data.name);
 
       switchSection("resume");
       const resumeEl = document.getElementById("resumeText");
       if (resumeEl) resumeEl.value = data.resume_text || "";
+
+      /* ── Fill ONLY the Resume Parser preview fields (read-only review) ──
+         Daily form fields are NOT filled here.
+         They are only filled when user clicks "Done — Fill Daily Entry Form".
+         This prevents any accidental/auto saves to the database. ── */
       const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
       set("resumeName",     cleanedName);
       set("resumeEmail",    data.email);
       set("resumePhone",    data.phone);
       set("resumeLocation", data.location);
-      set("dailyName",      cleanedName);
-      set("dailyEmail",     data.email);
-      set("dailyPhone",     data.phone);
-      set("dailyLocation",  data.location);
-      const dateEl = document.getElementById("dailyDate");
-      if (dateEl && !dateEl.value) dateEl.value = today();
+
+      /* Set resumeVisa only (not dailyVisa — that happens on button click) */
       if (data.visa) {
-        ["resumeVisa","dailyVisa"].forEach(id => {
-          const sel = document.getElementById(id);
-          if (!sel) return;
-          const opt = Array.from(sel.options).find(o => o.value.toLowerCase() === data.visa.toLowerCase());
-          if (opt) sel.value = opt.value;
-        });
-      }
-      if (data.source) {
-        const sel = document.getElementById("dailySource");
-        if (sel) {
-          const opt = Array.from(sel.options).find(o => o.value.toLowerCase() === data.source.toLowerCase());
-          if (opt) sel.value = opt.value;
+        const rVisa = document.getElementById("resumeVisa");
+        if (rVisa) {
+          const opt = Array.from(rVisa.options).find(o => o.value.toLowerCase() === data.visa.toLowerCase());
+          if (opt) rVisa.value = opt.value;
         }
       }
+
+      /* Store source for later use when user clicks the button */
+      window._pendingCeipalSource = data.source || "";
       if (!document.getElementById("extGoToDailyBtn")) {
         const btn = document.createElement("button");
         btn.id = "extGoToDailyBtn";
@@ -1796,26 +1812,23 @@ document.addEventListener("DOMContentLoaded", async function(){
           /* Switch to Daily tab */
           switchSection("daily");
 
-          /* Pre-fill the manual entry form from parsed resume data */
-          const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-          const parsedName = document.getElementById("resumeName")?.value || "";
-          setVal("dailyName",     parsedName);
-          setVal("dailyEmail",    document.getElementById("resumeEmail")?.value);
-          setVal("dailyPhone",    document.getElementById("resumePhone")?.value);
-          setVal("dailyLocation", document.getElementById("resumeLocation")?.value);
-          /* If name is empty, focus the name field so user types it */
-          if (!parsedName) {
-            setTimeout(() => {
-              const nf = document.getElementById("dailyName");
-              if (nf) { nf.focus(); nf.placeholder = "⚠️ Enter candidate name manually"; }
-            }, 400);
-          }
+          /* ── Fill ALL Daily form fields — only fires when user explicitly clicks this button ── */
+          const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val || ""; };
+          const parsedName     = document.getElementById("resumeName")?.value || "";
+          const parsedEmail    = document.getElementById("resumeEmail")?.value || "";
+          const parsedPhone    = document.getElementById("resumePhone")?.value || "";
+          const parsedLocation = document.getElementById("resumeLocation")?.value || "";
 
-          /* Set today's date if not already filled */
+          setVal("dailyName",     parsedName);
+          setVal("dailyEmail",    parsedEmail);
+          setVal("dailyPhone",    parsedPhone);
+          setVal("dailyLocation", parsedLocation);
+
+          /* Set today's date */
           const dateEl = document.getElementById("dailyDate");
           if (dateEl && !dateEl.value) dateEl.value = today();
 
-          /* Copy visa status */
+          /* Copy visa from resume parser */
           const rvEl = document.getElementById("resumeVisa");
           const dvEl = document.getElementById("dailyVisa");
           if (rvEl && dvEl && rvEl.value) {
@@ -1823,9 +1836,30 @@ document.addEventListener("DOMContentLoaded", async function(){
             if (opt) dvEl.value = opt.value;
           }
 
-          /* Store resume text so AI scoring works after save */
+          /* Apply source stored during handoff */
+          if (window._pendingCeipalSource) {
+            const srcEl = document.getElementById("dailySource");
+            if (srcEl) {
+              const opt = Array.from(srcEl.options).find(o =>
+                o.value.toLowerCase() === window._pendingCeipalSource.toLowerCase()
+              );
+              if (opt) srcEl.value = opt.value;
+            }
+          }
+
+          /* If name still empty, warn user */
+          if (!parsedName) {
+            setTimeout(() => {
+              const nf = document.getElementById("dailyName");
+              if (nf) { nf.focus(); nf.placeholder = "⚠️ Enter candidate name manually"; }
+            }, 400);
+          }
+
+          /* Store resume text for AI scoring */
           const resumeEl2 = document.getElementById("resumeText");
-          if (resumeEl2) window._parsedResumeText = resumeEl2.value;
+          if (resumeEl2 && resumeEl2.value.trim()) {
+            window._parsedResumeText = resumeEl2.value;
+          }
 
           /* Scroll entry form into view */
           const entryPanel = document.querySelector("#daily .entry-panel");
