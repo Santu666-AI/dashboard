@@ -59,6 +59,12 @@
       <i class="ri-rocket-line"></i> Starts
     </a>
 
+    <div class="nav-label">Tools</div>
+
+    <a data-tab="linkedin">
+      <i class="ri-linkedin-box-line"></i> LinkedIn Notepad
+    </a>
+
     <div class="sidebar-footer">
       <div class="sidebar-user" id="sidebarUserInfo">
         <div class="sidebar-avatar" id="sidebarAvatar">NR</div>
@@ -513,6 +519,87 @@
       <div id="startPagBar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:14px 4px 4px;"></div>
     </div>
 
+
+    <!-- ════ LINKEDIN NOTEPAD ════ -->
+    <div id="linkedin" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);">
+        <h2 style="margin:0;padding:0;border:none;"><i class="ri-linkedin-box-line" style="color:#0a66c2;margin-right:10px;"></i>LinkedIn Message Notepad</h2>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span id="li-msg-count" style="font-size:11px;color:#64748b;font-weight:600;"></span>
+          <button onclick="liAddMessage()" style="background:linear-gradient(135deg,#0a66c2,#0a85e0);color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 2px 12px rgba(10,102,194,0.3);">
+            <i class="ri-add-line"></i> New Message
+          </button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+        <div style="position:relative;flex:1;min-width:200px;">
+          <i class="ri-search-line" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#64748b;font-size:14px;"></i>
+          <input id="li-search" placeholder="Search messages, tags, titles..." oninput="liRender()" style="padding-left:34px;background:#0a1525;border:1px solid rgba(255,255,255,0.06);border-radius:9px;color:#e2e8f0;font-size:13px;width:100%;">
+        </div>
+        <select id="li-filter-cat" onchange="liRender()" style="background:#0a1525;border:1px solid rgba(255,255,255,0.06);border-radius:9px;color:#e2e8f0;font-size:13px;padding:9px 12px;min-width:160px;">
+          <option value="">All Categories</option>
+          <option value="connection">Connection Request</option>
+          <option value="followup">Follow-Up</option>
+          <option value="recruiting">Recruiting Outreach</option>
+          <option value="thankyou">Thank You</option>
+          <option value="inmail">InMail</option>
+          <option value="other">Other</option>
+        </select>
+        <select id="li-sort" onchange="liRender()" style="background:#0a1525;border:1px solid rgba(255,255,255,0.06);border-radius:9px;color:#e2e8f0;font-size:13px;padding:9px 12px;min-width:140px;">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="az">A to Z</option>
+          <option value="mostused">Most Used</option>
+        </select>
+      </div>
+      <div id="li-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;"></div>
+      <div id="li-empty" style="display:none;text-align:center;padding:80px 20px;">
+        <i class="ri-linkedin-box-line" style="font-size:56px;color:#1e3a5f;display:block;margin-bottom:16px;"></i>
+        <div style="font-size:16px;font-weight:600;color:#64748b;margin-bottom:8px;">No messages yet</div>
+        <div style="font-size:13px;color:#2d3f58;">Click "New Message" to save your first LinkedIn template</div>
+      </div>
+      <div id="li-modal-bg" onclick="liCloseModal(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+        <div onclick="event.stopPropagation()" style="background:#0c1628;border:1px solid rgba(59,130,246,0.25);border-radius:16px;width:min(640px,95vw);max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,0.6);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+            <h3 style="font-family:Syne,sans-serif;font-size:16px;font-weight:700;color:#e2e8f0;" id="li-modal-title">New LinkedIn Message</h3>
+            <button onclick="liCloseModal()" style="background:transparent;border:none;color:#64748b;font-size:20px;cursor:pointer;padding:4px 8px;"><i class="ri-close-line"></i></button>
+          </div>
+          <input type="hidden" id="li-edit-id">
+          <div style="margin-bottom:14px;">
+            <label style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;display:block;margin-bottom:7px;">Message Title / Name</label>
+            <input id="li-m-title" placeholder="e.g. Java Developer Outreach, Follow-up Template..." style="background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:#e2e8f0;font-size:13px;width:100%;">
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;display:block;margin-bottom:7px;">Category</label>
+            <select id="li-m-cat" style="background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:#e2e8f0;font-size:13px;width:100%;">
+              <option value="connection">Connection Request</option>
+              <option value="followup">Follow-Up</option>
+              <option value="recruiting">Recruiting Outreach</option>
+              <option value="thankyou">Thank You</option>
+              <option value="inmail">InMail</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;display:block;margin-bottom:7px;">Tags (comma separated)</label>
+            <input id="li-m-tags" placeholder="java, senior, fintech..." style="background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:#e2e8f0;font-size:13px;width:100%;">
+          </div>
+          <div style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+              <label style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;">Message Body</label>
+              <span id="li-char-count" style="font-size:11px;color:#64748b;">0 chars</span>
+            </div>
+            <textarea id="li-m-body" placeholder="Paste or type your LinkedIn message here..." style="background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:#e2e8f0;font-size:13px;min-height:180px;width:100%;line-height:1.7;" oninput="document.getElementById('li-char-count').textContent=this.value.length+' chars';"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button onclick="liCloseModal()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#94a3b8;padding:10px 20px;border-radius:9px;font-size:13px;cursor:pointer;">Cancel</button>
+            <button onclick="liSaveMessage()" style="background:linear-gradient(135deg,#0a66c2,#0a85e0);color:#fff;border:none;padding:10px 24px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;">
+              <i class="ri-save-line"></i> Save Message
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div><!-- /main -->
 </div><!-- /app -->
 
@@ -561,3 +648,262 @@
 </script>
 </body>
 </html>
+
+<script>
+/* ═══════════════════════════════════════════
+   LINKEDIN MESSAGE NOTEPAD — Full JS Logic
+═══════════════════════════════════════════ */
+(function(){
+  const STORE_KEY = 'nvr_linkedin_msgs';
+
+  // ── Storage helpers ──
+  function liLoad(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)||'[]'); }catch(e){ return []; } }
+  function liSave(arr){ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
+
+  // ── Category config ──
+  const LI_CATS = {
+    connection: { label:'Connection Request', color:'#3b82f6', icon:'ri-user-add-line' },
+    followup:   { label:'Follow-Up',          color:'#f59e0b', icon:'ri-reply-line' },
+    recruiting: { label:'Recruiting Outreach', color:'#10b981', icon:'ri-briefcase-line' },
+    thankyou:   { label:'Thank You',           color:'#8b5cf6', icon:'ri-heart-line' },
+    inmail:     { label:'InMail',              color:'#0a66c2', icon:'ri-mail-send-line' },
+    other:      { label:'Other',               color:'#64748b', icon:'ri-file-text-line' }
+  };
+
+  // ── Open modal for NEW ──
+  window.liAddMessage = function(){
+    document.getElementById('li-edit-id').value = '';
+    document.getElementById('li-m-title').value = '';
+    document.getElementById('li-m-cat').value = 'recruiting';
+    document.getElementById('li-m-tags').value = '';
+    document.getElementById('li-m-body').value = '';
+    document.getElementById('li-char-count').textContent = '0 chars';
+    document.getElementById('li-modal-title').textContent = 'New LinkedIn Message';
+    const bg = document.getElementById('li-modal-bg');
+    bg.style.display = 'flex';
+    setTimeout(()=>{ document.getElementById('li-m-title').focus(); },80);
+  };
+
+  // ── Open modal for EDIT ──
+  window.liEditMessage = function(id){
+    const msgs = liLoad();
+    const m = msgs.find(x=>x.id===id);
+    if(!m) return;
+    document.getElementById('li-edit-id').value = id;
+    document.getElementById('li-m-title').value = m.title;
+    document.getElementById('li-m-cat').value = m.cat;
+    document.getElementById('li-m-tags').value = (m.tags||[]).join(', ');
+    document.getElementById('li-m-body').value = m.body;
+    document.getElementById('li-char-count').textContent = m.body.length + ' chars';
+    document.getElementById('li-modal-title').textContent = 'Edit Message';
+    const bg = document.getElementById('li-modal-bg');
+    bg.style.display = 'flex';
+  };
+
+  // ── Close modal ──
+  window.liCloseModal = function(e){
+    if(e && e.target !== document.getElementById('li-modal-bg')) return;
+    document.getElementById('li-modal-bg').style.display = 'none';
+  };
+  // Allow calling without event too
+  const origClose = window.liCloseModal;
+  window.liCloseModal = function(e){
+    if(!e){ document.getElementById('li-modal-bg').style.display='none'; return; }
+    origClose(e);
+  };
+
+  // ── Save ──
+  window.liSaveMessage = function(){
+    const title = document.getElementById('li-m-title').value.trim();
+    const body  = document.getElementById('li-m-body').value.trim();
+    if(!title){ alert('Please enter a message title.'); return; }
+    if(!body){ alert('Message body cannot be empty.'); return; }
+    const msgs = liLoad();
+    const editId = document.getElementById('li-edit-id').value;
+    const tagsRaw = document.getElementById('li-m-tags').value;
+    const tags = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
+    if(editId){
+      const idx = msgs.findIndex(x=>x.id===editId);
+      if(idx>-1){
+        msgs[idx].title = title;
+        msgs[idx].cat   = document.getElementById('li-m-cat').value;
+        msgs[idx].tags  = tags;
+        msgs[idx].body  = body;
+        msgs[idx].updated = Date.now();
+      }
+    } else {
+      msgs.unshift({
+        id: 'li_'+Date.now(),
+        title, body,
+        cat: document.getElementById('li-m-cat').value,
+        tags,
+        uses: 0,
+        created: Date.now(),
+        updated: Date.now()
+      });
+    }
+    liSave(msgs);
+    document.getElementById('li-modal-bg').style.display = 'none';
+    liRender();
+  };
+
+  // ── Delete ──
+  window.liDeleteMessage = function(id){
+    if(!confirm('Delete this message template?')) return;
+    const msgs = liLoad().filter(x=>x.id!==id);
+    liSave(msgs);
+    liRender();
+  };
+
+  // ── Copy to clipboard ──
+  window.liCopyMessage = function(id){
+    const msgs = liLoad();
+    const m = msgs.find(x=>x.id===id);
+    if(!m) return;
+    navigator.clipboard.writeText(m.body).then(()=>{
+      // Increment use count
+      const idx = msgs.indexOf(m);
+      msgs[idx].uses = (msgs[idx].uses||0)+1;
+      liSave(msgs);
+      liRender();
+      // Show toast
+      liToast('✓ Copied to clipboard!', '#10b981');
+    }).catch(()=>{
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = m.body;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      liToast('✓ Copied!', '#10b981');
+    });
+  };
+
+  // ── Toast notification ──
+  function liToast(msg, color){
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = `position:fixed;bottom:28px;right:28px;background:${color};color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity 0.4s;`;
+    document.body.appendChild(t);
+    setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),400); }, 2200);
+  }
+
+  // ── Duplicate ──
+  window.liDuplicateMessage = function(id){
+    const msgs = liLoad();
+    const m = msgs.find(x=>x.id===id);
+    if(!m) return;
+    msgs.unshift({ ...m, id:'li_'+Date.now(), title: m.title+' (copy)', uses:0, created:Date.now(), updated:Date.now() });
+    liSave(msgs);
+    liRender();
+    liToast('Duplicated!','#3b82f6');
+  };
+
+  // ── Render cards ──
+  window.liRender = function(){
+    let msgs = liLoad();
+    const search = (document.getElementById('li-search')||{}).value || '';
+    const cat    = (document.getElementById('li-filter-cat')||{}).value || '';
+    const sort   = (document.getElementById('li-sort')||{}).value || 'newest';
+
+    // Filter
+    if(cat) msgs = msgs.filter(m=>m.cat===cat);
+    if(search){
+      const q = search.toLowerCase();
+      msgs = msgs.filter(m=>
+        m.title.toLowerCase().includes(q) ||
+        m.body.toLowerCase().includes(q) ||
+        (m.tags||[]).some(t=>t.toLowerCase().includes(q))
+      );
+    }
+    // Sort
+    if(sort==='oldest') msgs.sort((a,b)=>a.created-b.created);
+    else if(sort==='az') msgs.sort((a,b)=>a.title.localeCompare(b.title));
+    else if(sort==='mostused') msgs.sort((a,b)=>(b.uses||0)-(a.uses||0));
+    else msgs.sort((a,b)=>b.created-a.created);
+
+    const container = document.getElementById('li-cards');
+    const empty     = document.getElementById('li-empty');
+    const counter   = document.getElementById('li-msg-count');
+    const total     = liLoad().length;
+
+    if(!container) return;
+    counter.textContent = total ? total+' saved' : '';
+
+    if(msgs.length===0){
+      container.innerHTML='';
+      if(empty) empty.style.display='block';
+      return;
+    }
+    if(empty) empty.style.display='none';
+
+    container.innerHTML = msgs.map(m=>{
+      const catCfg = LI_CATS[m.cat] || LI_CATS.other;
+      const preview = m.body.length>160 ? m.body.slice(0,157)+'…' : m.body;
+      const dateStr = new Date(m.created).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      const tagHtml = (m.tags||[]).slice(0,4).map(t=>`<span style="background:rgba(59,130,246,0.12);color:#93c5fd;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;">${escHtml(t)}</span>`).join('');
+
+      return `<div style="background:#0c1628;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;transition:border-color 0.2s,transform 0.2s;position:relative;overflow:hidden;"
+        onmouseover="this.style.borderColor='rgba(59,130,246,0.3)';this.style.transform='translateY(-2px)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+
+        <!-- Category strip -->
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${catCfg.color};border-radius:14px 14px 0 0;opacity:0.8;"></div>
+
+        <!-- Header row -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-top:4px;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+              <span style="background:${catCfg.color}22;color:${catCfg.color};padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;white-space:nowrap;"><i class="${catCfg.icon}" style="margin-right:3px;"></i>${catCfg.label}</span>
+              ${m.uses>0?`<span style="font-size:10px;color:#64748b;">Used ${m.uses}×</span>`:''}
+            </div>
+            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#e2e8f0;line-height:1.3;word-break:break-word;">${escHtml(m.title)}</div>
+          </div>
+          <!-- Action buttons -->
+          <div style="display:flex;gap:5px;flex-shrink:0;">
+            <button title="Copy" onclick="liCopyMessage('${m.id}')" style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.2);color:#6ee7b7;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(16,185,129,0.22)'" onmouseout="this.style.background='rgba(16,185,129,0.12)'"><i class="ri-clipboard-line"></i></button>
+            <button title="Edit" onclick="liEditMessage('${m.id}')" style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(59,130,246,0.22)'" onmouseout="this.style.background='rgba(59,130,246,0.12)'"><i class="ri-edit-line"></i></button>
+            <button title="Duplicate" onclick="liDuplicateMessage('${m.id}')" style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.18);color:#fcd34d;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(245,158,11,0.20)'" onmouseout="this.style.background='rgba(245,158,11,0.10)'"><i class="ri-file-copy-line"></i></button>
+            <button title="Delete" onclick="liDeleteMessage('${m.id}')" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:#f87171;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(239,68,68,0.18)'" onmouseout="this.style.background='rgba(239,68,68,0.08)'"><i class="ri-delete-bin-line"></i></button>
+          </div>
+        </div>
+
+        <!-- Preview text -->
+        <div style="font-size:12px;color:#64748b;line-height:1.65;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-family:'DM Sans',sans-serif;white-space:pre-wrap;word-break:break-word;">${escHtml(preview)}</div>
+
+        <!-- Footer -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">${tagHtml}</div>
+          <div style="font-size:10px;color:#2d3f58;">${dateStr} · ${m.body.length} chars</div>
+        </div>
+
+        <!-- Big copy button -->
+        <button onclick="liCopyMessage('${m.id}')" style="background:linear-gradient(135deg,rgba(10,102,194,0.2),rgba(10,133,224,0.2));border:1px solid rgba(10,102,194,0.35);color:#93c5fd;padding:10px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.15s;"
+          onmouseover="this.style.background='linear-gradient(135deg,rgba(10,102,194,0.35),rgba(10,133,224,0.35))'"
+          onmouseout="this.style.background='linear-gradient(135deg,rgba(10,102,194,0.2),rgba(10,133,224,0.2))'">
+          <i class="ri-clipboard-line"></i> Copy Message to Clipboard
+        </button>
+      </div>`;
+    }).join('');
+  };
+
+  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ── Init: render when tab activated ──
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.sidebar a[data-tab]').forEach(link=>{
+      link.addEventListener('click',function(){
+        if(this.getAttribute('data-tab')==='linkedin'){
+          setTimeout(liRender, 50);
+        }
+      });
+    });
+    // Also render immediately if already on linkedin tab
+    if(document.getElementById('linkedin') && document.getElementById('linkedin').classList.contains('active')){
+      liRender();
+    }
+  });
+
+})();
+</script>
