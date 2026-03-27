@@ -64,6 +64,9 @@
     <a data-tab="linkedin">
       <i class="ri-linkedin-box-line"></i> LinkedIn Notepad
     </a>
+    <a data-tab="emaildrafts">
+      <i class="ri-mail-send-line"></i> Email Drafts
+    </a>
 
     <div class="sidebar-footer">
       <div class="sidebar-user" id="sidebarUserInfo">
@@ -603,6 +606,142 @@
   </div><!-- /main -->
 </div><!-- /app -->
 
+<!-- ═══════ EMAIL DRAFTS TAB ═══════ -->
+<template id="emaildrafts-section-template">
+  <div id="emaildrafts" class="section">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <h2 style="margin:0;padding:0;border:none;"><i class="ri-mail-send-line" style="color:#3b82f6;margin-right:10px;"></i>Email Drafts</h2>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span id="em-count" style="font-size:11px;color:#64748b;font-weight:600;"></span>
+        <button onclick="emOpenModal()" style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 2px 12px rgba(37,99,235,0.35);">
+          <i class="ri-add-line"></i> New Draft
+        </button>
+      </div>
+    </div>
+
+    <!-- Search / Filter bar -->
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+      <div style="position:relative;flex:1;min-width:200px;">
+        <i class="ri-search-line" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#64748b;font-size:14px;"></i>
+        <input id="em-search" placeholder="Search by subject or tag..." oninput="emRender()" style="padding-left:34px;background:#0a1525;border:1px solid rgba(255,255,255,0.06);border-radius:9px;color:#e2e8f0;font-size:13px;width:100%;padding-top:9px;padding-bottom:9px;">
+      </div>
+      <select id="em-filter-cat" onchange="emRender()" style="background:#0a1525;border:1px solid rgba(255,255,255,0.06);border-radius:9px;color:#e2e8f0;font-size:13px;padding:9px 12px;min-width:170px;">
+        <option value="">All Categories</option>
+        <option value="outreach">Candidate Outreach</option>
+        <option value="submission">Submission</option>
+        <option value="followup">Follow-Up</option>
+        <option value="interview">Interview</option>
+        <option value="offer">Offer / Placement</option>
+        <option value="client">Client Communication</option>
+        <option value="other">Other</option>
+      </select>
+      <select id="em-sort" onchange="emRender()" style="background:#0a1525;border:1px solid rgba(255,255,255,0.06);border-radius:9px;color:#e2e8f0;font-size:13px;padding:9px 12px;min-width:140px;">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="az">A to Z</option>
+        <option value="mostused">Most Copied</option>
+      </select>
+    </div>
+
+    <!-- Draft list — subjects as clickable hyperlinks -->
+    <div id="em-list"></div>
+
+    <!-- Empty state -->
+    <div id="em-empty" style="display:none;text-align:center;padding:80px 20px;">
+      <i class="ri-mail-send-line" style="font-size:56px;color:#1e3a5f;display:block;margin-bottom:16px;"></i>
+      <div style="font-size:16px;font-weight:600;color:#64748b;margin-bottom:8px;">No email drafts saved yet</div>
+      <div style="font-size:13px;color:#2d3f58;">Click "New Draft" to save your first email template</div>
+    </div>
+
+    <!-- ── COMPOSE MODAL ── -->
+    <div id="em-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:3000;backdrop-filter:blur(5px);align-items:center;justify-content:center;">
+      <div onclick="event.stopPropagation()" style="background:#0c1628;border:1px solid rgba(59,130,246,0.28);border-radius:16px;width:min(680px,96vw);max-height:92vh;overflow-y:auto;padding:30px;box-shadow:0 28px 90px rgba(0,0,0,0.65);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <h3 style="font-size:16px;font-weight:700;color:#e2e8f0;margin:0;" id="em-modal-title">New Email Draft</h3>
+          <button onclick="emCloseModal()" style="background:transparent;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1;"><i class="ri-close-line"></i></button>
+        </div>
+        <input type="hidden" id="em-edit-id">
+
+        <!-- Subject -->
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;display:block;margin-bottom:7px;">Subject Line <span style="color:#f87171;">*</span></label>
+          <input id="em-subject" placeholder="e.g. Exciting Java Developer Opportunity at [Client]" style="background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:#e2e8f0;font-size:13px;width:100%;padding:10px 14px;">
+        </div>
+
+        <!-- Category -->
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;display:block;margin-bottom:7px;">Category</label>
+          <select id="em-cat" style="background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:#e2e8f0;font-size:13px;width:100%;padding:10px 14px;">
+            <option value="outreach">Candidate Outreach</option>
+            <option value="submission">Submission</option>
+            <option value="followup">Follow-Up</option>
+            <option value="interview">Interview</option>
+            <option value="offer">Offer / Placement</option>
+            <option value="client">Client Communication</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <!-- Tags -->
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;display:block;margin-bottom:7px;">Tags <span style="color:#64748b;font-weight:400;">(comma separated)</span></label>
+          <input id="em-tags" placeholder="java, senior, client-acme..." style="background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:#e2e8f0;font-size:13px;width:100%;padding:10px 14px;">
+        </div>
+
+        <!-- Body -->
+        <div style="margin-bottom:22px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+            <label style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;">Email Body <span style="color:#f87171;">*</span></label>
+            <span id="em-char-count" style="font-size:11px;color:#64748b;">0 chars</span>
+          </div>
+          <textarea id="em-body" placeholder="Write or paste your full email body here..." oninput="document.getElementById('em-char-count').textContent=this.value.length+' chars';" style="background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:#e2e8f0;font-size:13px;min-height:220px;width:100%;padding:12px 14px;line-height:1.75;resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button onclick="emCloseModal()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#94a3b8;padding:10px 22px;border-radius:9px;font-size:13px;cursor:pointer;">Cancel</button>
+          <button onclick="emSaveDraft()" style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;border:none;padding:10px 26px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;">
+            <i class="ri-save-line"></i> Save Draft
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PREVIEW MODAL ── -->
+    <div id="em-preview-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:3000;backdrop-filter:blur(5px);align-items:center;justify-content:center;">
+      <div onclick="event.stopPropagation()" style="background:#0c1628;border:1px solid rgba(59,130,246,0.28);border-radius:16px;width:min(700px,96vw);max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 28px 90px rgba(0,0,0,0.65);">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:14px;">
+          <div style="flex:1;">
+            <div id="em-preview-cat-badge" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;margin-bottom:10px;"></div>
+            <div id="em-preview-subject" style="font-size:17px;font-weight:700;color:#e2e8f0;line-height:1.4;"></div>
+          </div>
+          <button onclick="emClosePreview()" style="background:transparent;border:none;color:#64748b;font-size:22px;cursor:pointer;flex-shrink:0;line-height:1;margin-top:2px;"><i class="ri-close-line"></i></button>
+        </div>
+
+        <!-- Email body display -->
+        <div id="em-preview-body" style="background:#060e1c;border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:20px 22px;font-size:13px;color:#cbd5e1;line-height:1.85;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;margin-bottom:20px;font-family:'DM Sans',sans-serif;"></div>
+
+        <!-- Action row -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+          <div id="em-preview-tags" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+          <div style="display:flex;gap:8px;">
+            <button id="em-copy-btn" onclick="emCopyFromPreview()" style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.12));border:1px solid rgba(16,185,129,0.3);color:#6ee7b7;padding:10px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;">
+              <i class="ri-clipboard-line"></i> Copy Body
+            </button>
+            <button onclick="emOpenInEmail()" style="background:linear-gradient(135deg,rgba(37,99,235,0.2),rgba(59,130,246,0.12));border:1px solid rgba(59,130,246,0.3);color:#93c5fd;padding:10px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;">
+              <i class="ri-external-link-line"></i> Open in Mail
+            </button>
+            <button onclick="emEditFromPreview()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#94a3b8;padding:10px 18px;border-radius:9px;font-size:13px;cursor:pointer;">
+              <i class="ri-edit-line"></i> Edit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="script.js?v=1774294331"></script>
@@ -610,8 +749,7 @@
 
 
 <script>
-(function(){
-  // Stars canvas
+(function(){\n  // Stars canvas
   const canvas = document.getElementById('stars-bg');
   if(!canvas) return;
   canvas.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none;';
@@ -646,264 +784,348 @@
   draw();
 })();
 </script>
-</body>
-</html>
 
+<!-- ═══════════════════════════════════════
+   EMAIL DRAFTS — Full JS Logic (Supabase)
+═══════════════════════════════════════ -->
 <script>
-/* ═══════════════════════════════════════════
-   LINKEDIN MESSAGE NOTEPAD — Full JS Logic
-═══════════════════════════════════════════ */
 (function(){
-  const STORE_KEY = 'nvr_linkedin_msgs';
+  /* ─── Supabase client (reuse existing sb if loaded) ─── */
+  const EM_SUPABASE_URL = "https://ftxrrgdmkpnghxilnpsk.supabase.co";
+  const EM_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eHJyZ2Rta3BuZ2h4aWxucHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDY0MzYsImV4cCI6MjA4NzE4MjQzNn0.KcqIN2ynBQWmglQ_-6eaFi3TGPSclB0TgeJ83XU_OWI";
+  const emSB = (typeof sb !== 'undefined') ? sb : window.supabase.createClient(EM_SUPABASE_URL, EM_SUPABASE_KEY);
 
-  // ── Storage helpers ──
-  function liLoad(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)||'[]'); }catch(e){ return []; } }
-  function liSave(arr){ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
+  const EM_TABLE = 'email_drafts';
+  let emCurrentId = null; // id shown in preview
 
-  // ── Category config ──
-  const LI_CATS = {
-    connection: { label:'Connection Request', color:'#3b82f6', icon:'ri-user-add-line' },
-    followup:   { label:'Follow-Up',          color:'#f59e0b', icon:'ri-reply-line' },
-    recruiting: { label:'Recruiting Outreach', color:'#10b981', icon:'ri-briefcase-line' },
-    thankyou:   { label:'Thank You',           color:'#8b5cf6', icon:'ri-heart-line' },
-    inmail:     { label:'InMail',              color:'#0a66c2', icon:'ri-mail-send-line' },
-    other:      { label:'Other',               color:'#64748b', icon:'ri-file-text-line' }
+  /* ─── Category config ─── */
+  const EM_CATS = {
+    outreach:   { label:'Candidate Outreach',    color:'#3b82f6', icon:'ri-user-search-line' },
+    submission: { label:'Submission',            color:'#10b981', icon:'ri-send-plane-line' },
+    followup:   { label:'Follow-Up',             color:'#f59e0b', icon:'ri-reply-line' },
+    interview:  { label:'Interview',             color:'#8b5cf6', icon:'ri-calendar-check-line' },
+    offer:      { label:'Offer / Placement',     color:'#ec4899', icon:'ri-award-line' },
+    client:     { label:'Client Communication',  color:'#0ea5e9', icon:'ri-building-line' },
+    other:      { label:'Other',                 color:'#64748b', icon:'ri-file-text-line' }
   };
 
-  // ── Open modal for NEW ──
-  window.liAddMessage = function(){
-    document.getElementById('li-edit-id').value = '';
-    document.getElementById('li-m-title').value = '';
-    document.getElementById('li-m-cat').value = 'recruiting';
-    document.getElementById('li-m-tags').value = '';
-    document.getElementById('li-m-body').value = '';
-    document.getElementById('li-char-count').textContent = '0 chars';
-    document.getElementById('li-modal-title').textContent = 'New LinkedIn Message';
-    const bg = document.getElementById('li-modal-bg');
-    bg.style.display = 'flex';
-    setTimeout(()=>{ document.getElementById('li-m-title').focus(); },80);
-  };
-
-  // ── Open modal for EDIT ──
-  window.liEditMessage = function(id){
-    const msgs = liLoad();
-    const m = msgs.find(x=>x.id===id);
-    if(!m) return;
-    document.getElementById('li-edit-id').value = id;
-    document.getElementById('li-m-title').value = m.title;
-    document.getElementById('li-m-cat').value = m.cat;
-    document.getElementById('li-m-tags').value = (m.tags||[]).join(', ');
-    document.getElementById('li-m-body').value = m.body;
-    document.getElementById('li-char-count').textContent = m.body.length + ' chars';
-    document.getElementById('li-modal-title').textContent = 'Edit Message';
-    const bg = document.getElementById('li-modal-bg');
-    bg.style.display = 'flex';
-  };
-
-  // ── Close modal ──
-  window.liCloseModal = function(e){
-    if(e && e.target !== document.getElementById('li-modal-bg')) return;
-    document.getElementById('li-modal-bg').style.display = 'none';
-  };
-  // Allow calling without event too
-  const origClose = window.liCloseModal;
-  window.liCloseModal = function(e){
-    if(!e){ document.getElementById('li-modal-bg').style.display='none'; return; }
-    origClose(e);
-  };
-
-  // ── Save ──
-  window.liSaveMessage = function(){
-    const title = document.getElementById('li-m-title').value.trim();
-    const body  = document.getElementById('li-m-body').value.trim();
-    if(!title){ alert('Please enter a message title.'); return; }
-    if(!body){ alert('Message body cannot be empty.'); return; }
-    const msgs = liLoad();
-    const editId = document.getElementById('li-edit-id').value;
-    const tagsRaw = document.getElementById('li-m-tags').value;
-    const tags = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
-    if(editId){
-      const idx = msgs.findIndex(x=>x.id===editId);
-      if(idx>-1){
-        msgs[idx].title = title;
-        msgs[idx].cat   = document.getElementById('li-m-cat').value;
-        msgs[idx].tags  = tags;
-        msgs[idx].body  = body;
-        msgs[idx].updated = Date.now();
-      }
-    } else {
-      msgs.unshift({
-        id: 'li_'+Date.now(),
-        title, body,
-        cat: document.getElementById('li-m-cat').value,
-        tags,
-        uses: 0,
-        created: Date.now(),
-        updated: Date.now()
-      });
+  /* ─── Load from Supabase ─── */
+  async function emLoad(){
+    try {
+      const { data, error } = await emSB.from(EM_TABLE).select('*').order('created_at', { ascending: false });
+      if(error) throw error;
+      return data || [];
+    } catch(e) {
+      console.warn('EmailDrafts: Supabase load failed, using localStorage fallback.', e.message);
+      try { return JSON.parse(localStorage.getItem('nvr_email_drafts')||'[]'); } catch(x){ return []; }
     }
-    liSave(msgs);
-    document.getElementById('li-modal-bg').style.display = 'none';
-    liRender();
+  }
+
+  /* ─── Save to Supabase ─── */
+  async function emInsert(record){
+    try {
+      const { data, error } = await emSB.from(EM_TABLE).insert([record]).select().single();
+      if(error) throw error;
+      return data;
+    } catch(e) {
+      console.warn('EmailDrafts: insert failed, saving locally.', e.message);
+      const arr = JSON.parse(localStorage.getItem('nvr_email_drafts')||'[]');
+      record.id = 'local_'+Date.now();
+      arr.unshift(record);
+      localStorage.setItem('nvr_email_drafts', JSON.stringify(arr));
+      return record;
+    }
+  }
+
+  async function emUpdate(id, fields){
+    try {
+      const { error } = await emSB.from(EM_TABLE).update(fields).eq('id', id);
+      if(error) throw error;
+    } catch(e) {
+      console.warn('EmailDrafts: update failed locally.', e.message);
+      const arr = JSON.parse(localStorage.getItem('nvr_email_drafts')||'[]');
+      const idx = arr.findIndex(x=>x.id==id);
+      if(idx>-1) Object.assign(arr[idx], fields);
+      localStorage.setItem('nvr_email_drafts', JSON.stringify(arr));
+    }
+  }
+
+  async function emDelete(id){
+    try {
+      const { error } = await emSB.from(EM_TABLE).delete().eq('id', id);
+      if(error) throw error;
+    } catch(e) {
+      const arr = JSON.parse(localStorage.getItem('nvr_email_drafts')||'[]').filter(x=>x.id!=id);
+      localStorage.setItem('nvr_email_drafts', JSON.stringify(arr));
+    }
+  }
+
+  /* ─── Toast ─── */
+  function emToast(msg, color='#10b981'){
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText=`position:fixed;bottom:28px;right:28px;background:${color};color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity 0.4s;`;
+    document.body.appendChild(t);
+    setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),400); }, 2500);
+  }
+
+  function emEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  /* ─── Open compose modal ─── */
+  window.emOpenModal = function(draft){
+    document.getElementById('em-edit-id').value = draft ? draft.id : '';
+    document.getElementById('em-subject').value = draft ? draft.subject : '';
+    document.getElementById('em-cat').value     = draft ? (draft.category||'outreach') : 'outreach';
+    document.getElementById('em-tags').value    = draft ? (draft.tags||[]).join(', ') : '';
+    document.getElementById('em-body').value    = draft ? draft.body : '';
+    document.getElementById('em-char-count').textContent = draft ? draft.body.length+' chars' : '0 chars';
+    document.getElementById('em-modal-title').textContent = draft ? 'Edit Email Draft' : 'New Email Draft';
+    const bg = document.getElementById('em-modal-bg');
+    bg.style.display='flex';
+    setTimeout(()=>document.getElementById('em-subject').focus(), 80);
   };
 
-  // ── Delete ──
-  window.liDeleteMessage = function(id){
-    if(!confirm('Delete this message template?')) return;
-    const msgs = liLoad().filter(x=>x.id!==id);
-    liSave(msgs);
-    liRender();
+  window.emCloseModal = function(){
+    document.getElementById('em-modal-bg').style.display='none';
   };
 
-  // ── Copy to clipboard ──
-  window.liCopyMessage = function(id){
-    const msgs = liLoad();
-    const m = msgs.find(x=>x.id===id);
-    if(!m) return;
-    navigator.clipboard.writeText(m.body).then(()=>{
-      // Increment use count
-      const idx = msgs.indexOf(m);
-      msgs[idx].uses = (msgs[idx].uses||0)+1;
-      liSave(msgs);
-      liRender();
-      // Show toast
-      liToast('✓ Copied to clipboard!', '#10b981');
+  /* ─── Save draft ─── */
+  window.emSaveDraft = async function(){
+    const subject = document.getElementById('em-subject').value.trim();
+    const body    = document.getElementById('em-body').value.trim();
+    if(!subject){ emToast('Subject cannot be empty.','#ef4444'); return; }
+    if(!body){ emToast('Email body cannot be empty.','#ef4444'); return; }
+
+    const editId  = document.getElementById('em-edit-id').value;
+    const tagsRaw = document.getElementById('em-tags').value;
+    const tags    = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
+    const category= document.getElementById('em-cat').value;
+
+    if(editId){
+      await emUpdate(editId, { subject, body, category, tags, updated_at: new Date().toISOString() });
+      emToast('Draft updated!');
+    } else {
+      await emInsert({ subject, body, category, tags, copy_count: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+      emToast('Draft saved!');
+    }
+    emCloseModal();
+    emRender();
+  };
+
+  /* ─── Delete ─── */
+  window.emDeleteDraft = async function(id){
+    if(!confirm('Delete this email draft?')) return;
+    await emDelete(id);
+    emToast('Deleted.','#64748b');
+    emRender();
+  };
+
+  /* ─── Open preview ─── */
+  window.emOpenPreview = async function(id){
+    const drafts = await emLoad();
+    const d = drafts.find(x=>x.id==id);
+    if(!d) return;
+    emCurrentId = id;
+    const cat = EM_CATS[d.category] || EM_CATS.other;
+    document.getElementById('em-preview-cat-badge').innerHTML=`<i class="${cat.icon}"></i> ${cat.label}`;
+    document.getElementById('em-preview-cat-badge').style.cssText=`display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;margin-bottom:10px;background:${cat.color}22;color:${cat.color};letter-spacing:0.5px;`;
+    document.getElementById('em-preview-subject').textContent = d.subject;
+    document.getElementById('em-preview-body').textContent = d.body;
+    const tagHtml = (d.tags||[]).map(t=>`<span style="background:rgba(59,130,246,0.12);color:#93c5fd;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;">${emEsc(t)}</span>`).join('');
+    document.getElementById('em-preview-tags').innerHTML = tagHtml;
+    document.getElementById('em-preview-bg').style.display='flex';
+  };
+
+  window.emClosePreview = function(){
+    document.getElementById('em-preview-bg').style.display='none';
+    emCurrentId = null;
+  };
+
+  /* ─── Copy body from preview ─── */
+  window.emCopyFromPreview = async function(){
+    const drafts = await emLoad();
+    const d = drafts.find(x=>x.id==emCurrentId);
+    if(!d) return;
+    navigator.clipboard.writeText(d.body).then(async ()=>{
+      await emUpdate(emCurrentId, { copy_count: (d.copy_count||0)+1 });
+      emToast('✓ Email body copied to clipboard!');
+      const btn = document.getElementById('em-copy-btn');
+      if(btn){ btn.innerHTML='<i class="ri-check-line"></i> Copied!'; setTimeout(()=>btn.innerHTML='<i class="ri-clipboard-line"></i> Copy Body',2000); }
     }).catch(()=>{
-      // Fallback
-      const ta = document.createElement('textarea');
-      ta.value = m.body;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      liToast('✓ Copied!', '#10b981');
+      const ta=document.createElement('textarea');ta.value=d.body;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+      emToast('✓ Copied!');
     });
   };
 
-  // ── Toast notification ──
-  function liToast(msg, color){
-    const t = document.createElement('div');
-    t.textContent = msg;
-    t.style.cssText = `position:fixed;bottom:28px;right:28px;background:${color};color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity 0.4s;`;
-    document.body.appendChild(t);
-    setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),400); }, 2200);
-  }
-
-  // ── Duplicate ──
-  window.liDuplicateMessage = function(id){
-    const msgs = liLoad();
-    const m = msgs.find(x=>x.id===id);
-    if(!m) return;
-    msgs.unshift({ ...m, id:'li_'+Date.now(), title: m.title+' (copy)', uses:0, created:Date.now(), updated:Date.now() });
-    liSave(msgs);
-    liRender();
-    liToast('Duplicated!','#3b82f6');
+  /* ─── Open in email client ─── */
+  window.emOpenInEmail = async function(){
+    const drafts = await emLoad();
+    const d = drafts.find(x=>x.id==emCurrentId);
+    if(!d) return;
+    window.location.href = `mailto:?subject=${encodeURIComponent(d.subject)}&body=${encodeURIComponent(d.body)}`;
   };
 
-  // ── Render cards ──
-  window.liRender = function(){
-    let msgs = liLoad();
-    const search = (document.getElementById('li-search')||{}).value || '';
-    const cat    = (document.getElementById('li-filter-cat')||{}).value || '';
-    const sort   = (document.getElementById('li-sort')||{}).value || 'newest';
+  /* ─── Edit from preview ─── */
+  window.emEditFromPreview = async function(){
+    const drafts = await emLoad();
+    const d = drafts.find(x=>x.id==emCurrentId);
+    if(!d) return;
+    emClosePreview();
+    emOpenModal(d);
+  };
 
-    // Filter
-    if(cat) msgs = msgs.filter(m=>m.cat===cat);
+  /* ─── Render subject list ─── */
+  window.emRender = async function(){
+    const listEl  = document.getElementById('em-list');
+    const emptyEl = document.getElementById('em-empty');
+    const countEl = document.getElementById('em-count');
+    if(!listEl) return;
+
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b;font-size:13px;"><i class="ri-loader-4-line" style="font-size:22px;"></i><br>Loading drafts...</div>';
+
+    let drafts = await emLoad();
+    const search  = (document.getElementById('em-search')||{}).value || '';
+    const catFilt = (document.getElementById('em-filter-cat')||{}).value || '';
+    const sort    = (document.getElementById('em-sort')||{}).value || 'newest';
+
+    if(catFilt) drafts = drafts.filter(d=>d.category===catFilt);
     if(search){
       const q = search.toLowerCase();
-      msgs = msgs.filter(m=>
-        m.title.toLowerCase().includes(q) ||
-        m.body.toLowerCase().includes(q) ||
-        (m.tags||[]).some(t=>t.toLowerCase().includes(q))
+      drafts = drafts.filter(d=>
+        (d.subject||'').toLowerCase().includes(q)||
+        (d.tags||[]).some(t=>t.toLowerCase().includes(q))
       );
     }
-    // Sort
-    if(sort==='oldest') msgs.sort((a,b)=>a.created-b.created);
-    else if(sort==='az') msgs.sort((a,b)=>a.title.localeCompare(b.title));
-    else if(sort==='mostused') msgs.sort((a,b)=>(b.uses||0)-(a.uses||0));
-    else msgs.sort((a,b)=>b.created-a.created);
+    if(sort==='oldest') drafts.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    else if(sort==='az') drafts.sort((a,b)=>(a.subject||'').localeCompare(b.subject||''));
+    else if(sort==='mostused') drafts.sort((a,b)=>(b.copy_count||0)-(a.copy_count||0));
+    else drafts.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
 
-    const container = document.getElementById('li-cards');
-    const empty     = document.getElementById('li-empty');
-    const counter   = document.getElementById('li-msg-count');
-    const total     = liLoad().length;
+    countEl.textContent = drafts.length ? drafts.length+' draft'+(drafts.length>1?'s':'') : '';
 
-    if(!container) return;
-    counter.textContent = total ? total+' saved' : '';
-
-    if(msgs.length===0){
-      container.innerHTML='';
-      if(empty) empty.style.display='block';
+    if(!drafts.length){
+      listEl.innerHTML='';
+      if(emptyEl) emptyEl.style.display='block';
       return;
     }
-    if(empty) empty.style.display='none';
+    if(emptyEl) emptyEl.style.display='none';
 
-    container.innerHTML = msgs.map(m=>{
-      const catCfg = LI_CATS[m.cat] || LI_CATS.other;
-      const preview = m.body.length>160 ? m.body.slice(0,157)+'…' : m.body;
-      const dateStr = new Date(m.created).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-      const tagHtml = (m.tags||[]).slice(0,4).map(t=>`<span style="background:rgba(59,130,246,0.12);color:#93c5fd;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;">${escHtml(t)}</span>`).join('');
+    /* Render as a clean table-style list — only subjects visible, clickable */
+    listEl.innerHTML = `
+    <div style="background:#0c1628;border:1px solid rgba(255,255,255,0.06);border-radius:14px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:0;background:#080f1c;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;">Subject</span>
+        <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;text-align:center;min-width:80px;">Category</span>
+        <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;text-align:right;min-width:120px;">Actions</span>
+      </div>
+      ${drafts.map((d,i)=>{
+        const cat = EM_CATS[d.category]||EM_CATS.other;
+        const dateStr = new Date(d.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+        const tagPills = (d.tags||[]).slice(0,3).map(t=>`<span style="background:rgba(59,130,246,0.10);color:#93c5fd;padding:1px 7px;border-radius:12px;font-size:10px;">${emEsc(t)}</span>`).join('');
+        return `
+        <div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:14px 20px;border-bottom:${i<drafts.length-1?'1px solid rgba(255,255,255,0.04)':'none'};align-items:center;transition:background 0.15s;"
+          onmouseover="this.style.background='rgba(59,130,246,0.04)'"
+          onmouseout="this.style.background='transparent'">
 
-      return `<div style="background:#0c1628;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;transition:border-color 0.2s,transform 0.2s;position:relative;overflow:hidden;"
-        onmouseover="this.style.borderColor='rgba(59,130,246,0.3)';this.style.transform='translateY(-2px)'"
-        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
-
-        <!-- Category strip -->
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${catCfg.color};border-radius:14px 14px 0 0;opacity:0.8;"></div>
-
-        <!-- Header row -->
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-top:4px;">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-              <span style="background:${catCfg.color}22;color:${catCfg.color};padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;white-space:nowrap;"><i class="${catCfg.icon}" style="margin-right:3px;"></i>${catCfg.label}</span>
-              ${m.uses>0?`<span style="font-size:10px;color:#64748b;">Used ${m.uses}×</span>`:''}
+          <!-- Subject hyperlink -->
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:0;padding-right:16px;">
+            <a href="#" onclick="emOpenPreview('${d.id}');return false;"
+              style="font-size:14px;font-weight:600;color:#60a5fa;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:100%;"
+              onmouseover="this.style.color='#93c5fd';this.style.textDecoration='underline'"
+              onmouseout="this.style.color='#60a5fa';this.style.textDecoration='none'"
+              title="${emEsc(d.subject)}">
+              <i class="ri-mail-line" style="margin-right:6px;font-size:13px;"></i>${emEsc(d.subject)}
+            </a>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:10px;color:#475569;">${dateStr}</span>
+              ${d.copy_count>0?`<span style="font-size:10px;color:#64748b;">Copied ${d.copy_count}×</span>`:''}
+              ${tagPills}
             </div>
-            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#e2e8f0;line-height:1.3;word-break:break-word;">${escHtml(m.title)}</div>
           </div>
-          <!-- Action buttons -->
-          <div style="display:flex;gap:5px;flex-shrink:0;">
-            <button title="Copy" onclick="liCopyMessage('${m.id}')" style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.2);color:#6ee7b7;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(16,185,129,0.22)'" onmouseout="this.style.background='rgba(16,185,129,0.12)'"><i class="ri-clipboard-line"></i></button>
-            <button title="Edit" onclick="liEditMessage('${m.id}')" style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(59,130,246,0.22)'" onmouseout="this.style.background='rgba(59,130,246,0.12)'"><i class="ri-edit-line"></i></button>
-            <button title="Duplicate" onclick="liDuplicateMessage('${m.id}')" style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.18);color:#fcd34d;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(245,158,11,0.20)'" onmouseout="this.style.background='rgba(245,158,11,0.10)'"><i class="ri-file-copy-line"></i></button>
-            <button title="Delete" onclick="liDeleteMessage('${m.id}')" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:#f87171;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(239,68,68,0.18)'" onmouseout="this.style.background='rgba(239,68,68,0.08)'"><i class="ri-delete-bin-line"></i></button>
+
+          <!-- Category badge -->
+          <div style="min-width:80px;text-align:center;padding:0 10px;">
+            <span style="background:${cat.color}18;color:${cat.color};padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;letter-spacing:0.3px;">
+              <i class="${cat.icon}" style="margin-right:3px;"></i>${cat.label}
+            </span>
           </div>
-        </div>
 
-        <!-- Preview text -->
-        <div style="font-size:12px;color:#64748b;line-height:1.65;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-family:'DM Sans',sans-serif;white-space:pre-wrap;word-break:break-word;">${escHtml(preview)}</div>
-
-        <!-- Footer -->
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-          <div style="display:flex;gap:5px;flex-wrap:wrap;">${tagHtml}</div>
-          <div style="font-size:10px;color:#2d3f58;">${dateStr} · ${m.body.length} chars</div>
-        </div>
-
-        <!-- Big copy button -->
-        <button onclick="liCopyMessage('${m.id}')" style="background:linear-gradient(135deg,rgba(10,102,194,0.2),rgba(10,133,224,0.2));border:1px solid rgba(10,102,194,0.35);color:#93c5fd;padding:10px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.15s;"
-          onmouseover="this.style.background='linear-gradient(135deg,rgba(10,102,194,0.35),rgba(10,133,224,0.35))'"
-          onmouseout="this.style.background='linear-gradient(135deg,rgba(10,102,194,0.2),rgba(10,133,224,0.2))'">
-          <i class="ri-clipboard-line"></i> Copy Message to Clipboard
-        </button>
-      </div>`;
-    }).join('');
+          <!-- Actions -->
+          <div style="display:flex;gap:5px;min-width:120px;justify-content:flex-end;">
+            <button title="Preview & Copy" onclick="emOpenPreview('${d.id}')"
+              style="background:rgba(16,185,129,0.10);border:1px solid rgba(16,185,129,0.2);color:#6ee7b7;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;"
+              onmouseover="this.style.background='rgba(16,185,129,0.22)'" onmouseout="this.style.background='rgba(16,185,129,0.10)'">
+              <i class="ri-eye-line"></i>
+            </button>
+            <button title="Quick Copy Body" onclick="emQuickCopy('${d.id}')"
+              style="background:rgba(59,130,246,0.10);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;"
+              onmouseover="this.style.background='rgba(59,130,246,0.22)'" onmouseout="this.style.background='rgba(59,130,246,0.10)'">
+              <i class="ri-clipboard-line"></i>
+            </button>
+            <button title="Edit" onclick="emEditDraft('${d.id}')"
+              style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.18);color:#fcd34d;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;"
+              onmouseover="this.style.background='rgba(245,158,11,0.20)'" onmouseout="this.style.background='rgba(245,158,11,0.08)'">
+              <i class="ri-edit-line"></i>
+            </button>
+            <button title="Delete" onclick="emDeleteDraft('${d.id}')"
+              style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);color:#f87171;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;"
+              onmouseover="this.style.background='rgba(239,68,68,0.18)'" onmouseout="this.style.background='rgba(239,68,68,0.06)'">
+              <i class="ri-delete-bin-line"></i>
+            </button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
   };
 
-  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  /* ─── Quick copy without opening preview ─── */
+  window.emQuickCopy = async function(id){
+    const drafts = await emLoad();
+    const d = drafts.find(x=>x.id==id);
+    if(!d) return;
+    navigator.clipboard.writeText(d.body).then(async ()=>{
+      await emUpdate(id, { copy_count: (d.copy_count||0)+1 });
+      emToast('✓ Email body copied!');
+      emRender();
+    }).catch(()=>{
+      const ta=document.createElement('textarea');ta.value=d.body;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+      emToast('✓ Copied!');
+    });
+  };
 
-  // ── Init: render when tab activated ──
+  /* ─── Edit shortcut ─── */
+  window.emEditDraft = async function(id){
+    const drafts = await emLoad();
+    const d = drafts.find(x=>x.id==id);
+    if(!d) return;
+    emOpenModal(d);
+  };
+
+  /* ─── Inject section HTML from template ─── */
+  function emInjectSection(){
+    if(document.getElementById('emaildrafts')) return;
+    const tpl = document.getElementById('emaildrafts-section-template');
+    if(!tpl) return;
+    const clone = tpl.content.cloneNode(true);
+    const main = document.querySelector('.main');
+    if(main) main.appendChild(clone);
+  }
+
+  /* ─── Hook into existing tab routing ─── */
   document.addEventListener('DOMContentLoaded', function(){
+    emInjectSection();
     document.querySelectorAll('.sidebar a[data-tab]').forEach(link=>{
-      link.addEventListener('click',function(){
-        if(this.getAttribute('data-tab')==='linkedin'){
-          setTimeout(liRender, 50);
+      link.addEventListener('click', function(){
+        if(this.getAttribute('data-tab')==='emaildrafts'){
+          emInjectSection();
+          setTimeout(emRender, 80);
         }
       });
     });
-    // Also render immediately if already on linkedin tab
-    if(document.getElementById('linkedin') && document.getElementById('linkedin').classList.contains('active')){
-      liRender();
-    }
+    if(window.location.hash==='#emaildrafts') setTimeout(emRender,200);
   });
 
 })();
 </script>
+</body>
+</html>
