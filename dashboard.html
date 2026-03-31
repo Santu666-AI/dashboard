@@ -178,28 +178,28 @@
               <!-- Filled by JS -->
               <div class="pipeline-step">
                 <span class="pipeline-step-label">Sourced</span>
-                <div class="pipeline-bar-wrap"><div class="pipeline-bar" style="width:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);"></div></div>
-                <span class="pipeline-step-count" style="color:#60a5fa;" id="funnelSrc">—</span>
+                <div class="pipeline-bar-wrap"><div class="pipeline-bar" style="width:0%;background:linear-gradient(90deg,#2563eb,#60a5fa);transition:width 1.2s cubic-bezier(0.4,0,0.2,1);"></div></div>
+                <span class="pipeline-step-count" style="color:#1d4ed8;font-weight:700;" id="funnelSrc">—</span>
               </div>
               <div class="pipeline-step">
                 <span class="pipeline-step-label">Submitted</span>
-                <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="funnelBarSub" style="width:75%;background:linear-gradient(90deg,#0891b2,#67e8f9);"></div></div>
-                <span class="pipeline-step-count" style="color:#67e8f9;" id="funnelSubVal">—</span>
+                <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="funnelBarSub" style="width:0%;background:linear-gradient(90deg,#0891b2,#67e8f9);transition:width 1.2s cubic-bezier(0.4,0,0.2,1);"></div></div>
+                <span class="pipeline-step-count" style="color:#0891b2;font-weight:700;" id="funnelSubVal">—</span>
               </div>
               <div class="pipeline-step">
                 <span class="pipeline-step-label">Interviewed</span>
-                <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="funnelBarInt" style="width:50%;background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div></div>
-                <span class="pipeline-step-count" style="color:#a78bfa;" id="funnelIntVal">—</span>
+                <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="funnelBarInt" style="width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width 1.2s cubic-bezier(0.4,0,0.2,1);"></div></div>
+                <span class="pipeline-step-count" style="color:#7c3aed;font-weight:700;" id="funnelIntVal">—</span>
               </div>
               <div class="pipeline-step">
                 <span class="pipeline-step-label">Placed</span>
-                <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="funnelBarPlace" style="width:25%;background:linear-gradient(90deg,#059669,#6ee7b7);"></div></div>
-                <span class="pipeline-step-count" style="color:#6ee7b7;" id="funnelPlaceVal">—</span>
+                <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="funnelBarPlace" style="width:0%;background:linear-gradient(90deg,#059669,#6ee7b7);transition:width 1.2s cubic-bezier(0.4,0,0.2,1);"></div></div>
+                <span class="pipeline-step-count" style="color:#059669;font-weight:700;" id="funnelPlaceVal">—</span>
               </div>
               <div class="pipeline-step">
                 <span class="pipeline-step-label">Started</span>
-                <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="funnelBarStart" style="width:15%;background:linear-gradient(90deg,#b45309,#fcd34d);"></div></div>
-                <span class="pipeline-step-count" style="color:#fcd34d;" id="funnelStartVal">—</span>
+                <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="funnelBarStart" style="width:0%;background:linear-gradient(90deg,#b45309,#fcd34d);transition:width 1.2s cubic-bezier(0.4,0,0.2,1);"></div></div>
+                <span class="pipeline-step-count" style="color:#d97706;font-weight:700;" id="funnelStartVal">—</span>
               </div>
             </div>
           </div>
@@ -242,7 +242,7 @@
               <div style="background:rgba(37,99,235,0.04);border-radius:10px;padding:14px 16px;border:1px solid rgba(37,99,235,0.08);">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                   <span style="font-size:11px;font-weight:600;color:#5e7299;">Submit → Interview</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#67e8f9;" id="rateSubInt">—%</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:#0891b2;" id="rateSubInt">—%</span>
                 </div>
                 <div style="background:rgba(30,58,110,0.08);border-radius:20px;height:6px;overflow:hidden;">
                   <div id="barSubInt" style="height:100%;border-radius:20px;background:linear-gradient(90deg,#0891b2,#67e8f9);width:0%;transition:width 1s;"></div>
@@ -251,7 +251,7 @@
               <div style="background:rgba(37,99,235,0.04);border-radius:10px;padding:14px 16px;border:1px solid rgba(37,99,235,0.08);">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                   <span style="font-size:11px;font-weight:600;color:#5e7299;">Interview → Placed</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#6ee7b7;" id="rateIntPlace">—%</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:#059669;" id="rateIntPlace">—%</span>
                 </div>
                 <div style="background:rgba(30,58,110,0.08);border-radius:20px;height:6px;overflow:hidden;">
                   <div id="barIntPlace" style="height:100%;border-radius:20px;background:linear-gradient(90deg,#059669,#6ee7b7);width:0%;transition:width 1s;"></div>
@@ -260,7 +260,7 @@
               <div style="background:rgba(37,99,235,0.04);border-radius:10px;padding:14px 16px;border:1px solid rgba(37,99,235,0.08);">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                   <span style="font-size:11px;font-weight:600;color:#5e7299;">Placed → Started</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#fcd34d;" id="ratePlaceStart">—%</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:#d97706;" id="ratePlaceStart">—%</span>
                 </div>
                 <div style="background:rgba(30,58,110,0.08);border-radius:20px;height:6px;overflow:hidden;">
                   <div id="barPlaceStart" style="height:100%;border-radius:20px;background:linear-gradient(90deg,#b45309,#fcd34d);width:0%;transition:width 1s;"></div>
@@ -1383,41 +1383,11 @@
     }).join('');
   }
 
-  // Funnel update
+  // Funnel update — handled by renderKPI() in script.js
+  // This stub is kept for compatibility but does nothing
   function updateFunnel(){
-    var src = +(document.getElementById('kpiSub')||{}).textContent || 0;
-    var sub = src;
-    var intr = +(document.getElementById('kpiInt')||{}).textContent || 0;
-    var placed = +(document.getElementById('kpiPlace')||{}).textContent || 0;
-    var started = +(document.getElementById('kpiStart')||{}).textContent || 0;
-
-    // Update funnel display
-    function setFunnel(barId, valId, val, base, color){
-      var el = document.getElementById(valId);
-      var bar = document.getElementById(barId);
-      if(el) el.textContent = val;
-      if(bar && base > 0) bar.style.width = Math.round((val/base)*100)+'%';
-    }
-
-    var srcEl = document.getElementById('funnelSrc');
-    if(srcEl) srcEl.textContent = src;
-
-    setFunnel('funnelBarSub','funnelSubVal',sub,sub,'');
-    setFunnel('funnelBarInt','funnelIntVal',intr,sub,'');
-    setFunnel('funnelBarPlace','funnelPlaceVal',placed,sub,'');
-    setFunnel('funnelBarStart','funnelStartVal',started,sub,'');
-
-    // Conversion rates
-    function setPct(elId, barId, num, den){
-      var pct = den>0 ? Math.round((num/den)*100) : 0;
-      var el = document.getElementById(elId);
-      var bar = document.getElementById(barId);
-      if(el) el.textContent = pct+'%';
-      if(bar) setTimeout(function(){ bar.style.width = Math.min(pct,100)+'%'; }, 200);
-    }
-    setPct('rateSubInt','barSubInt',intr,sub);
-    setPct('rateIntPlace','barIntPlace',placed,intr);
-    setPct('ratePlaceStart','barPlaceStart',started,placed);
+    // renderKPI() in script.js handles all funnel + KPI updates
+    if(typeof renderKPI === "function") renderKPI();
   }
 
   function escHtml(s){
@@ -1429,8 +1399,9 @@
   function runDashEnhance(){
     setTimeout(function(){
       enhanceDashboard();
-      updateFunnel();
-    }, 350);
+      // renderKPI() handles all funnel + rates automatically via script.js
+      if(typeof renderKPI === "function") renderKPI();
+    }, 450);
   }
 
   document.addEventListener('click', function(e){

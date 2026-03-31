@@ -1330,33 +1330,57 @@ function syncStageScrollBar(stage){
 }
 
 
-/* ================= KPI ================= */
+/* ================= KPI — AUTO YEAR CALCULATION ================= */
 
-/* ── Year selector state ── */
+/* ── Year selector state — defaults to current year ── */
 let kpiYear = new Date().getFullYear();
 
+/* ── Build or refresh the year pill selector (2023 → current year) ── */
 function buildYearSelector(){
-  const existing = document.getElementById("kpiYearSelector");
-  if(existing) return; // already built
-
   const currentYear = new Date().getFullYear();
-  const years = [];
-  for(let y = 2023; y <= currentYear + 2; y++) years.push(y);
 
-  const wrapper = document.createElement("div");
-  wrapper.id = "kpiYearSelector";
-  wrapper.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;";
+  /* ── Always build years from 2023 up to current year only ── */
+  const years = [];
+  for(let y = 2023; y <= currentYear; y++) years.push(y);
+
+  /* ── Find or create wrapper ── */
+  let wrapper = document.getElementById("kpiYearSelector");
+  if(!wrapper){
+    wrapper = document.createElement("div");
+    wrapper.id = "kpiYearSelector";
+
+    /* Insert before the KPI cards grid */
+    const dashSection = document.getElementById("dashboard");
+    if(dashSection){
+      const kpiCards = dashSection.querySelector(".kpi-cards");
+      if(kpiCards){
+        dashSection.insertBefore(wrapper, kpiCards);
+      } else {
+        /* fallback: insert after section-hero */
+        const hero = dashSection.querySelector(".section-hero");
+        if(hero && hero.nextSibling){
+          dashSection.insertBefore(wrapper, hero.nextSibling);
+        } else {
+          dashSection.appendChild(wrapper);
+        }
+      }
+    }
+  }
+
+  /* ── Clear and rebuild contents every time (so year list stays current) ── */
+  wrapper.innerHTML = "";
+  wrapper.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 36px;margin-bottom:14px;";
 
   const label = document.createElement("span");
-  label.style.cssText = "font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;";
-  label.textContent = "YEAR";
+  label.style.cssText = "font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#5e7299;font-family:'DM Sans',sans-serif;margin-right:4px;";
+  label.textContent = "VIEW YEAR:";
   wrapper.appendChild(label);
 
   years.forEach(y => {
     const btn = document.createElement("button");
     btn.textContent = y;
     btn.id = "kpiYearBtn_" + y;
-    btn.style.cssText = `padding:5px 14px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid;transition:all 0.15s;`;
+    btn.style.cssText = "padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid;cursor:pointer;transition:all 0.15s;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;box-shadow:none;";
     applyYearBtnStyle(btn, y === kpiYear);
     btn.onclick = () => {
       kpiYear = y;
@@ -1367,56 +1391,124 @@ function buildYearSelector(){
     };
     wrapper.appendChild(btn);
   });
-
-  // Insert before the KPI table
-  const dashSection = document.getElementById("dashboard");
-  if(dashSection){
-    const tableContainer = dashSection.querySelector(".table-container");
-    if(tableContainer) dashSection.insertBefore(wrapper, tableContainer);
-  }
 }
 
 function applyYearBtnStyle(btn, active){
   if(active){
-    btn.style.background = "rgba(59,130,246,0.2)";
-    btn.style.color = "#93c5fd";
-    btn.style.borderColor = "rgba(59,130,246,0.5)";
+    btn.style.background = "linear-gradient(135deg,#2563eb,#1d4ed8)";
+    btn.style.color = "#ffffff";
+    btn.style.borderColor = "#1d4ed8";
+    btn.style.boxShadow = "0 2px 10px rgba(37,99,235,0.30)";
+    btn.style.transform = "translateY(-1px)";
   } else {
-    btn.style.background = "rgba(255,255,255,0.03)";
-    btn.style.color = "#64748b";
-    btn.style.borderColor = "rgba(255,255,255,0.06)";
+    btn.style.background = "rgba(30,58,110,0.05)";
+    btn.style.color = "#5e7299";
+    btn.style.borderColor = "rgba(30,58,110,0.15)";
+    btn.style.boxShadow = "none";
+    btn.style.transform = "none";
   }
 }
 
+/* ── Parse a date string safely, return null on failure ── */
+function safeYear(dateStr){
+  if(!dateStr) return null;
+  try{ return new Date(dateStr).getFullYear(); }
+  catch(e){ return null; }
+}
+function safeMonth(dateStr){
+  if(!dateStr) return null;
+  try{ return new Date(dateStr).getMonth(); }
+  catch(e){ return null; }
+}
+
+/* ── Main KPI render — called on load + every year button click ── */
 function renderKPI(){
   if(!kpiSub) return;
 
   buildYearSelector();
 
   const yr = kpiYear;
+  const thisYear = new Date().getFullYear();
+  const isCurrentYear = (yr === thisYear);
 
-  // Filter each dataset to selected year
-  const subY   = DB.submission.filter(r => r.submission_date        && new Date(r.submission_date).getFullYear()        === yr);
-  const intY   = DB.interview.filter(r  => r.interview_scheduled_on && new Date(r.interview_scheduled_on).getFullYear() === yr && (!r.interview_round || r.interview_round === "1st Round"));
-  const placeY = DB.placement.filter(r  => r.placement_date         && new Date(r.placement_date).getFullYear()         === yr);
-  const startY = DB.start.filter(r      => r.start_date             && new Date(r.start_date).getFullYear()             === yr);
+  /* ── Filter datasets by selected year ── */
+  const subY   = (DB.submission  || []).filter(r => safeYear(r.submission_date)        === yr);
+  const intY   = (DB.interview   || []).filter(r => safeYear(r.interview_scheduled_on) === yr
+                   && (!r.interview_round || r.interview_round === "1st Round"));
+  const placeY = (DB.placement   || []).filter(r => safeYear(r.placement_date)         === yr);
+  const startY = (DB.start       || []).filter(r => safeYear(r.start_date)             === yr);
 
+  /* ── KPI card values ── */
   kpiSub.innerText   = subY.length;
   kpiInt.innerText   = intY.length;
   kpiPlace.innerText = placeY.length;
   kpiStart.innerText = startY.length;
 
-  if(!monthlyBody) return;
+  /* ── KPI card trend labels ── */
+  const trendLabel = isCurrentYear
+    ? "Total this year (" + yr + ")"
+    : "Total for " + yr;
 
-  // Use DocumentFragment for fast DOM insertion
+  const trendEls = ["kpiSubTrend","kpiIntTrend","kpiPlaceTrend","kpiStartTrend"];
+  trendEls.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = trendLabel;
+  });
+
+  /* ── Funnel bars — update widths dynamically ── */
+  const maxVal = subY.length || 1; // avoid div-by-zero
+  const funnelData = [
+    { bar: "funnelBarSub",   val: "funnelSubVal",   count: subY.length,   base: maxVal },
+    { bar: "funnelBarInt",   val: "funnelIntVal",   count: intY.length,   base: maxVal },
+    { bar: "funnelBarPlace", val: "funnelPlaceVal", count: placeY.length, base: maxVal },
+    { bar: "funnelBarStart", val: "funnelStartVal", count: startY.length, base: maxVal },
+  ];
+  /* Sourced bar = same as submissions (100%) */
+  const srcEl = document.getElementById("funnelSrc");
+  if(srcEl) srcEl.textContent = subY.length;
+
+  funnelData.forEach(fd => {
+    const barEl = document.getElementById(fd.bar);
+    const valEl = document.getElementById(fd.val);
+    const pct   = fd.base > 0 ? Math.round((fd.count / fd.base) * 100) : 0;
+    if(barEl){
+      /* Use setTimeout so CSS transition fires */
+      setTimeout(() => { barEl.style.width = Math.min(pct, 100) + "%"; }, 120);
+    }
+    if(valEl) valEl.textContent = fd.count;
+  });
+
+  /* ── Conversion rate bars ── */
+  function setConvRate(valId, barId, num, den){
+    const pct = den > 0 ? Math.round((num / den) * 100) : 0;
+    const valEl = document.getElementById(valId);
+    const barEl = document.getElementById(barId);
+    if(valEl) valEl.textContent = pct + "%";
+    if(barEl) setTimeout(() => { barEl.style.width = Math.min(pct, 100) + "%"; }, 200);
+  }
+  setConvRate("rateSubInt",    "barSubInt",    intY.length,   subY.length);
+  setConvRate("rateIntPlace",  "barIntPlace",  placeY.length, intY.length);
+  setConvRate("ratePlaceStart","barPlaceStart",startY.length, placeY.length);
+
+  /* ── Monthly breakdown table ── */
+  if(!monthlyBody) return;
+  const currentMonth = new Date().getMonth();
   const frag = document.createDocumentFragment();
+
   for(let m = 0; m < 12; m++){
     const sub   = countMonthArr(subY,   "submission_date",        m);
     const intC  = countMonthArr(intY,   "interview_scheduled_on", m);
     const place = countMonthArr(placeY, "placement_date",         m);
     const start = countMonthArr(startY, "start_date",             m);
+
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${MONTHS[m]}</td><td>${sub}</td><td>${intC}</td><td>${place}</td><td>${start}</td>`;
+
+    /* Highlight current month row if viewing current year */
+    if(isCurrentYear && m === currentMonth){
+      tr.style.cssText = "background:linear-gradient(90deg,rgba(37,99,235,0.07),rgba(37,99,235,0.02));font-weight:700;border-left:3px solid #2563eb;";
+    }
+
+    tr.innerHTML = `<td style="font-weight:${isCurrentYear && m === currentMonth ? '700' : '600'};color:${isCurrentYear && m === currentMonth ? '#1d4ed8' : ''}">${MONTHS[m]}${isCurrentYear && m === currentMonth ? ' ★' : ''}</td><td>${sub||'—'}</td><td>${intC||'—'}</td><td>${place||'—'}</td><td>${start||'—'}</td>`;
     frag.appendChild(tr);
   }
   monthlyBody.innerHTML = "";
