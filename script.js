@@ -1412,13 +1412,25 @@ function applyYearBtnStyle(btn, active){
 /* ── Parse a date string safely, return null on failure ── */
 function safeYear(dateStr){
   if(!dateStr) return null;
-  try{ return new Date(dateStr).getFullYear(); }
-  catch(e){ return null; }
+  try{
+    const parts = String(dateStr).split("-");
+    if(parts.length >= 1){
+      const y = parseInt(parts[0], 10);
+      return isNaN(y) ? null : y;
+    }
+    return null;
+  }catch(e){ return null; }
 }
 function safeMonth(dateStr){
   if(!dateStr) return null;
-  try{ return new Date(dateStr).getMonth(); }
-  catch(e){ return null; }
+  try{
+    const parts = String(dateStr).split("-");
+    if(parts.length >= 2){
+      const m = parseInt(parts[1], 10);
+      return isNaN(m) ? null : m - 1; // 0-indexed like Date.getMonth()
+    }
+    return null;
+  }catch(e){ return null; }
 }
 
 /* ── Main KPI render — called on load + every year button click ── */
@@ -1516,11 +1528,21 @@ function renderKPI(){
 }
 
 function countMonth(arr,field,month){
-  return arr.filter(r=>{ if(!r[field]) return false; return new Date(r[field]).getMonth()===month; }).length;
+  return arr.filter(r=>{
+    if(!r[field]) return false;
+    const parts = String(r[field]).split("-");
+    if(parts.length < 2) return false;
+    return parseInt(parts[1], 10) - 1 === month;
+  }).length;
 }
 
 function countMonthArr(arr,field,month){
-  return arr.filter(r=>{ if(!r[field]) return false; return new Date(r[field]).getMonth()===month; }).length;
+  return arr.filter(r=>{
+    if(!r[field]) return false;
+    const parts = String(r[field]).split("-");
+    if(parts.length < 2) return false;
+    return parseInt(parts[1], 10) - 1 === month;
+  }).length;
 }
 
 /* ================= TASK SYSTEM ================= */
