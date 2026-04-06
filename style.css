@@ -703,11 +703,15 @@ td a{color:#2563eb;text-decoration:none;font-weight:600;transition:color 0.1s;}
 td a:hover{color:#1d4ed8;text-decoration:underline;}
 
 td input[type="date"]{
-  background:var(--bg-input);border:1px solid var(--border);color:var(--text);
+  background:var(--bg-input);border:1px solid var(--border);color:#2563eb;
   padding:4px 8px;border-radius:7px;font-size:12px;width:136px;cursor:pointer;
 }
+td input[type="date"]::-webkit-calendar-picker-indicator{
+  filter:invert(30%) sepia(90%) saturate(400%) hue-rotate(190deg);
+  cursor:pointer;
+}
 td input[placeholder="Add notes..."]{
-  background:transparent;border:1px solid transparent;color:var(--text);
+  background:transparent;border:1px solid transparent;color:#0ea5e9;
   padding:4px 8px;border-radius:7px;font-size:12.5px;width:160px;transition:all 0.14s;
 }
 td input[placeholder="Add notes..."]:hover{border-color:var(--border);background:var(--bg-input);}
