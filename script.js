@@ -250,7 +250,16 @@ function renderJD(){
 
   jdBody.innerHTML = "";
 
-  DB.jd.forEach((r,i)=>{
+  const statusOrder = { "Active": 0, "Hold": 1, "Closed": 2 };
+  const sortedJD = [...DB.jd].sort((a, b) => {
+    const sA = statusOrder[a.status] ?? 3;
+    const sB = statusOrder[b.status] ?? 3;
+    if (sA !== sB) return sA - sB;
+    return new Date(b.date) - new Date(a.date);
+  });
+
+  sortedJD.forEach((r,i)=>{
+    const origIndex = DB.jd.indexOf(r);
 
     if(r.isEditing){
 
@@ -260,26 +269,26 @@ function renderJD(){
           <td>${r.date}</td>
           <td>
             <input value="${r.nvr || ""}"
-              onchange="updateJDField(${i},'nvr',this.value)">
+              onchange="updateJDField(${origIndex},'nvr',this.value)">
           </td>
           <td>
             <input value="${r.title || ""}"
-              onchange="updateJDField(${i},'title',this.value)">
+              onchange="updateJDField(${origIndex},'title',this.value)">
           </td>
           <td>
             <input value="${r.client || ""}"
-              onchange="updateJDField(${i},'client',this.value)">
+              onchange="updateJDField(${origIndex},'client',this.value)">
           </td>
           <td>
-            <select onchange="updateJDField(${i},'status',this.value)">
+            <select onchange="updateJDField(${origIndex},'status',this.value)">
               <option ${r.status==="Active"?"selected":""}>Active</option>
               <option ${r.status==="Hold"?"selected":""}>Hold</option>
               <option ${r.status==="Closed"?"selected":""}>Closed</option>
             </select>
           </td>
           <td>
-            <button onclick="saveJDRow(${i})">Save</button>
-            <button onclick="deleteJD(${i})">Delete</button>
+            <button onclick="saveJDRow(${origIndex})">Save</button>
+            <button onclick="deleteJD(${origIndex})">Delete</button>
           </td>
         </tr>
       `;
@@ -293,7 +302,7 @@ function renderJD(){
   <td>${r.nvr || ""}</td>
 
   <td>
-    <a href="#" onclick="viewJD(${i})" style="color:#1a73e8;font-weight:600;text-decoration:none;">
+    <a href="#" onclick="viewJD(${origIndex})" style="color:#1a73e8;font-weight:600;text-decoration:none;">
       ${r.title || ""}
     </a>
   </td>
@@ -302,8 +311,8 @@ function renderJD(){
   <td>${r.status || ""}</td>
 
   <td>
-    <button onclick="editJD(${i})">Edit</button>
-    <button onclick="deleteJD(${i})">Delete</button>
+    <button onclick="editJD(${origIndex})">Edit</button>
+    <button onclick="deleteJD(${origIndex})">Delete</button>
   </td>
 </tr>
 `;
@@ -584,7 +593,7 @@ function populateRequirementDropdown(){
 
   dailyRequirement.innerHTML = '<option value="">Select Requirement</option>';
 
-  DB.jd.forEach(j=>{
+  DB.jd.filter(j => j.status === "Active").forEach(j=>{
     dailyRequirement.innerHTML += `
       <option value="${j.title}">
         ${j.title}
